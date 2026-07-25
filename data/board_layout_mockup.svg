@@ -1,0 +1,511 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="1920" height="1080" viewBox="0 0 1920 1080">
+  <!-- ============================================================
+       The Drawdown Protocol — Tier A board, layout mockup 1920x1080
+       Panel centers match data/board_layout.json (panel_origin: center).
+       Names/archetypes are ONE EXAMPLE SEED — slots key on region_id only.
+       Palette: era-neutral mid-transition; state hues CVD-validated:
+         emissions #9c3b24 · absorption #79a94a · flood #33689c
+         ally gold #d9a441 · era ramp #8f8f87 / #d8d8d0 / #f2f7e8
+       ============================================================ -->
+  <defs>
+    <linearGradient id="gGround" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#71766d"/>
+      <stop offset="1" stop-color="#575c55"/>
+    </linearGradient>
+    <linearGradient id="gWarm" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#79a94a"/>
+      <stop offset="1" stop-color="#c98f38"/>
+    </linearGradient>
+    <filter id="soften" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+
+    <!-- Archetype icons, 24x24, stroke-styled at use site -->
+    <symbol id="ic_home" viewBox="0 0 24 24">
+      <path d="M2.5 20 H21.5 M4 20 V12 A8 8 0 0 1 20 12 V20 M9 20 V15.5 A3 3 0 0 1 15 15.5 V20"/>
+    </symbol>
+    <symbol id="ic_industry" viewBox="0 0 24 24">
+      <path d="M3.5 20.5 H20.5 M5.5 20.5 V11 L10 14 V11 L14.5 14 V20.5 M16.5 20.5 V5.5 H19.5 V20.5"/>
+    </symbol>
+    <symbol id="ic_coastal" viewBox="0 0 24 24">
+      <path d="M5 16.5 V8.5 H8.5 V16.5 M10.5 16.5 V5 H14 V16.5 M16 16.5 V10.5 H19 V16.5 M3 20 Q6 17.8 9 20 T15 20 T21 20"/>
+    </symbol>
+    <symbol id="ic_agrarian" viewBox="0 0 24 24">
+      <path d="M12 21 V6 M12 10.5 Q8.8 10 7.5 6.8 Q10.8 7.2 12 10.5 M12 10.5 Q15.2 10 16.5 6.8 Q13.2 7.2 12 10.5 M12 6 Q9.6 5.4 8.8 2.8 Q11.4 3.4 12 6 M12 6 Q14.4 5.4 15.2 2.8 Q12.6 3.4 12 6"/>
+    </symbol>
+    <symbol id="ic_forest" viewBox="0 0 24 24">
+      <path d="M7 20.5 V17 M3.5 17 L7 10 L10.5 17 Z M16.5 20.5 V18 M13 18 L16.5 11 L20 18 Z"/>
+    </symbol>
+    <symbol id="ic_arid" viewBox="0 0 24 24">
+      <circle cx="12" cy="8" r="3"/>
+      <path d="M12 3.2 V1.8 M7.9 5 L6.9 4 M16.1 5 L17.1 4 M6.6 8 H4.9 M17.4 8 H19.1 M3 19.5 Q8 14.5 12 17.5 Q16 20.5 21 16.5"/>
+    </symbol>
+    <symbol id="ic_island" viewBox="0 0 24 24">
+      <path d="M7.5 16.5 Q12 11.5 16.5 16.5 M12 13.2 V9.8 M12 9.8 Q9.5 7.6 6.8 8.6 Q9.6 9.2 12 9.8 M12 9.8 Q14.5 7.6 17.2 8.6 Q14.4 9.2 12 9.8 M3 20 Q6 18 9 20 T15 20 T21 20"/>
+    </symbol>
+
+    <!-- State glyphs, origin-centered -->
+    <path id="g_caret" d="M-4.6 3.6 L0 -4.6 L4.6 3.6 Z"/>
+    <path id="g_leaf" d="M0 5.8 Q-5.4 2.4 -4.6 -2.4 Q-2.4 -6.4 1.8 -5.4 Q5.6 -3.2 4.2 1.6 Q3 5.2 0 5.8 Z"/>
+    <path id="g_flame" d="M0 -6 C2.8 -2.6 4 0.6 2.6 3.2 C1.6 5.2 -1.6 5.2 -2.6 3.2 C-4 0.6 -2.8 -2.6 0 -6 Z"/>
+    <path id="g_wave" d="M-6 -1.5 Q-3 -5 0 -1.5 T6 -1.5 M-6 3.5 Q-3 0 0 3.5 T6 3.5"/>
+    <path id="g_house" d="M-4 3.5 V-0.5 L0 -4 L4 -0.5 V3.5 Z"/>
+  </defs>
+
+  <g font-family="Segoe UI, Trebuchet MS, DejaVu Sans, Verdana, sans-serif">
+
+    <!-- ==================== frame ==================== -->
+    <rect x="0" y="0" width="1920" height="1080" fill="#2e332f"/>
+
+    <!-- ==================== board ground ==================== -->
+    <rect x="24" y="112" width="1472" height="736" rx="24" fill="url(#gGround)"/>
+
+    <!-- soft landmass silhouettes behind the bands -->
+    <g filter="url(#soften)" fill="#6d7368" opacity="0.6">
+      <path d="M180 260 Q240 140 460 150 Q700 105 900 140 Q1180 120 1300 200 Q1340 280 1200 300 Q900 330 600 310 Q300 330 180 260 Z"/>
+      <ellipse cx="400" cy="400" rx="330" ry="95"/>
+      <ellipse cx="1140" cy="395" rx="280" ry="90"/>
+      <path d="M280 600 Q500 520 800 560 Q1100 520 1260 600 Q1240 690 1000 680 Q700 710 460 680 Q300 670 280 600 Z"/>
+      <ellipse cx="544" cy="760" rx="120" ry="42"/>
+      <ellipse cx="1104" cy="760" rx="120" ry="42"/>
+    </g>
+
+    <!-- band watermarks (silhouette logic) -->
+    <g fill="#82887c" opacity="0.75" font-size="10" letter-spacing="3">
+      <text transform="translate(44 258) rotate(-90)">BOREAL NORTH</text>
+      <text transform="translate(44 462) rotate(-90)">TEMPERATE MID</text>
+      <text transform="translate(1476 540) rotate(90)">TROPIC SOUTH</text>
+      <text transform="translate(1476 800) rotate(90)">OCEANIC</text>
+    </g>
+
+    <!-- decorative arcs (cosmetic only — never adjacency) -->
+    <g fill="none" stroke="#9aa091" stroke-width="2.5" stroke-linecap="round"
+       stroke-dasharray="1 9" opacity="0.5">
+      <path d="M336 216 Q536 164 736 192"/>
+      <path d="M736 192 Q944 168 1152 224"/>
+      <path d="M208 384 Q384 356 560 408"/>
+      <path d="M560 408 Q744 352 928 376"/>
+      <path d="M928 376 Q1120 352 1312 408"/>
+      <path d="M352 592 Q568 564 784 616"/>
+      <path d="M784 616 Q976 560 1168 584"/>
+      <path d="M544 752 Q824 716 1104 752"/>
+    </g>
+
+    <!-- ==================== region panels (draw order = board_layout.json) ==================== -->
+
+    <!-- region_02 · Drenholm · Industrial Heartland · neutral · t1 -->
+    <g transform="translate(736 192)">
+      <rect x="-100" y="-58" width="208" height="128" rx="14" fill="#262b27" opacity="0.3"/>
+      <rect x="-104" y="-64" width="208" height="128" rx="14" fill="#cdcdc5" stroke="#8f8f87" stroke-width="1.5"/>
+      <use xlink:href="#ic_industry" href="#ic_industry" x="-96" y="-58" width="24" height="24"
+           fill="none" stroke="#3a3f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="-64" y="-40" font-size="17" font-weight="600" fill="#262b27">Drenholm</text>
+      <text x="-64" y="-25" font-size="9.5" letter-spacing="1" fill="#5c6157">INDUSTRIAL HEARTLAND</text>
+      <use xlink:href="#g_caret" href="#g_caret" transform="translate(-88 -13)" fill="#9c3b24"/>
+      <rect x="-78" y="-18" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-18" width="133" height="10" rx="5" fill="#9c3b24"/>
+      <text x="62" y="-9" font-size="9.5" fill="#262b27">8.3 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(-88 3) scale(0.9)" fill="#79a94a"/>
+      <rect x="-78" y="-2" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-2" width="11" height="10" rx="5" fill="#79a94a"/>
+      <text x="62" y="7" font-size="9.5" fill="#262b27">0.7 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(34 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(53 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(72 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(91 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <text x="-96" y="56" font-size="9" font-family="Consolas, DejaVu Sans Mono, monospace" fill="#7d8174">region_02</text>
+    </g>
+
+    <!-- region_01 · Vorstal · Industrial Heartland · ALLY · t3 -->
+    <g transform="translate(336 216)">
+      <rect x="-110" y="-70" width="220" height="140" rx="19" fill="none" stroke="#d9a441" stroke-width="3"/>
+      <rect x="-100" y="-58" width="208" height="128" rx="14" fill="#262b27" opacity="0.3"/>
+      <rect x="-104" y="-64" width="208" height="128" rx="14" fill="#d6ddc1" stroke="#3c413c" stroke-width="1.5"/>
+      <circle cx="92" cy="-58" r="9.5" fill="#d9a441" stroke="#464a42" stroke-width="1"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(92 -58) scale(0.75)" fill="#2e332f"/>
+      <use xlink:href="#ic_industry" href="#ic_industry" x="-96" y="-58" width="24" height="24"
+           fill="none" stroke="#3a3f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="-64" y="-40" font-size="17" font-weight="600" fill="#262b27">Vorstal</text>
+      <text x="-64" y="-25" font-size="9.5" letter-spacing="1" fill="#5c6157">INDUSTRIAL HEARTLAND</text>
+      <use xlink:href="#g_caret" href="#g_caret" transform="translate(-88 -13)" fill="#9c3b24"/>
+      <rect x="-78" y="-18" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-18" width="99" height="10" rx="5" fill="#9c3b24"/>
+      <text x="62" y="-9" font-size="9.5" fill="#262b27">6.2 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(-88 3) scale(0.9)" fill="#79a94a"/>
+      <rect x="-78" y="-2" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-2" width="13" height="10" rx="5" fill="#79a94a"/>
+      <text x="62" y="7" font-size="9.5" fill="#262b27">0.8 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(34 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(53 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(72 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(91 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <text x="-96" y="56" font-size="9" font-family="Consolas, DejaVu Sans Mono, monospace" fill="#7d8174">region_01</text>
+    </g>
+
+    <!-- region_03 · Karagan · Industrial Heartland · neutral · t1 -->
+    <g transform="translate(1152 224)">
+      <rect x="-100" y="-58" width="208" height="128" rx="14" fill="#262b27" opacity="0.3"/>
+      <rect x="-104" y="-64" width="208" height="128" rx="14" fill="#cdcdc5" stroke="#8f8f87" stroke-width="1.5"/>
+      <use xlink:href="#ic_industry" href="#ic_industry" x="-96" y="-58" width="24" height="24"
+           fill="none" stroke="#3a3f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="-64" y="-40" font-size="17" font-weight="600" fill="#262b27">Karagan</text>
+      <text x="-64" y="-25" font-size="9.5" letter-spacing="1" fill="#5c6157">INDUSTRIAL HEARTLAND</text>
+      <use xlink:href="#g_caret" href="#g_caret" transform="translate(-88 -13)" fill="#9c3b24"/>
+      <rect x="-78" y="-18" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-18" width="109" height="10" rx="5" fill="#9c3b24"/>
+      <text x="62" y="-9" font-size="9.5" fill="#262b27">6.8 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(-88 3) scale(0.9)" fill="#79a94a"/>
+      <rect x="-78" y="-2" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-2" width="10" height="10" rx="5" fill="#79a94a"/>
+      <text x="62" y="7" font-size="9.5" fill="#262b27">0.6 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(34 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(53 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(72 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(91 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <text x="-96" y="56" font-size="9" font-family="Consolas, DejaVu Sans Mono, monospace" fill="#7d8174">region_03</text>
+    </g>
+
+    <!-- region_05 · Ashkara · Arid Belt · neutral · t1 · burned '41 -->
+    <g transform="translate(928 376)">
+      <rect x="-100" y="-58" width="208" height="128" rx="14" fill="#262b27" opacity="0.3"/>
+      <rect x="-104" y="-64" width="208" height="128" rx="14" fill="#cdcdc5" stroke="#8f8f87" stroke-width="1.5"/>
+      <use xlink:href="#ic_arid" href="#ic_arid" x="-96" y="-58" width="24" height="24"
+           fill="none" stroke="#3a3f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="-64" y="-40" font-size="17" font-weight="600" fill="#262b27">Ashkara</text>
+      <text x="-64" y="-25" font-size="9.5" letter-spacing="1" fill="#5c6157">ARID BELT</text>
+      <use xlink:href="#g_caret" href="#g_caret" transform="translate(-88 -13)" fill="#9c3b24"/>
+      <rect x="-78" y="-18" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-18" width="42" height="10" rx="5" fill="#9c3b24"/>
+      <text x="62" y="-9" font-size="9.5" fill="#262b27">2.6 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(-88 3) scale(0.9)" fill="#79a94a"/>
+      <rect x="-78" y="-2" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-2" width="8" height="10" rx="4" fill="#79a94a"/>
+      <text x="62" y="7" font-size="9.5" fill="#262b27">0.4 Gt</text>
+      <use xlink:href="#g_flame" href="#g_flame" transform="translate(-88 25) scale(1.05)" fill="#8a3520"/>
+      <text x="-77" y="29" font-size="9" fill="#5c6157">&#8217;41</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(34 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(53 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(72 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(91 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <text x="-96" y="56" font-size="9" font-family="Consolas, DejaVu Sans Mono, monospace" fill="#7d8174">region_05</text>
+    </g>
+
+    <!-- region_04 · Maravel · Coastal Metropolis · neutral · t2 · flooded '39 -->
+    <g transform="translate(208 384)">
+      <rect x="-100" y="-58" width="208" height="128" rx="14" fill="#262b27" opacity="0.3"/>
+      <rect x="-104" y="-64" width="208" height="128" rx="14" fill="#d2d6c3" stroke="#8f8f87" stroke-width="1.5"/>
+      <use xlink:href="#ic_coastal" href="#ic_coastal" x="-96" y="-58" width="24" height="24"
+           fill="none" stroke="#3a3f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="-64" y="-40" font-size="17" font-weight="600" fill="#262b27">Maravel</text>
+      <text x="-64" y="-25" font-size="9.5" letter-spacing="1" fill="#5c6157">COASTAL METROPOLIS</text>
+      <use xlink:href="#g_caret" href="#g_caret" transform="translate(-88 -13)" fill="#9c3b24"/>
+      <rect x="-78" y="-18" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-18" width="62" height="10" rx="5" fill="#9c3b24"/>
+      <text x="62" y="-9" font-size="9.5" fill="#262b27">3.9 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(-88 3) scale(0.9)" fill="#79a94a"/>
+      <rect x="-78" y="-2" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-2" width="10" height="10" rx="5" fill="#79a94a"/>
+      <text x="62" y="7" font-size="9.5" fill="#262b27">0.6 Gt</text>
+      <use xlink:href="#g_wave" href="#g_wave" transform="translate(-88 25)" fill="none" stroke="#33689c" stroke-width="2" stroke-linecap="round"/>
+      <text x="-77" y="29" font-size="9" fill="#5c6157">&#8217;39</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(34 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(53 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(72 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(91 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <text x="-96" y="56" font-size="9" font-family="Consolas, DejaVu Sans Mono, monospace" fill="#7d8174">region_04</text>
+    </g>
+
+    <!-- region_00 · The Signatories · PLAYER HOME · t4 -->
+    <g transform="translate(560 408)">
+      <rect x="-114" y="-74" width="228" height="148" rx="22" fill="none" stroke="#f2f7e8" stroke-width="2" opacity="0.9"/>
+      <rect x="-110" y="-70" width="220" height="140" rx="19" fill="none" stroke="#d9a441" stroke-width="3"/>
+      <rect x="-100" y="-58" width="208" height="128" rx="14" fill="#262b27" opacity="0.3"/>
+      <rect x="-104" y="-64" width="208" height="128" rx="14" fill="#d9e2c3" stroke="#3c413c" stroke-width="1.5"/>
+      <circle cx="92" cy="-60" r="11" fill="#f2f7e8" stroke="#d9a441" stroke-width="2"/>
+      <use xlink:href="#g_house" href="#g_house" transform="translate(92 -59)"
+           fill="none" stroke="#464a42" stroke-width="1.8" stroke-linejoin="round"/>
+      <use xlink:href="#ic_home" href="#ic_home" x="-96" y="-58" width="24" height="24"
+           fill="none" stroke="#3a3f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="-64" y="-40" font-size="17" font-weight="600" fill="#262b27">The Signatories</text>
+      <text x="-64" y="-25" font-size="9.5" letter-spacing="1" fill="#5c6157">PLAYER HOME &#183; COASTAL</text>
+      <use xlink:href="#g_caret" href="#g_caret" transform="translate(-88 -13)" fill="#9c3b24"/>
+      <rect x="-78" y="-18" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-18" width="18" height="10" rx="5" fill="#9c3b24"/>
+      <text x="62" y="-9" font-size="9.5" fill="#262b27">1.1 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(-88 3) scale(0.9)" fill="#79a94a"/>
+      <rect x="-78" y="-2" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-2" width="16" height="10" rx="5" fill="#79a94a"/>
+      <text x="62" y="7" font-size="9.5" fill="#262b27">1.0 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(34 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(53 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(72 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(91 26) scale(0.8)" fill="#6d8f3d"/>
+      <text x="-96" y="56" font-size="9" font-family="Consolas, DejaVu Sans Mono, monospace" fill="#7d8174">region_00</text>
+    </g>
+
+    <!-- region_06 · Tsurano · Coastal Metropolis · neutral · t2 -->
+    <g transform="translate(1312 408)">
+      <rect x="-100" y="-58" width="208" height="128" rx="14" fill="#262b27" opacity="0.3"/>
+      <rect x="-104" y="-64" width="208" height="128" rx="14" fill="#d2d6c3" stroke="#8f8f87" stroke-width="1.5"/>
+      <use xlink:href="#ic_coastal" href="#ic_coastal" x="-96" y="-58" width="24" height="24"
+           fill="none" stroke="#3a3f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="-64" y="-40" font-size="17" font-weight="600" fill="#262b27">Tsurano</text>
+      <text x="-64" y="-25" font-size="9.5" letter-spacing="1" fill="#5c6157">COASTAL METROPOLIS</text>
+      <use xlink:href="#g_caret" href="#g_caret" transform="translate(-88 -13)" fill="#9c3b24"/>
+      <rect x="-78" y="-18" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-18" width="67" height="10" rx="5" fill="#9c3b24"/>
+      <text x="62" y="-9" font-size="9.5" fill="#262b27">4.2 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(-88 3) scale(0.9)" fill="#79a94a"/>
+      <rect x="-78" y="-2" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-2" width="8" height="10" rx="4" fill="#79a94a"/>
+      <text x="62" y="7" font-size="9.5" fill="#262b27">0.5 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(34 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(53 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(72 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(91 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <text x="-96" y="56" font-size="9" font-family="Consolas, DejaVu Sans Mono, monospace" fill="#7d8174">region_06</text>
+    </g>
+
+    <!-- region_09 · Yarrandi · Agrarian Basin · neutral · t2 -->
+    <g transform="translate(1168 584)">
+      <rect x="-100" y="-58" width="208" height="128" rx="14" fill="#262b27" opacity="0.3"/>
+      <rect x="-104" y="-64" width="208" height="128" rx="14" fill="#d2d6c3" stroke="#8f8f87" stroke-width="1.5"/>
+      <use xlink:href="#ic_agrarian" href="#ic_agrarian" x="-96" y="-58" width="24" height="24"
+           fill="none" stroke="#3a3f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="-64" y="-40" font-size="17" font-weight="600" fill="#262b27">Yarrandi</text>
+      <text x="-64" y="-25" font-size="9.5" letter-spacing="1" fill="#5c6157">AGRARIAN BASIN</text>
+      <use xlink:href="#g_caret" href="#g_caret" transform="translate(-88 -13)" fill="#9c3b24"/>
+      <rect x="-78" y="-18" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-18" width="46" height="10" rx="5" fill="#9c3b24"/>
+      <text x="62" y="-9" font-size="9.5" fill="#262b27">2.9 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(-88 3) scale(0.9)" fill="#79a94a"/>
+      <rect x="-78" y="-2" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-2" width="22" height="10" rx="5" fill="#79a94a"/>
+      <text x="62" y="7" font-size="9.5" fill="#262b27">1.4 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(34 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(53 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(72 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(91 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <text x="-96" y="56" font-size="9" font-family="Consolas, DejaVu Sans Mono, monospace" fill="#7d8174">region_09</text>
+    </g>
+
+    <!-- region_07 · Korvatna · Forest Commons · ALLY · t3 · burned '43 -->
+    <g transform="translate(352 592)">
+      <rect x="-110" y="-70" width="220" height="140" rx="19" fill="none" stroke="#d9a441" stroke-width="3"/>
+      <rect x="-100" y="-58" width="208" height="128" rx="14" fill="#262b27" opacity="0.3"/>
+      <rect x="-104" y="-64" width="208" height="128" rx="14" fill="#d6ddc1" stroke="#3c413c" stroke-width="1.5"/>
+      <circle cx="92" cy="-58" r="9.5" fill="#d9a441" stroke="#464a42" stroke-width="1"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(92 -58) scale(0.75)" fill="#2e332f"/>
+      <use xlink:href="#ic_forest" href="#ic_forest" x="-96" y="-58" width="24" height="24"
+           fill="none" stroke="#3a3f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="-64" y="-40" font-size="17" font-weight="600" fill="#262b27">Korvatna</text>
+      <text x="-64" y="-25" font-size="9.5" letter-spacing="1" fill="#5c6157">FOREST COMMONS</text>
+      <use xlink:href="#g_caret" href="#g_caret" transform="translate(-88 -13)" fill="#9c3b24"/>
+      <rect x="-78" y="-18" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-18" width="14" height="10" rx="5" fill="#9c3b24"/>
+      <text x="62" y="-9" font-size="9.5" fill="#262b27">0.9 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(-88 3) scale(0.9)" fill="#79a94a"/>
+      <rect x="-78" y="-2" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-2" width="90" height="10" rx="5" fill="#79a94a"/>
+      <text x="62" y="7" font-size="9.5" fill="#262b27">5.6 Gt</text>
+      <use xlink:href="#g_flame" href="#g_flame" transform="translate(-88 25) scale(1.05)" fill="#8a3520"/>
+      <text x="-77" y="29" font-size="9" fill="#5c6157">&#8217;43</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(34 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(53 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(72 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(91 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <text x="-96" y="56" font-size="9" font-family="Consolas, DejaVu Sans Mono, monospace" fill="#7d8174">region_07</text>
+    </g>
+
+    <!-- region_08 · Umbeya · Agrarian Basin · neutral · t2 -->
+    <g transform="translate(784 616)">
+      <rect x="-100" y="-58" width="208" height="128" rx="14" fill="#262b27" opacity="0.3"/>
+      <rect x="-104" y="-64" width="208" height="128" rx="14" fill="#d2d6c3" stroke="#8f8f87" stroke-width="1.5"/>
+      <use xlink:href="#ic_agrarian" href="#ic_agrarian" x="-96" y="-58" width="24" height="24"
+           fill="none" stroke="#3a3f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="-64" y="-40" font-size="17" font-weight="600" fill="#262b27">Umbeya</text>
+      <text x="-64" y="-25" font-size="9.5" letter-spacing="1" fill="#5c6157">AGRARIAN BASIN</text>
+      <use xlink:href="#g_caret" href="#g_caret" transform="translate(-88 -13)" fill="#9c3b24"/>
+      <rect x="-78" y="-18" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-18" width="43" height="10" rx="5" fill="#9c3b24"/>
+      <text x="62" y="-9" font-size="9.5" fill="#262b27">2.7 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(-88 3) scale(0.9)" fill="#79a94a"/>
+      <rect x="-78" y="-2" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-2" width="24" height="10" rx="5" fill="#79a94a"/>
+      <text x="62" y="7" font-size="9.5" fill="#262b27">1.5 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(34 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(53 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(72 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(91 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <text x="-96" y="56" font-size="9" font-family="Consolas, DejaVu Sans Mono, monospace" fill="#7d8174">region_08</text>
+    </g>
+
+    <!-- region_10 · Palawei · Island Nations · ALLY · t3 · flooded '42 -->
+    <g transform="translate(544 752)">
+      <rect x="-110" y="-70" width="220" height="140" rx="19" fill="none" stroke="#d9a441" stroke-width="3"/>
+      <rect x="-100" y="-58" width="208" height="128" rx="14" fill="#262b27" opacity="0.3"/>
+      <rect x="-104" y="-64" width="208" height="128" rx="14" fill="#d6ddc1" stroke="#3c413c" stroke-width="1.5"/>
+      <circle cx="92" cy="-58" r="9.5" fill="#d9a441" stroke="#464a42" stroke-width="1"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(92 -58) scale(0.75)" fill="#2e332f"/>
+      <use xlink:href="#ic_island" href="#ic_island" x="-96" y="-58" width="24" height="24"
+           fill="none" stroke="#3a3f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="-64" y="-40" font-size="17" font-weight="600" fill="#262b27">Palawei</text>
+      <text x="-64" y="-25" font-size="9.5" letter-spacing="1" fill="#5c6157">ISLAND NATIONS</text>
+      <use xlink:href="#g_caret" href="#g_caret" transform="translate(-88 -13)" fill="#9c3b24"/>
+      <rect x="-78" y="-18" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-18" width="10" height="10" rx="5" fill="#9c3b24"/>
+      <text x="62" y="-9" font-size="9.5" fill="#262b27">0.6 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(-88 3) scale(0.9)" fill="#79a94a"/>
+      <rect x="-78" y="-2" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-2" width="21" height="10" rx="5" fill="#79a94a"/>
+      <text x="62" y="7" font-size="9.5" fill="#262b27">1.3 Gt</text>
+      <use xlink:href="#g_wave" href="#g_wave" transform="translate(-88 25)" fill="none" stroke="#33689c" stroke-width="2" stroke-linecap="round"/>
+      <text x="-77" y="29" font-size="9" fill="#5c6157">&#8217;42</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(34 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(53 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(72 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(91 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <text x="-96" y="56" font-size="9" font-family="Consolas, DejaVu Sans Mono, monospace" fill="#7d8174">region_10</text>
+    </g>
+
+    <!-- region_11 · Marovai · Island Nations · neutral · t2 -->
+    <g transform="translate(1104 752)">
+      <rect x="-100" y="-58" width="208" height="128" rx="14" fill="#262b27" opacity="0.3"/>
+      <rect x="-104" y="-64" width="208" height="128" rx="14" fill="#d2d6c3" stroke="#8f8f87" stroke-width="1.5"/>
+      <use xlink:href="#ic_island" href="#ic_island" x="-96" y="-58" width="24" height="24"
+           fill="none" stroke="#3a3f36" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="-64" y="-40" font-size="17" font-weight="600" fill="#262b27">Marovai</text>
+      <text x="-64" y="-25" font-size="9.5" letter-spacing="1" fill="#5c6157">ISLAND NATIONS</text>
+      <use xlink:href="#g_caret" href="#g_caret" transform="translate(-88 -13)" fill="#9c3b24"/>
+      <rect x="-78" y="-18" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-18" width="11" height="10" rx="5" fill="#9c3b24"/>
+      <text x="62" y="-9" font-size="9.5" fill="#262b27">0.7 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(-88 3) scale(0.9)" fill="#79a94a"/>
+      <rect x="-78" y="-2" width="134" height="10" rx="5" fill="#b3b6a8"/>
+      <rect x="-78" y="-2" width="19" height="10" rx="5" fill="#79a94a"/>
+      <text x="62" y="7" font-size="9.5" fill="#262b27">1.2 Gt</text>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(34 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(53 26) scale(0.8)" fill="#6d8f3d"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(72 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(91 26) scale(0.8)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+      <text x="-96" y="56" font-size="9" font-family="Consolas, DejaVu Sans Mono, monospace" fill="#7d8174">region_11</text>
+    </g>
+
+    <!-- ==================== HUD ghost: top bar ==================== -->
+    <g>
+      <rect x="6" y="6" width="1908" height="84" rx="10" fill="#262b27" opacity="0.25"/>
+      <rect x="6" y="6" width="1908" height="84" rx="10" fill="none" stroke="#9aa094" stroke-width="1.5" stroke-dasharray="7 7" opacity="0.8"/>
+      <text x="28" y="40" font-size="16" font-weight="700" letter-spacing="3" fill="#d9a441">THE DRAWDOWN PROTOCOL</text>
+      <text x="28" y="62" font-size="11" fill="#a8ae9f">Tier A board &#183; layout mockup 1920&#215;1080 &#183; example seed &#8212; year 2043</text>
+      <text x="1898" y="84" text-anchor="end" font-size="11" letter-spacing="2.5" fill="#9aa094">HUD &#8212; PILLARS &#183; WARMING GAUGE (RESERVED)</text>
+      <!-- warming gauge ghost -->
+      <g transform="translate(820 52)">
+        <text x="0" y="-16" text-anchor="middle" font-size="12" font-weight="600" fill="#dfe3d6">WARMING&#160;&#160;+1.62 &#176;C</text>
+        <rect x="-160" y="-4" width="320" height="8" rx="4" fill="#454a43"/>
+        <rect x="-160" y="-4" width="93" height="8" rx="4" fill="url(#gWarm)"/>
+        <rect x="-68.5" y="-8" width="2.5" height="16" fill="#f2f7e8"/>
+        <circle cx="-102" cy="0" r="4.5" fill="#79a94a" stroke="#2e332f" stroke-width="1"/>
+        <path d="M-48.6 -5 L-39.4 -5 L-44 4 Z" fill="#d9a441" stroke="#2e332f" stroke-width="1"/>
+        <path d="M44 -6 L49.5 0 L44 6 L38.5 0 Z" fill="#9c3b24" stroke="#2e332f" stroke-width="1"/>
+        <text x="-102" y="20" text-anchor="middle" font-size="8.5" fill="#8d938a">+1.5</text>
+        <text x="-44" y="20" text-anchor="middle" font-size="8.5" fill="#8d938a">+1.7 OS I</text>
+        <text x="44" y="20" text-anchor="middle" font-size="8.5" fill="#8d938a">+2.0 OS II</text>
+      </g>
+      <!-- pillar chips ghost -->
+      <g fill="none" stroke="#8d938a" stroke-width="1.2" stroke-dasharray="5 5" opacity="0.85">
+        <rect x="1180" y="32" width="92" height="32" rx="8"/>
+        <rect x="1284" y="32" width="92" height="32" rx="8"/>
+        <rect x="1388" y="32" width="92" height="32" rx="8"/>
+        <rect x="1492" y="32" width="120" height="32" rx="8"/>
+        <rect x="1624" y="32" width="110" height="32" rx="8"/>
+      </g>
+      <g font-size="12.5" fill="#dfe3d6" text-anchor="middle">
+        <text x="1226" y="53">M 118</text>
+        <text x="1330" y="53">H 62</text>
+        <text x="1434" y="53">I 34</text>
+        <text x="1552" y="53">ALLIES 3/6</text>
+        <text x="1679" y="53">YEAR 2043</text>
+      </g>
+    </g>
+
+    <!-- ==================== HUD ghost: right dock ==================== -->
+    <g>
+      <rect x="1526" y="102" width="388" height="756" rx="12" fill="#262b27" opacity="0.25"/>
+      <rect x="1526" y="102" width="388" height="756" rx="12" fill="none" stroke="#9aa094" stroke-width="1.5" stroke-dasharray="7 7" opacity="0.8"/>
+      <text x="1544" y="130" font-size="11" letter-spacing="2" fill="#9aa094">REGION INSPECTOR + TURN LOG &#8212; RESERVED</text>
+
+      <!-- mockup legend (lives in the dock only for this mockup) -->
+      <rect x="1544" y="148" width="352" height="452" rx="14" fill="#d8d8d0"/>
+      <text x="1564" y="178" font-size="12" font-weight="700" letter-spacing="2" fill="#262b27">MOCKUP LEGEND</text>
+
+      <g font-size="11.5" fill="#3a3f36">
+        <rect x="1560" y="200" width="30" height="20" rx="6" fill="none" stroke="#d9a441" stroke-width="2.5"/>
+        <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(1596 210) scale(0.65)" fill="#b98a35"/>
+        <text x="1610" y="214">Ally &#8212; gold ring + laurel badge</text>
+
+        <rect x="1558" y="236" width="34" height="24" rx="8" fill="none" stroke="#f2f7e8" stroke-width="1.6"/>
+        <rect x="1561" y="239" width="28" height="18" rx="6" fill="none" stroke="#d9a441" stroke-width="2"/>
+        <use xlink:href="#g_house" href="#g_house" transform="translate(1602 248) scale(0.9)" fill="none" stroke="#464a42" stroke-width="1.6"/>
+        <text x="1614" y="252">Player home &#8212; double ring + keystone</text>
+
+        <rect x="1560" y="274" width="30" height="20" rx="6" fill="none" stroke="#8f8f87" stroke-width="1.6"/>
+        <text x="1610" y="288">Neutral &#8212; dim grey outline</text>
+
+        <use xlink:href="#g_caret" href="#g_caret" transform="translate(1566 320) scale(0.9)" fill="#9c3b24"/>
+        <rect x="1576" y="314" width="26" height="9" rx="4.5" fill="#9c3b24"/>
+        <text x="1610" y="324">Emissions (Gt) &#8212; rust bar, caret glyph</text>
+
+        <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(1566 356) scale(0.8)" fill="#79a94a"/>
+        <rect x="1576" y="350" width="26" height="9" rx="4.5" fill="#79a94a"/>
+        <text x="1610" y="360">Absorption (Gt) &#8212; leaf bar, leaf glyph</text>
+
+        <use xlink:href="#g_flame" href="#g_flame" transform="translate(1568 392)" fill="#8a3520"/>
+        <text x="1610" y="396">Scar: burned (+ year)</text>
+
+        <use xlink:href="#g_wave" href="#g_wave" transform="translate(1568 428)" fill="none" stroke="#33689c" stroke-width="2" stroke-linecap="round"/>
+        <text x="1610" y="432">Scar: flooded (+ year)</text>
+
+        <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(1562 464) scale(0.7)" fill="#6d8f3d"/>
+        <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(1578 464) scale(0.7)" fill="#6d8f3d"/>
+        <use xlink:href="#g_leaf" href="#g_leaf" transform="translate(1594 464) scale(0.7)" fill="none" stroke="#9aa08f" stroke-width="1.2"/>
+        <text x="1610" y="468">Transition &#8212; leaf pips + face tint</text>
+      </g>
+
+      <g>
+        <rect x="1560" y="496" width="40" height="22" fill="#8f8f87"/>
+        <rect x="1604" y="496" width="40" height="22" fill="#d8d8d0" stroke="#a9ac9e" stroke-width="1"/>
+        <rect x="1648" y="496" width="40" height="22" fill="#f2f7e8" stroke="#a9ac9e" stroke-width="1"/>
+        <text x="1580" y="532" text-anchor="middle" font-size="8.5" fill="#5c6157">#8f8f87</text>
+        <text x="1624" y="532" text-anchor="middle" font-size="8.5" fill="#5c6157">#d8d8d0</text>
+        <text x="1668" y="532" text-anchor="middle" font-size="8.5" fill="#5c6157">#f2f7e8</text>
+        <text x="1564" y="552" font-size="10.5" fill="#3a3f36">EraModulate ramp &#8212; 0 / 50 / 100 % sector progress</text>
+        <text x="1564" y="582" font-size="10" fill="#5c6157">Color is never the only channel: tooltip and</text>
+        <text x="1564" y="595" font-size="10" fill="#5c6157">inspector repeat every panel value as text.</text>
+      </g>
+    </g>
+
+    <!-- ==================== HUD ghost: card tray ==================== -->
+    <g>
+      <rect x="6" y="870" width="1908" height="204" rx="10" fill="#262b27" opacity="0.25"/>
+      <rect x="6" y="870" width="1908" height="204" rx="10" fill="none" stroke="#9aa094" stroke-width="1.5" stroke-dasharray="7 7" opacity="0.8"/>
+      <text x="24" y="892" font-size="11" letter-spacing="2.5" fill="#9aa094">CARD TRAY &#8212; RESERVED (HUD)</text>
+      <g fill="#2c302b" fill-opacity="0.5" stroke="#8d938a" stroke-width="1.2" stroke-dasharray="6 6" opacity="0.8">
+        <rect x="578" y="884" width="140" height="160" rx="12"/>
+        <rect x="734" y="884" width="140" height="160" rx="12"/>
+        <rect x="890" y="884" width="140" height="160" rx="12"/>
+        <rect x="1046" y="884" width="140" height="160" rx="12"/>
+        <rect x="1202" y="884" width="140" height="160" rx="12"/>
+      </g>
+      <g font-size="11" letter-spacing="2" fill="#8d938a" text-anchor="middle">
+        <text x="648" y="976">CARD</text>
+        <text x="804" y="976">CARD</text>
+        <text x="960" y="976">CARD</text>
+        <text x="1116" y="976">CARD</text>
+        <text x="1272" y="976">CARD</text>
+      </g>
+      <text x="960" y="1060" text-anchor="middle" font-size="11" fill="#9aa094">Example seed: names &amp; archetypes illustrative &#8212; slots key on region_id only &#183; panel centers from data/board_layout.json (panel_origin: center)</text>
+    </g>
+
+  </g>
+</svg>
