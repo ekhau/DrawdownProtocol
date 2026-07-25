@@ -1,0 +1,18 @@
+# Risk Register — The Drawdown Protocol
+
+Top production and design risks, with mitigations. Review at every milestone; add new
+entries rather than deleting resolved ones (mark them Done).
+
+| # | Risk | Type | Likelihood | Impact | Mitigation |
+|---|---|---|---|---|---|
+| 1 | **Diplomacy scope creep** — the "deal with other countries" fantasy balloons into AI opinion simulation and negotiation UI | Design/Prod | High | High | MVP locks diplomacy to two cards (Form Alliance, Joint Project) inside the existing card system; anything richer waits until the loop is proven fun (golden rules 3, 11) |
+| 2 | **Balance feels random, not strategic** — players cannot reconstruct why warming or happiness moved | Design | Medium | High | All formulas visible in `../Phase_1/01_Balance_Model.md`; per-change log lines; deterministic seeds; tune via data files only |
+| 3 | **Dominant strategy: Joint Project spam** — DIP2 touches all three sectors and may outclass single-sector cards once allies exist | Design | Medium | Medium | Flagged from the paper model (Run C wins largely through DIP2). Playtest metric: DIP2 pick-rate; balance levers ready (Influence cost, cooldown, diminishing progress) |
+| 4 | **Happiness death spiral frustrates** — low H cuts income, causing crises, cutting H further, with no way back | Design | Medium | High | Spiral is intentional but must stay escapable: Wellbeing Fund card, social-crisis policy window, and Knowledge nodes all provide exits; watch failure interviews in playtests |
+| 5 | **Late-game money hoarding** — paper model shows winners ending with 6 000+ funds and nothing to buy | Design | High | Low | Known from Phase 1 runs. Add money sinks in tuning (recurring costs, disaster relief for allies, wellbeing spending); acceptable for prototype |
+| 6 | **Procgen world map rabbit hole** — building tile-level world generation before the loop is fun | Prod | Medium | High | MVP procgen is parameter-level only (starting values per seed); isometric map is a nice-to-have that follows fun, never precedes it |
+| 7 | **Preachy tone undermines the message** — lecture text instead of systems | Design | Medium | Medium | Pillar 5 reject list; all climate arguments must be expressed as mechanics; flavor text reviewed for moralizing |
+| 8 | **Event RNG feels punitive** — a bad decade of rolls reads as unfair | Design | Medium | Medium | Every event carries an opportunity rider (pillar 2); damage scaled by player-built Resilience; probabilities published in the event table |
+| 9 | **Art cost of the grey-to-solarpunk arc** — the visual payoff is expensive for a small team | Prod | High | Medium | Ship MVP with abstract dashboard + palette shifts (CanvasModulate-style tinting); full tile art only after the loop is validated |
+| 10 | **Science drift** — tuned numbers quietly contradict cited sources | Design | Medium | Medium | Every deliberate simplification is written in `../Phase_1/06_Assumptions.md` so it can be challenged; concept doc lists sources per mechanic |
+| 11 | **Timeline slip** — 6-week plan compresses under solo/small-team reality | Prod | High | Medium | Phase gates from Plan.md; cut from nice-to-have list first; vertical slice by end of week 2 (golden rule 14) |
