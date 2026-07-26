@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "region_count": 12,
+  "jitter": {
+    "sector_base_range": [0.9, 1.1],
+    "sector_total_clamp": [48.0, 52.0],
+    "absorption_range": [0.9, 1.1],
+    "absorption_clamp": [18.0, 22.0],
+    "money_range": [0.9, 1.1],
+    "happiness_delta_range": [-3.0, 3.0],
+    "share_noise_range": [0.7, 1.3]
+  },
+  "archetypes": [
+    { "id": "player_home", "name": "Player Home", "min": 1, "max": 1, "is_home": true,
+      "ind": 0.4, "tra": 0.4, "agr": 0.4, "sink": 0.6,
+      "tags": ["coastal"], "affinity": 1.0,
+      "syllables": ["sig", "na", "vell", "ora", "den", "lys"] },
+    { "id": "industrial_heartland", "name": "Industrial Heartland", "min": 2, "max": 3, "is_home": false,
+      "ind": 2.5, "tra": 1.2, "agr": 0.8, "sink": 0.5,
+      "tags": [], "affinity": 1.0,
+      "syllables": ["kor", "vat", "stahl", "brun", "gor", "dek"] },
+    { "id": "coastal_metropolis", "name": "Coastal Metropolis", "min": 2, "max": 3, "is_home": false,
+      "ind": 1.2, "tra": 2.0, "agr": 0.6, "sink": 0.4,
+      "tags": ["coastal"], "affinity": 1.0,
+      "syllables": ["mar", "vis", "port", "azu", "len", "cai"] },
+    { "id": "agrarian_basin", "name": "Agrarian Basin", "min": 2, "max": 3, "is_home": false,
+      "ind": 0.5, "tra": 0.8, "agr": 2.5, "sink": 0.8,
+      "tags": ["arid"], "affinity": 1.0,
+      "syllables": ["ter", "gan", "sol", "vega", "dur", "pam" ] },
+    { "id": "forest_commons", "name": "Forest Commons", "min": 1, "max": 2, "is_home": false,
+      "ind": 0.3, "tra": 0.4, "agr": 0.8, "sink": 3.0,
+      "tags": ["forested"], "affinity": 1.0,
+      "syllables": ["syl", "var", "kuna", "bor", "eli", "thu"] },
+    { "id": "arid_belt", "name": "Arid Belt", "min": 1, "max": 2, "is_home": false,
+      "ind": 0.8, "tra": 0.8, "agr": 1.2, "sink": 0.3,
+      "tags": ["arid"], "affinity": 1.0,
+      "syllables": ["sah", "kar", "dun", "zer", "ost", "mir"] },
+    { "id": "island_nations", "name": "Island Nations", "min": 1, "max": 2, "is_home": false,
+      "ind": 0.3, "tra": 0.6, "agr": 0.6, "sink": 0.7,
+      "tags": ["coastal"], "affinity": 1.2,
+      "syllables": ["isla", "moa", "kiri", "tua", "pel", "nau"] }
+  ]
+}

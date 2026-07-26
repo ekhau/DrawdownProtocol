@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "START_YEAR": 2030,
+  "END_YEAR": 2100,
+  "T_START": 1.30,
+  "T_WARN": 1.50,
+  "T_BAND2": 1.75,
+  "T_LOSS": 2.00,
+  "T_FLOOR": 1.20,
+  "K_WARM": 0.001,
+  "K_COOL": 0.00025,
+  "SECTOR_BASE": { "ind": 20.0, "tra": 15.0, "agr": 15.0 },
+  "RESIDUAL": 0.10,
+  "A_START": 20.0,
+  "A_FLOOR": 5.0,
+  "SINK_STRESS": [0.0, 0.10, 0.25],
+  "TECH_CAP": 70.0,
+  "FULL_CAP": 100.0
+}

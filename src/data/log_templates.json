@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "system": {
+    "income": "Income: +{money} funds, +{influence} influence{penalty_note}",
+    "penalty_h_below_40": " (unrest: income x0.75)",
+    "penalty_h_below_25": " (crisis: income x0.5)",
+    "pass": "No policy enacted - funds banked.",
+    "rebuild_better_tra": "Rebuilt better: transport +{amount}% from flood recovery.",
+    "ledger": "Ledger: E {e} - A {a} = net {n} Gt",
+    "sink_matured": "Restoration matures: absorption +{amount} Gt/yr.",
+    "warming": "Warming: {t} C ({dt} this year)",
+    "drift": "Happiness {h} (co-benefit +{co}, overshoot stress -{stress})",
+    "band_up_1": "OVERSHOOT - the world passes +1.5 C. Events intensify; sinks strain.",
+    "band_up_2": "OVERSHOOT II - the world passes +1.75 C. The pressure escalates.",
+    "band_down_1": "Relief - warming falls back below +1.75 C.",
+    "band_down_0": "The world dips back below +1.5 C. The air clears.",
+    "ally_lost": "{region} leaves the coalition.",
+    "run_end_kp": "Knowledge gained: {kp} points."
+  },
+  "ops": {
+    "sector_progress": "{sector} +{applied}%{cap_note}",
+    "joint_progress": "Joint project: industry +{ind}%, transport +{tra}%, agro +{agr}%",
+    "happiness": "Happiness {amount}{waive_note}",
+    "sink_now": "Absorption +{amount} Gt/yr",
+    "reforest": "Restoration begun: +{per_year} Gt/yr for {years} years",
+    "adapt": "Adaptation +{amount}",
+    "media": "Independent media active for the rest of the run",
+    "wellbeing": "Wellbeing +{amount} happiness",
+    "ally": "{region} joins the coalition (+20 funds and +1 influence yearly)"
+  },
+  "cards": {
+    "enact": "Enacted {name} ({cost_note})"
+  },
+  "events": {
+    "heat_wave_hit": "Heat wave strikes {region}: happiness -{happiness}, funds -{money}{resilience_note}",
+    "mega_fire_hit": "Mega fire in {region}: absorption -{absorption}, funds -{money}, happiness -{happiness} (fire #{fires}){resilience_note}",
+    "mega_fire_opp": "Rebuild better: restoration is half price while the ashes are warm.",
+    "flood_tsunami_hit": "Flood devastates {region}: funds -{money}, happiness -{happiness}{resilience_note}",
+    "flood_tsunami_opp": "Rebuild better: transport will be rebuilt transformed next year.",
+    "social_crisis_hit": "Social crisis in {region}: influence -{influence}, funds -{money}{ally_note}",
+    "social_crisis_opp": "A window for change is open: the next sufficiency policy costs no happiness.",
+    "permafrost_methane_hit": "Permafrost methane release: the thaw frees what was frozen. +2.0 Gt/yr emissions, permanently.",
+    "ocean_sink_weakening_hit": "Ocean sink weakening: the sea absorbs less. Absorption -2.0 Gt/yr.",
+    "amazon_dieback_hit": "Amazon dieback: the forest flips from sink to source. Absorption -3.0 Gt/yr.",
+    "resilience_note": " (resilience softened this)"
+  },
+  "endings": {
+    "WIN_NEUTRAL": "The balance holds. The world is carbon-neutral.",
+    "LOSS_LIMIT_BREACHED": "The limit for a safe human world is breached.",
+    "LOSS_NOT_NEUTRAL": "We survived the century. The job is not done."
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    { "id": "affordable_evs", "name": "Affordable EVs", "kp_cost": 6,
+      "insight": "We know how to make electric cars people can buy.",
+      "patch": { "card": "TRA2", "cost_money": 84 } },
+
+    { "id": "healthy_sobriety", "name": "Healthy Sobriety", "kp_cost": 8,
+      "insight": "Bikes and plant-rich food are good for climate and health.",
+      "patch": { "cards": ["AGR1", "TRA3"], "effect_happiness": 2 } },
+
+    { "id": "informed_public", "name": "Informed Public", "kp_cost": 8,
+      "insight": "People who understand accept - even demand - sufficiency.",
+      "grant": { "media": true } },
+
+    { "id": "restoration_playbook", "name": "Restoration Playbook", "kp_cost": 5,
+      "insight": "We have learned to regrow ecosystems fast.",
+      "patch": { "cards": ["SNK1", "SNK2"], "reforest_years": 3 } },
+
+    { "id": "coalition_diplomacy", "name": "Coalition Diplomacy", "kp_cost": 10,
+      "insight": "Trust, once earned, is easier the next time.",
+      "patch": { "card": "DIP1", "cost_influence": 15 } },
+
+    { "id": "crisis_ready", "name": "Crisis-Ready Design", "kp_cost": 12,
+      "insight": "We build for the disasters we know are coming.",
+      "grant": { "adapt": 10 } }
+  ]
+}
