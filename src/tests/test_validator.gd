@@ -9,12 +9,13 @@ func _docs() -> Dictionary:
 		"events": JSON.parse_string(FileAccess.get_file_as_string("res://data/events.json")),
 		"knowledge": JSON.parse_string(FileAccess.get_file_as_string("res://data/knowledge.json")),
 		"templates": JSON.parse_string(FileAccess.get_file_as_string("res://data/log_templates.json")),
+		"tutorial": JSON.parse_string(FileAccess.get_file_as_string("res://data/tutorial.json")),
 	}
 
 
 func _validate(d: Dictionary) -> DataValidator:
 	var v := DataValidator.new()
-	v.validate_all(d["cards"], d["events"], d["knowledge"], d["templates"])
+	v.validate_all(d["cards"], d["events"], d["knowledge"], d["templates"], d["tutorial"])
 	return v
 
 
@@ -131,6 +132,38 @@ func test_mutation_knowledge_cost_range() -> void:
 	d["knowledge"] = d["knowledge"].duplicate(true)
 	d["knowledge"]["nodes"][0]["kp_cost"] = 99
 	_expect_rule(_validate(d), "K1", "kp_cost out of 1-20 rejected (K1)")
+
+
+func test_mutation_tutorial_bad_target() -> void:
+	var d := _docs()
+	d["tutorial"] = d["tutorial"].duplicate(true)
+	d["tutorial"]["steps"][0]["target"] = "minimap"
+	_expect_rule(_validate(d), "TU3", "unknown tutorial target rejected (TU3)")
+
+
+func test_mutation_tutorial_bad_signal() -> void:
+	var d := _docs()
+	d["tutorial"] = d["tutorial"].duplicate(true)
+	d["tutorial"]["steps"][0]["advance"] = {"type": "signal", "signal": "meteor_struck"}
+	_expect_rule(_validate(d), "TU4", "unknown advance signal rejected (TU4)")
+
+
+func test_mutation_tutorial_empty_text() -> void:
+	var d := _docs()
+	d["tutorial"] = d["tutorial"].duplicate(true)
+	d["tutorial"]["steps"][1]["text"] = ""
+	_expect_rule(_validate(d), "TU2", "empty step text rejected (TU2)")
+
+
+func test_tutorial_signals_match_layer_vocabulary() -> void:
+	# Every advance signal in the shipped steps must be one the TutorialLayer
+	# can actually receive via Main's notify() hooks.
+	var doc: Dictionary = _docs()["tutorial"]
+	for s: Dictionary in doc["steps"]:
+		var advance: Dictionary = s.get("advance", {})
+		if String(advance.get("type", "")) == "signal":
+			check(DataValidator.TUTORIAL_SIGNALS.has(String(advance.get("signal", ""))),
+				"step %s uses a wired signal" % s.get("id", "?"))
 
 
 func test_mutation_missing_template() -> void:

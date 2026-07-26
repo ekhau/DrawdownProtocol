@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "steps": [
+    { "id": "welcome", "title": "The Drawdown Protocol",
+      "text": "2030. You lead a small coalition with one promise: a carbon-neutral world by 2100. You get one move per year - 71 in total. Let's learn the table in one minute.",
+      "target": "none", "advance": { "type": "next" } },
+
+    { "id": "pillars", "title": "The three pillars",
+      "text": "Money funds every policy. The carbon ledger compares emissions E against absorption A - their balance drives everything. Happiness keeps society on board. Hover any number for details.",
+      "target": "top_bar", "advance": { "type": "next" } },
+
+    { "id": "warming", "title": "The thermometer",
+      "text": "Net-positive carbon pushes warming up. Past +1.5 C the world enters Overshoot: harsher events, straining sinks. At +2.0 C the run is lost - the one hard defeat.",
+      "target": "warming_gauge", "advance": { "type": "next" } },
+
+    { "id": "board", "title": "The world",
+      "text": "Twelve regions render the global simulation: rust bar for emissions, green for absorption. Coastal, arid and forested regions attract different disasters. Gold rings mark allies.",
+      "target": "board", "advance": { "type": "next" } },
+
+    { "id": "inspect", "title": "Inspect a region",
+      "text": "Click any region now. Its shares, vulnerabilities, scars and alliance status appear in the inspector on the right.",
+      "target": "board", "advance": { "type": "signal", "signal": "region_selected" } },
+
+    { "id": "cards", "title": "The Policy Board",
+      "text": "All 15 policies, always visible - dimmed cards state their reason. Note the sufficiency cards: technology alone stalls every sector at 70%; sufficiency lifts the ceiling to 100%.",
+      "target": "card_tray", "advance": { "type": "next" } },
+
+    { "id": "enact", "title": "Enact one policy",
+      "text": "Play one card now - one per year, so the whole game is choosing what moves the needle most. The Independent Media Fund is a fine opening.",
+      "target": "card_tray", "advance": { "type": "signal", "signal": "card_played" } },
+
+    { "id": "resolve", "title": "Resolve the year",
+      "text": "Press Space: income, ledger, warming, happiness - and perhaps an event. Passing is legal too: Space twice banks the money for later.",
+      "target": "prompt", "advance": { "type": "signal", "signal": "year_advanced" } },
+
+    { "id": "events", "title": "Events and resilience",
+      "text": "The log explains every number. Heat waves, fires, floods and social crises hit harder as warming rises - resilience (happiness + adaptation) softens them. Every crisis opens a door: watch for the green beat.",
+      "target": "log_dock", "advance": { "type": "next" } },
+
+    { "id": "diplomacy", "title": "Diplomacy is scale",
+      "text": "Each ally pays +20 money and +1 influence yearly, and joint projects push all three sectors at once. Being allied always beats being alone.",
+      "target": "card_tray", "advance": { "type": "next" } },
+
+    { "id": "knowledge", "title": "Knowledge persists",
+      "text": "Press H to open the Knowledge tree. Every run - won or lost - earns Knowledge Points to unlock permanent insights. Defeat is never a reset.",
+      "target": "prompt", "advance": { "type": "signal", "signal": "hub_opened" } },
+
+    { "id": "winlose", "title": "How it ends",
+      "text": "Win: reach 2100 with emissions at or below absorption. Lose: touch +2.0 C, any year. Reaching 2100 without neutrality is a soft loss - but the Knowledge stays. Good luck, Signatory.",
+      "target": "warming_gauge", "advance": { "type": "next" } }
+  ]
+}

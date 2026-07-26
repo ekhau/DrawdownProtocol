@@ -8,6 +8,7 @@ const SAVE_PATH := "user://knowledge_save.json"
 var kp_total: int = 0
 var unlocked: Array = []  # Array[String] of knowledge node ids
 var last_seed: int = 0
+var tutorial_done: bool = false  # completed OR dismissed; never auto-reshow
 
 
 func _ready() -> void:
@@ -22,6 +23,7 @@ func load_state() -> void:
 		kp_total = int(parsed.get("kp_total", 0))
 		unlocked = parsed.get("unlocked", [])
 		last_seed = int(parsed.get("last_seed", 0))
+		tutorial_done = bool(parsed.get("tutorial_done", false))
 
 
 func save_state() -> void:
@@ -33,6 +35,7 @@ func save_state() -> void:
 		"kp_total": kp_total,
 		"unlocked": unlocked,
 		"last_seed": last_seed,
+		"tutorial_done": tutorial_done,
 	}))
 
 

@@ -16,6 +16,7 @@ func _initialize() -> void:
 	# Reset persisted meta so the smoke is repeatable.
 	meta.kp_total = 0
 	meta.unlocked = []
+	meta.tutorial_done = false
 	meta.save_state()
 	var main_scene: PackedScene = load("res://scenes/main.tscn")
 	var main: Node = main_scene.instantiate()
@@ -30,6 +31,34 @@ func _initialize() -> void:
 	var rs: RunState = main.sim.run_state
 	print("boot ok: seed %d, year %d, %d panels, %d chips" % [
 		rs.run_seed, rs.year, main.board.panels.size(), main.tray._chips.size()])
+
+	# --- Tutorial, part 1: auto-open, advance, close mid-way, flag persisted.
+	if not main.tutorial.active:
+		print("FAIL: tutorial did not auto-open on a fresh profile")
+		errors += 1
+	if main.tutorial.current_step_id() != &"welcome":
+		print("FAIL: tutorial did not start at the first step")
+		errors += 1
+	for i in 4:  # welcome/pillars/warming/board are informational Next steps
+		main.tutorial.advance()
+	if main.tutorial.current_step_id() != &"inspect":
+		print("FAIL: expected the inspect step, got %s" % main.tutorial.current_step_id())
+		errors += 1
+	main._on_region_clicked(rs.world[4].id)  # the real action advances the step
+	if main.tutorial.current_step_id() != &"cards":
+		print("FAIL: region click did not advance the tutorial")
+		errors += 1
+	main._toggle_tutorial()  # close mid-way
+	if main.tutorial.active:
+		print("FAIL: tutorial did not close")
+		errors += 1
+	if not meta.tutorial_done:
+		print("FAIL: dismissal flag not set")
+		errors += 1
+	if not FileAccess.get_file_as_string("user://knowledge_save.json").contains("\"tutorial_done\":true"):
+		print("FAIL: tutorial_done not persisted to user://")
+		errors += 1
+	print("tutorial part 1 ok: auto-open, advance, real-action step, mid-way close persisted")
 
 	# 1. Enact a card through the tray handler.
 	main._on_card_chosen(&"SOC1")
@@ -113,6 +142,51 @@ func _initialize() -> void:
 	if float(main.sim.run_state.catalog.card(&"TRA2")["cost_money"]) != 84.0:
 		print("FAIL: knowledge patch not applied to new run")
 		errors += 1
+
+	# --- Tutorial, part 2: no auto-reshow, re-open via toggle, complete fully.
+	rs = main.sim.run_state
+	if main.tutorial.active:
+		print("FAIL: tutorial auto-reshown despite the persisted flag")
+		errors += 1
+	main._toggle_tutorial()  # the "?" button and F1 route here
+	if not main.tutorial.active:
+		print("FAIL: tutorial did not re-open")
+		errors += 1
+	var visited := 0
+	var guard := 40
+	while main.tutorial.active and guard > 0:
+		guard -= 1
+		visited += 1
+		var step: Dictionary = main.tutorial.steps[main.tutorial.index]
+		var advance: Dictionary = step.get("advance", {})
+		if String(advance.get("type", "")) == "next":
+			main.tutorial.advance()
+		else:
+			match StringName(String(advance.get("signal", ""))):
+				&"region_selected":
+					main._on_region_clicked(rs.world[1].id)
+				&"card_played":
+					main._on_card_chosen(&"SOC1")
+				&"year_advanced":
+					main._on_advance_pressed()
+				&"hub_opened":
+					main._toggle_hub()
+				_:
+					print("FAIL: smoke cannot drive signal %s" % advance.get("signal", "?"))
+					errors += 1
+					break
+	if main.tutorial.active:
+		print("FAIL: tutorial did not complete (visited %d steps)" % visited)
+		errors += 1
+	if visited != main.tutorial.steps.size():
+		print("FAIL: visited %d of %d steps" % [visited, main.tutorial.steps.size()])
+		errors += 1
+	if not meta.tutorial_done:
+		print("FAIL: completion flag lost")
+		errors += 1
+	if main.hub.visible:
+		main._toggle_hub()  # tidy up after the hub step
+	print("tutorial part 2 ok: no auto-reshow, re-opened, completed all %d steps" % visited)
 
 	if errors == 0:
 		print("UI SMOKE PASSED")

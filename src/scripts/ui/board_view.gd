@@ -42,6 +42,14 @@ func _ready() -> void:
 		panel.panel_hovered.connect(func(id: StringName) -> void: region_hovered.emit(id))
 
 
+## The usable board rect from the layout data (tutorial spotlight anchor).
+func board_rect() -> Rect2:
+	var area: Dictionary = _layout.get("board_area", {})
+	if area.is_empty():
+		return Rect2()
+	return Rect2(float(area["x"]), float(area["y"]), float(area["w"]), float(area["h"]))
+
+
 func bind_world(rs: RunState) -> void:
 	for r in rs.world:
 		if panels.has(r.id):

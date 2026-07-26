@@ -12,6 +12,7 @@ var influence_label: Label
 var prompt_label: Label
 var gauge: WarmingGauge
 var seed_label: Label
+var help_button: Button
 
 
 func _ready() -> void:
@@ -57,6 +58,14 @@ func _ready() -> void:
 	seed_label.add_theme_font_size_override("font_size", 10)
 	seed_label.add_theme_color_override("font_color", Color("6e746a"))
 	right.add_child(seed_label)
+
+	help_button = Button.new()
+	help_button.text = "?"
+	help_button.tooltip_text = "Tutorial (F1)"
+	help_button.focus_mode = Control.FOCUS_NONE
+	help_button.custom_minimum_size = Vector2(36, 36)
+	help_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(help_button)
 
 
 func _big_label(parent: Control, text: String, color: Color) -> Label:

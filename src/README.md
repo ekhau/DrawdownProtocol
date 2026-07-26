@@ -37,8 +37,13 @@ godot/bin/godot.linuxbsd.editor.dev.x86_64 --headless --path src --script res://
 | Mouse | Pick policy cards, select regions, choose the DIP1 alliance partner |
 | Space | Resolve the year (passing needs a second Space to confirm) |
 | H | Knowledge tree (meta-progression) |
+| F1 or the "?" button (top-right) | Open/close the step-by-step tutorial |
 | F3 | Debug overlay: sim internals, world table, autoplay Safe/Risky/Mixed, restart same seed / seed+1 |
 | Esc / RMB | Clear selection / cancel the alliance target prompt |
+
+The tutorial opens automatically on a fresh profile and never re-shows once
+completed or dismissed (flag persisted in `user://knowledge_save.json`);
+re-open it any time with `?` or F1.
 
 ## Architecture
 
@@ -80,6 +85,7 @@ view is its own class in `scripts/ui/`. Sim → UI flows only through signals
 | `data/archetypes.json` | region presets, min/max counts, jitter ranges |
 | `data/log_templates.json` | every log/banner line template |
 | `data/board_layout.json` | Tier A dashboard slots (copy of `../data/board_layout.json`) |
+| `data/tutorial.json` | tutorial steps: spotlight target, text, advance rule (validated: rules TU1-TU4) |
 
 ## Implemented
 
@@ -112,6 +118,15 @@ view is its own class in `scripts/ui/`. Sim → UI flows only through signals
 - Debug: F3 overlay (header, flags, feedback armed/triggered, world table,
   log tail, autoplay buttons, restart same/next seed, copy seed), headless
   batch harness with CSV, data validator (boot fail-loud + CI exit codes).
+- Step-by-step tutorial (GoldenRules #7): 12 data-driven steps covering the
+  pillars, warming gauge, board/regions, Policy Board + one-card lock and the
+  sufficiency cap, resolving/passing, events and resilience, diplomacy,
+  Knowledge, and win/lose. Each step dims the screen with a spotlight cutout
+  over the relevant control (non-blocking - the player performs the real
+  action); action steps advance on the real sim signal (region selected, card
+  enacted, year resolved, hub opened), informational steps on Next. Closable
+  on every step; auto-opens once, persists completed/dismissed in Meta,
+  re-openable via "?" or F1. UI-layer only; steps validated by the pipeline.
 
 ## Test results (at time of writing)
 
@@ -124,7 +139,9 @@ view is its own class in `scripts/ui/`. Sim → UI flows only through signals
   additive-content invariance, social-crisis flatness).
 - `tests/_ui_smoke.gd`: boots the real scene headless and drives card play,
   one-card lock, pass confirm, DIP1 targeting, inspector, hub, autoplay to a
-  WIN, KP award, restart, knowledge patch application — passes.
+  WIN, KP award, restart, knowledge patch application, and the tutorial
+  (auto-open, real-action advancement, mid-way close with persisted flag,
+  no auto-reshow, re-open, full 12-step completion) — passes.
 - Fixture regression: canonical seed-2030 Safe/Risky/Mixed reproduce the
   stored golden CSV byte-for-byte, with the Phase 1 anchors:
   **Safe WIN 15 KP · Risky LOSS_LIMIT_BREACHED in 2099 with 9 KP (sectors
@@ -165,8 +182,7 @@ view is its own class in `scripts/ui/`. Sim → UI flows only through signals
 
 - **Tier B isometric diorama** (nice-to-have; spec frozen in Phase 3 docs for
   later — `STREAM_TILES` is reserved in `seed_util.gd`).
-- Audio, onboarding/tutorial (`highlight_filter` seam exists conceptually but
-  is not wired), save/load mid-run, JSONL-to-disk analytics writer (records
+- Audio, save/load mid-run, JSONL-to-disk analytics writer (records
   keep the full run in memory; `TurnRecord.to_jsonl_line()` exists and is
   used by tests), title screen / export presets (Plan.md Phase 9).
 - `alliance_affinity` is generated and displayed but has no cost effect (as

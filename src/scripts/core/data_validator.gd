@@ -32,6 +32,12 @@ const KNOWLEDGE_PATCH_KEYS := ["card", "cards", "cost_money", "cost_influence",
 	"effect_happiness", "reforest_years"]
 const KNOWLEDGE_GRANT_KEYS := ["media", "adapt"]
 
+## Tutorial step vocabulary (docs: GoldenRules #7 - teach through play).
+const TUTORIAL_TARGETS := ["none", "top_bar", "warming_gauge", "carbon_label",
+	"board", "region_home", "card_tray", "log_dock", "prompt", "help_button"]
+const TUTORIAL_SIGNALS := ["region_selected", "card_played", "year_advanced", "hub_opened"]
+const TUTORIAL_TEXT_MAX := 280  # warning guardrail: steps must not be walls of text
+
 var errors: PackedStringArray = []
 var warnings: PackedStringArray = []
 
@@ -42,8 +48,9 @@ static func load_and_validate(data_dir: String = "res://data") -> DataValidator:
 	var events_doc := _read(data_dir + "/events.json", v)
 	var knowledge_doc := _read(data_dir + "/knowledge.json", v)
 	var templates_doc := _read(data_dir + "/log_templates.json", v)
+	var tutorial_doc := _read(data_dir + "/tutorial.json", v)
 	if v.errors.is_empty():
-		v.validate_all(cards_doc, events_doc, knowledge_doc, templates_doc)
+		v.validate_all(cards_doc, events_doc, knowledge_doc, templates_doc, tutorial_doc)
 	return v
 
 
@@ -63,11 +70,14 @@ func ok() -> bool:
 
 
 func validate_all(cards_doc: Dictionary, events_doc: Dictionary,
-		knowledge_doc: Dictionary, templates_doc: Dictionary) -> bool:
+		knowledge_doc: Dictionary, templates_doc: Dictionary,
+		tutorial_doc: Dictionary = {}) -> bool:
 	var card_ids := validate_cards(cards_doc)
 	var event_info := validate_events(events_doc)
 	validate_knowledge(knowledge_doc, card_ids)
 	validate_templates(templates_doc, event_info)
+	if not tutorial_doc.is_empty():
+		validate_tutorial(tutorial_doc)
 	return ok()
 
 
@@ -270,6 +280,44 @@ func validate_knowledge(doc: Dictionary, card_ids: Array[String]) -> void:
 		for key in n.get("grant", {}):
 			if not KNOWLEDGE_GRANT_KEYS.has(String(key)):
 				errors.append("K1 [%s] unknown grant key '%s'" % [where, key])
+
+
+# ---------------------------------------------------------- tutorial.json ---
+
+func validate_tutorial(doc: Dictionary) -> void:
+	if not KNOWN_SCHEMA_VERSIONS.has(int(doc.get("schema_version", -1))):
+		errors.append("TU1 [tutorial] unknown schema_version")
+	var steps: Array = doc.get("steps", [])
+	if steps.is_empty():
+		errors.append("TU1 [tutorial] empty or missing steps array")
+	var ids: Array[String] = []
+	var snake := RegEx.create_from_string("^[a-z][a-z0-9_]*$")
+	for s: Dictionary in steps:
+		var id := String(s.get("id", ""))
+		var where := "tutorial:%s" % (id if not id.is_empty() else "?")
+		if snake.search(id) == null:
+			errors.append("TU1 [%s] id must be snake_case" % where)
+		if ids.has(id):
+			errors.append("TU1 [%s] duplicate id" % where)
+		ids.append(id)
+		if String(s.get("title", "")).is_empty():
+			errors.append("TU2 [%s] title must be non-empty" % where)
+		var text := String(s.get("text", ""))
+		if text.is_empty():
+			errors.append("TU2 [%s] text must be non-empty" % where)
+		elif text.length() > TUTORIAL_TEXT_MAX:
+			warnings.append("TU2 [%s] text is %d chars (guardrail %d: teach, don't lecture)" % [where, text.length(), TUTORIAL_TEXT_MAX])
+		if not TUTORIAL_TARGETS.has(String(s.get("target", ""))):
+			errors.append("TU3 [%s] unknown target '%s'" % [where, s.get("target", "")])
+		var advance: Dictionary = s.get("advance", {})
+		match String(advance.get("type", "")):
+			"next":
+				pass
+			"signal":
+				if not TUTORIAL_SIGNALS.has(String(advance.get("signal", ""))):
+					errors.append("TU4 [%s] unknown advance signal '%s'" % [where, advance.get("signal", "")])
+			_:
+				errors.append("TU4 [%s] advance.type must be 'next' or 'signal'" % where)
 
 
 # ----------------------------------------------------- log_templates.json ---

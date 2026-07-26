@@ -15,6 +15,7 @@ var vignette: Vignette
 var hub: KnowledgeHub
 var end_screen: RunEndScreen
 var debug_overlay: DebugOverlay
+var tutorial: TutorialLayer
 
 var _mode := Mode.PLAY
 var _selected_region: StringName = &""
@@ -103,6 +104,16 @@ func _build_scene() -> void:
 	debug_overlay.autoplay_requested.connect(_on_autoplay)
 	debug_overlay.advance10_requested.connect(_on_advance10)
 
+	var tutorial_layer := CanvasLayer.new()
+	tutorial_layer.name = "TutorialLayer"
+	tutorial_layer.layer = 5
+	add_child(tutorial_layer)
+	tutorial = TutorialLayer.new()
+	tutorial.anchor_resolver = _tutorial_anchor
+	tutorial.dismissed.connect(_on_tutorial_dismissed)
+	tutorial_layer.add_child(tutorial)
+	top_bar.help_button.pressed.connect(_toggle_tutorial)
+
 
 func _random_seed() -> int:
 	var rng := RandomNumberGenerator.new()
@@ -146,6 +157,9 @@ func _start_run(seed_value: int) -> void:
 			var node: Dictionary = sim.base_catalog.knowledge_by_id.get(String(id), {})
 			names.append(String(node.get("name", id)))
 		banners.push("hope", "Knowledge carried into this timeline: " + ", ".join(names))
+	# First contact: teach through play unless already completed or dismissed.
+	if not Meta.tutorial_done and tutorial != null and not tutorial.active:
+		tutorial.open()
 	_update_prompt()
 
 
@@ -162,6 +176,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("toggle_debug"):
 		debug_overlay.visible = not debug_overlay.visible
 		debug_overlay.refresh()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("toggle_tutorial"):
+		if _mode != Mode.TARGETING:
+			_toggle_tutorial()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("clear_selection"):
 		if _mode == Mode.TARGETING:
@@ -240,6 +258,7 @@ func _on_region_clicked(region_id: StringName) -> void:
 	_selected_region = region_id
 	board.set_selection(region_id)
 	dock.show_region(sim.run_state, region_id)
+	tutorial.notify(&"region_selected")
 
 
 func _cancel_targeting() -> void:
@@ -254,7 +273,48 @@ func _toggle_hub() -> void:
 		hub.visible = false
 	else:
 		hub.open(sim.base_catalog)
+		tutorial.notify(&"hub_opened")
 	_update_prompt()
+
+
+func _toggle_tutorial() -> void:
+	if tutorial.active:
+		tutorial.dismiss(false)
+	else:
+		tutorial.open()
+
+
+func _on_tutorial_dismissed(_completed: bool) -> void:
+	# Completed or dismissed: never auto-reshow (re-open via "?" or F1).
+	Meta.tutorial_done = true
+	Meta.save_state()
+
+
+## Resolves tutorial spotlight anchors to global rects (view geometry only).
+func _tutorial_anchor(target: StringName) -> Rect2:
+	match target:
+		&"top_bar":
+			return top_bar.get_global_rect()
+		&"warming_gauge":
+			return top_bar.gauge.get_global_rect()
+		&"carbon_label":
+			return top_bar.carbon_label.get_global_rect()
+		&"card_tray":
+			return tray.get_global_rect()
+		&"log_dock":
+			return dock.get_global_rect()
+		&"prompt":
+			return top_bar.prompt_label.get_global_rect().grow(12.0)
+		&"help_button":
+			return top_bar.help_button.get_global_rect()
+		&"board":
+			return board.board_rect()
+		&"region_home":
+			if sim.run_state != null:
+				for r in sim.run_state.world:
+					if r.is_player_home and board.panels.has(r.id):
+						return board.panels[r.id].get_global_rect()
+	return Rect2()
 
 
 # -------------------------------------------------------------- sim events ---
@@ -269,6 +329,7 @@ func _on_card_played(card_id: StringName, accepted: bool) -> void:
 		if _selected_region != &"":
 			dock.show_region(rs, _selected_region)
 		debug_overlay.refresh()
+		tutorial.notify(&"card_played")
 	else:
 		top_bar.set_prompt("Cannot enact: " + _reason_text(rs.can_play_reason(card_id)))
 		return
@@ -292,6 +353,7 @@ func _on_year_advanced(rec: TurnRecord) -> void:
 		for fb in rec.feedbacks:
 			banners.push("interstitial", LogFormatter.render("events", String(fb) + "_hit"))
 	debug_overlay.refresh()
+	tutorial.notify(&"year_advanced")
 	_update_prompt()
 
 
@@ -329,6 +391,7 @@ func _on_run_ended(_outcome: StringName, kp: int) -> void:
 	board.refresh(rs)
 	dock.append_log(rec.year, rec.log_lines)
 	banners.skip_all()
+	tutorial.close_silent()  # not a dismissal: an unfinished tour may reopen
 	end_screen.show_outcome(rs)
 	debug_overlay.refresh()
 	_mode = Mode.ENDED
