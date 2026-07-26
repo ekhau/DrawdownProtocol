@@ -41,7 +41,7 @@ func _show_validation_failure(v: DataValidator) -> void:
 	print(v.report())
 	var label := Label.new()
 	label.text = "CONTENT VALIDATION FAILED - the run refuses to start.\n\n" + v.report()
-	label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(label)

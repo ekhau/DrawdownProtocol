@@ -23,7 +23,7 @@ func _ready() -> void:
 	style.content_margin_top = 6.0
 	style.content_margin_bottom = 6.0
 	add_theme_stylebox_override("panel", style)
-	set_anchors_preset(Control.PRESET_TOP_WIDE)
+	set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	custom_minimum_size = Vector2(0, 96)
 
 	var row := HBoxContainer.new()

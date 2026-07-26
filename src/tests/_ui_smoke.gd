@@ -152,11 +152,25 @@ func _initialize() -> void:
 	if not main.tutorial.active:
 		print("FAIL: tutorial did not re-open")
 		errors += 1
+	# Regression guard for the 0-size layer bug: the overlay must span the view.
+	if main.tutorial.size.x < 100.0 or main.tutorial.size.y < 100.0:
+		print("FAIL: tutorial layer has no size (%s) - anchor layout broken" % main.tutorial.size)
+		errors += 1
 	var visited := 0
 	var guard := 40
 	while main.tutorial.active and guard > 0:
 		guard -= 1
 		visited += 1
+		# Let _place_panel's awaited layout frame resolve, then assert the
+		# explainer panel is fully inside the viewport at EVERY step.
+		await process_frame
+		await process_frame
+		var prect := Rect2(main.tutorial._panel.position, main.tutorial._panel.size)
+		var vrect := Rect2(Vector2.ZERO, main.tutorial.size)
+		if not vrect.encloses(prect):
+			print("FAIL: step %s panel %s outside viewport %s" % [
+				main.tutorial.current_step_id(), prect, vrect])
+			errors += 1
 		var step: Dictionary = main.tutorial.steps[main.tutorial.index]
 		var advance: Dictionary = step.get("advance", {})
 		if String(advance.get("type", "")) == "next":

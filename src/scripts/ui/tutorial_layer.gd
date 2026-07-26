@@ -14,6 +14,8 @@ const TUTORIAL_PATH := "res://data/tutorial.json"
 const DIM := Color(0.0, 0.0, 0.0, 0.55)
 const SPOT_MARGIN := 8.0
 const OUTLINE := Color("f2e28a")
+const PANEL_MARGIN := 12.0  # minimum clearance to every viewport edge
+const PANEL_GAP := 24.0     # clearance between the panel and the spotlight
 
 var steps: Array = []
 var index: int = -1
@@ -35,7 +37,7 @@ var active: bool:
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE  # never block the real controls
 	visible = false
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(TUTORIAL_PATH))
@@ -175,22 +177,40 @@ func _show_step() -> void:
 
 
 func _place_panel() -> void:
-	# Keep the panel clear of the spotlight: below the top bar when the target
-	# sits low on screen, above the card tray otherwise.
-	await get_tree().process_frame  # let the panel compute its size
+	await get_tree().process_frame  # let the panel re-layout for the new text
+	if not active:
+		return
+	var margin := PANEL_MARGIN
+	var gap := PANEL_GAP
+	# The layer is full-rect over the viewport; fall back to the viewport rect
+	# if layout has not resolved yet (belt and braces for the 0-size case).
+	var view := size
+	if view.x < 2.0 or view.y < 2.0:
+		view = get_viewport_rect().size
 	var panel_size := _panel.size
-	var x := (size.x - panel_size.x) / 2.0
-	var low_target := _has_target and _target_rect.get_center().y >= size.y * 0.5
-	var y := 120.0 if low_target else size.y - 240.0 - panel_size.y
+	var x := (view.x - panel_size.x) / 2.0
+	var y := (view.y - panel_size.y) / 2.0  # default: dead center (no target)
 	if _has_target:
-		# Nudge horizontally off the spotlight when they would overlap.
+		# Place adjacent to the spotlight, on its roomier vertical side;
+		# fall back to screen center when neither side can fit the panel.
+		var above_space := _target_rect.position.y
+		var below_space := view.y - _target_rect.end.y
+		if _target_rect.get_center().y < view.y * 0.5 and below_space >= panel_size.y + gap + margin:
+			y = _target_rect.end.y + gap
+		elif above_space >= panel_size.y + gap + margin:
+			y = _target_rect.position.y - panel_size.y - gap
+		elif below_space >= panel_size.y + gap + margin:
+			y = _target_rect.end.y + gap
+		# Nudge horizontally off narrow spotlights when they would overlap.
 		var candidate := Rect2(Vector2(x, y), panel_size)
-		if candidate.intersects(_target_rect) and _target_rect.size.x < size.x * 0.6:
-			x = _target_rect.position.x - panel_size.x - 24.0
-			if x < 8.0:
-				x = _target_rect.end.x + 24.0
-	_panel.position = Vector2(clampf(x, 8.0, size.x - panel_size.x - 8.0),
-		clampf(y, 104.0, size.y - panel_size.y - 8.0))
+		if candidate.intersects(_target_rect) and _target_rect.size.x < view.x * 0.6:
+			var left_x := _target_rect.position.x - panel_size.x - gap
+			x = left_x if left_x >= margin else _target_rect.end.x + gap
+	# Safety net: always fully inside the viewport, whatever was chosen above.
+	# maxf guards the min>max inversion when the panel is larger than the view.
+	x = clampf(x, margin, maxf(margin, view.x - panel_size.x - margin))
+	y = clampf(y, margin, maxf(margin, view.y - panel_size.y - margin))
+	_panel.position = Vector2(x, y)
 
 
 func _draw() -> void:
