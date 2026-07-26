@@ -29,8 +29,15 @@ func _initialize() -> void:
 		quit(1)
 		return
 	var rs: RunState = main.sim.run_state
-	print("boot ok: seed %d, year %d, %d panels, %d chips" % [
-		rs.run_seed, rs.year, main.board.panels.size(), main.tray._chips.size()])
+	print("boot ok: seed %d, year %d, %d panels, %d chips, %d crises" % [
+		rs.run_seed, rs.year, main.board.panels.size(), main.tray._chips.size(),
+		rs.pending_crises.size()])
+	if rs.pending_crises.size() != 3:
+		print("FAIL: expected 3 pending crises at year start")
+		errors += 1
+	if main.tray._project_chips.size() != rs.catalog.projects.size():
+		print("FAIL: project chips missing from the tray")
+		errors += 1
 
 	# --- Tutorial, part 1: auto-open, advance, close mid-way, flag persisted.
 	if not main.tutorial.active:
@@ -39,7 +46,7 @@ func _initialize() -> void:
 	if main.tutorial.current_step_id() != &"welcome":
 		print("FAIL: tutorial did not start at the first step")
 		errors += 1
-	for i in 4:  # welcome/pillars/warming/board are informational Next steps
+	for i in 4:  # welcome/pillars/warming/crises are informational Next steps
 		main.tutorial.advance()
 	if main.tutorial.current_step_id() != &"inspect":
 		print("FAIL: expected the inspect step, got %s" % main.tutorial.current_step_id())
@@ -60,22 +67,21 @@ func _initialize() -> void:
 		errors += 1
 	print("tutorial part 1 ok: auto-open, advance, real-action step, mid-way close persisted")
 
-	# 1. Enact a card through the tray handler.
+	# 1. Multi-play: several cards through the tray handler, same year.
 	main._on_card_chosen(&"SOC1")
 	if not rs.media:
 		print("FAIL: SOC1 not applied")
 		errors += 1
-	# 2. Second card must be refused (one-policy lock, UI trusts model verdict).
-	main._on_card_chosen(&"IND1")
-	if rs._pending_action.get("action", &"") != &"SOC1":
-		print("FAIL: second card was not rejected")
+	main._on_card_chosen(&"RSP1")
+	if rs.cards_played_this_turn() != 2:
+		print("FAIL: second card of the year was not accepted (multi-play)")
 		errors += 1
-	# 3. Space resolves the year.
+	# 2. Space resolves the year.
 	main._on_advance_pressed()
 	if rs.year != 2031:
 		print("FAIL: year did not advance (year=%d)" % rs.year)
 		errors += 1
-	# 4. Pass flow needs the explicit double-Space confirm.
+	# 3. Pass flow needs the explicit double-Space confirm.
 	main._on_advance_pressed()
 	if rs.year != 2031 or not main._pass_armed:
 		print("FAIL: pass confirm not armed")
@@ -84,7 +90,7 @@ func _initialize() -> void:
 	if rs.year != 2032:
 		print("FAIL: pass did not resolve after confirm")
 		errors += 1
-	# 5. DIP1 targeting flow: highlight, click a neutral region, ally formed.
+	# 4. DIP1 targeting flow: highlight, click a neutral region, ally formed.
 	rs.money = 500.0
 	rs.influence = 50.0
 	main.tray.refresh(rs)
@@ -99,6 +105,11 @@ func _initialize() -> void:
 		errors += 1
 	if main._mode != main.Mode.PLAY:
 		print("FAIL: targeting mode not exited")
+		errors += 1
+	# 5. Project launch through the tray handler.
+	main._on_project_chosen(&"global_sink_trust")
+	if rs.active_projects.size() != 1:
+		print("FAIL: project did not launch")
 		errors += 1
 	# 6. Region selection fills the inspector.
 	main._on_region_clicked(rs.world[0].id)
@@ -181,6 +192,8 @@ func _initialize() -> void:
 					main._on_region_clicked(rs.world[1].id)
 				&"card_played":
 					main._on_card_chosen(&"SOC1")
+				&"project_started":
+					main._on_project_chosen(&"global_sink_trust")
 				&"year_advanced":
 					main._on_advance_pressed()
 				&"hub_opened":

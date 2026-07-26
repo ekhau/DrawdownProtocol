@@ -1,13 +1,14 @@
 # Roadmap: Design and Build a Simple 2D Isometric Rogue-lite Prototype
 
 ## 1. Prototype Goal
-Build a playable Godot prototype where each run represents a full timeline (2030 to 2100), the player makes one strategic choice per year, and the simulation can be won or lost in a clear and understandable way.
+Build a playable Godot prototype where each run represents a full timeline (2030 to 2100), every year confronts the player with three random crises they answer by playing policy cards (with combos, long-term projects, and a growing deck), and the simulation can be won or lost in a clear and understandable way.
 
 ### Success Criteria
 - A full run is playable in 10 to 20 minutes.
 - The core loop is understandable within the first 2 turns.
-- Win condition: year reaches 2100.
-- Loss conditions: resilience <= 0 or warming contribution >= 2.0 C.
+- Win condition: year reaches 2100 carbon-neutral.
+- Loss condition: warming contribution >= 2.0 C (single hard loss; social collapse acts through systems).
+- Combos fire visibly most turns for a competent player; at least one project completes in a typical winning run.
 - At least one meaningful meta-progression choice exists between runs.
 
 ## 2. Scope Definition (Keep It Simple)
@@ -15,12 +16,13 @@ Build a playable Godot prototype where each run represents a full timeline (2030
 ### Must Have (Prototype MVP)
 - Isometric tile board with clickable tiles.
 - Year-based turn loop.
-- Policy card selection (one policy per year).
+- Three random crises drawn per year; policy cards (multi-play, resource-bound) as the tool to answer them.
+- Card combos with an escalating chain, long-term projects, and play-driven deck growth.
 - Resource and climate simulation (resilience, emissions, warming).
-- Random events and feedback loops.
+- Feedback loops and opportunity riders.
 - Win and loss states.
 - Basic meta-progression currency and unlock screen.
-- Simple UI for metrics, logs, and available actions.
+- Simple UI for metrics, crises, logs, and available actions.
 
 ### Nice to Have (If Time Permits)
 - Multiple biome templates.
@@ -37,13 +39,13 @@ Build a playable Godot prototype where each run represents a full timeline (2030
 ## 3. Core Gameplay Loop Specification
 Each turn equals one year.
 
-1. Show current year and world metrics.
-2. Draw policy options (example: 3 cards).
-3. Player selects exactly one policy.
-4. Apply immediate and persistent policy effects.
+1. Show current year and world metrics; apply income and project upkeep.
+2. Draw 3 random events (crises and opportunities) from the weighted crisis deck.
+3. Player plays any number of policy cards (up to the per-year cap), bound by Money / Influence / Happiness costs; card tags answer matching crises immediately; completed tag sets fire combos; projects may be launched or abandoned.
+4. Apply immediate and persistent card effects, rewards, combo payoffs.
 5. Simulate yearly changes (emissions, sinks, resilience, warming).
-6. Trigger possible random event and climate feedback.
-7. Update HUD and event log with results.
+6. Resolve unanswered crises (damage plus opportunity riders) and climate feedbacks.
+7. Update HUD, crisis panel, and event log with results.
 8. Check win or loss condition.
 9. Advance year.
 
@@ -58,8 +60,10 @@ Each turn equals one year.
 
 ### Data-Driven Files
 - biomes.json: tile distributions and biome modifiers.
-- policies.json: policy effects, costs, tags, unlock requirements.
-- events.json: event triggers, probabilities, and outcomes.
+- cards.json: policy effects, costs, rewards, tags, unlock requirements.
+- events.json: crisis deck (draw weights, damages, response tags, riders) and feedback triggers.
+- combos.json: combo tag sets and payoffs.
+- projects.json: long-term project upkeep, completion payoffs, penalties.
 
 ### Engineering Rules for Prototype
 - Keep simulation deterministic with RandomNumberGenerator seed.
@@ -165,25 +169,25 @@ Each turn equals one year.
 - One turn advances all systems consistently.
 - Win/loss conditions always evaluate correctly.
 
-## Phase 5: Policy Cards and Event System (3 to 5 days)
+## Phase 5: Policy Cards, Crises, Combos and Projects (3 to 5 days)
 ### Tasks
-- Load policy definitions from JSON.
-- Build policy selection UI and one-policy-per-year lock.
-- Implement policy prerequisites and category tags.
-- Load events and feedback loops from JSON.
-- Trigger events based on thresholds and weighted randomness.
+- Load card definitions (costs, rewards, tags, unlocks) from JSON.
+- Build the multi-play card UI with the per-year card cap and resource gating.
+- Load the crisis deck, combos, projects, and feedback loops from JSON.
+- Draw 3 crises per year with band-weighted randomness; match card tags to crisis responses.
+- Fire combos on completed tag sets with the chain multiplier; charge and complete projects.
 
 ### Deliverables (Detailed)
-- Policy catalog data file with at least 10 to 15 balanced policies.
-- Policy card UI with costs, effects, tags, and prerequisite visibility.
-- Turn lock logic enforcing exactly one policy choice per year.
-- Event catalog with at least 6 to 10 feedback loops and extreme events.
-- Event resolver with threshold checks, weighted probabilities, and clear outcomes.
-- Event and policy result messages integrated into the run log and HUD.
+- Card catalog data file with 20+ balanced policies plus unlockable cards.
+- Card UI with costs, rewards, tags, effects, and blocked-state visibility.
+- Crisis panel showing the year's three events, their threats, response tags, and live answered state.
+- Crisis deck of ~10 drawable events plus 3 feedback loops; combo and project catalogs.
+- Resolver applying answered-crisis containment, unanswered damage with riders, combo payoffs, and project lifecycles.
+- Crisis, combo, project, and card messages integrated into the run log and HUD.
 
 ### Done Criteria
-- Policy pick always resolves exactly once per year.
-- Event triggers are understandable and visible in logs.
+- Exactly 3 events drawn per year; every card play resolves against crises and combos deterministically.
+- Crisis outcomes, combos, and project events are understandable and visible in logs.
 
 ## Phase 6: Meta-Progression Loop (2 to 3 days)
 ### Tasks
@@ -272,12 +276,14 @@ Each turn equals one year.
 ## 7. Quality Gates and Validation Checklist
 Run this checklist before calling the prototype complete:
 
-- One policy can be selected per year, never more.
-- Year always advances correctly with Space input.
+- Exactly 3 crises are drawn every year; the card cap (5 per year) is never exceeded.
+- Answered crises never damage; unanswered crises always leave a readable trace.
+- Combos fire at most once per combo per year and the chain multiplier matches the HUD.
+- Projects charge every year, complete after their full term, and penalize abandonment.
+- Year always advances correctly with Space input (double-Space confirm on an empty year).
 - Hub toggle works consistently with H input.
-- Loss triggers when resilience <= 0.
 - Loss triggers when warming contribution >= 2.0 C.
-- Win triggers at year >= 2100.
+- Win triggers at year >= 2100 with net emissions <= 0.
 - HUD values match simulation state after every turn.
 - Event log explains what changed and why.
 - Meta unlock effects are applied to new runs.

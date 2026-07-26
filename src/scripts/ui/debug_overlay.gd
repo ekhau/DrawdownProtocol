@@ -74,6 +74,19 @@ func refresh() -> void:
 		rs.money, rs.happiness, rs.influence, rs.allies, rs.resilience(), rs.adapt])
 	lines.append("flags: media=%s window=%s fire_discount=%s flood_rebuild=%s  fires=%d  e_extra=%.1f" % [
 		rs.media, rs.window, rs.fire_discount, rs.flood_rebuild, rs.fires, rs.e_extra])
+	var crisis_strs: PackedStringArray = []
+	for crisis in rs.pending_crises:
+		crisis_strs.append("%s%s" % [crisis["id"], "(ok)" if crisis["answered"] else ""])
+	lines.append("crises: [%s]  answered=%d  chain=%d (x%.1f)  combos=%d  kp_earned=%d" % [
+		", ".join(crisis_strs), rs.crises_answered_total, rs.combo_chain,
+		SocietyCalc.combo_mult(rs.combo_chain), rs.combos_total, rs.kp_earned])
+	var proj_strs: PackedStringArray = []
+	for ps in rs.active_projects:
+		proj_strs.append("%s(%dy)" % [ps.id, ps.years_left])
+	for pid in rs.project_history:
+		proj_strs.append("%s:%s" % [pid, rs.project_history[pid]])
+	lines.append("projects: [%s]  unlocked: %s" % [", ".join(proj_strs),
+		", ".join(PackedStringArray(rs.unlocked_card_ids))])
 	var fb_strs: PackedStringArray = []
 	for ev in rs.catalog.feedback_events():
 		var id := String(ev["id"])

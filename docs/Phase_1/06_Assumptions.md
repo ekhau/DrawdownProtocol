@@ -31,8 +31,12 @@ science drift is only acceptable when it is documented).
 
 ## Economy and Society
 
-9. **One card per year, 71 turns.** The core readability constraint (golden rules 5–6);
-   everything else is balanced around ~50–56 cards actually played per run.
+9. **Three crises and up to five cards per year, 71 turns.** The turn is a bounded
+   tactical puzzle (golden rules 5–6): the crisis draw is the pressure, resources are the
+   real limit, and the 5-card cap only guards the ceiling. Everything is balanced around
+   ~200–300 cards actually played per winning run (~2–3 answers plus ~1 transformation
+   per year), with the old ~50-card transformation pacing preserved by halving per-card
+   progress amounts.
 10. **Income 100/yr baseline, +20 per ally.** Allies are the only income scaling — makes
     "being allied always beats being alone" arithmetically true (design pillar 3).
 11. **Sector tech cap at 70% without a sufficiency card.** The load-bearing gameplay
@@ -45,7 +49,8 @@ science drift is only acceptable when it is documented).
     (0.5/1.0).** Asserts that a transformed world is a *nicer* world (EAT-Lancet health
     co-benefits, active mobility). The claim is scientifically grounded; the numbers are
     pure tuning for the dip-then-bloom arc.
-14. **Income penalties ×0.75 below 40 H, ×0.5 below 25 H** and the social-crisis formula
+14. **Income penalties ×0.75 below 40 H, ×0.5 below 25 H** and the social-crisis draw
+    modifiers (×3 below 40 H, ×0.5 with media)
     are invented; they exist to make social collapse systemic rather than an instant loss
     (see resilience reconciliation in `../Phase_0/04_Simulation_Metric_Dictionary.md`).
 15. **Resilience R = 0.4·H + adaptation, damage ×(1 − R/200).** Linear and memoryless;
@@ -53,18 +58,31 @@ science drift is only acceptable when it is documented).
 
 ## Structure and Method
 
-16. **Events roll independently per year** — no clustering, no compound-disaster modeling.
-17. **Influence is uncapped** in the paper model (winners bank 80–230 by 2100); a cap
-    (e.g. 100) is likely in implementation.
-18. **No late-game money sink**: winners hoard 6 000+ funds after full transition.
-    Accepted for Phase 1; flagged as Risk #5 with candidate sinks listed.
+16. **Exactly three events per year, drawn without replacement** from a weighted deck —
+    guaranteed presence replaces the old independent per-event rolls; escalation moves
+    into the draw weights. No clustering beyond the draw, no compound-disaster modeling.
+17. **Influence is uncapped** (winners bank 80–230 by 2100); a cap (e.g. 100) is likely
+    in a later pass.
+18. **No late-game money sink**: the Safe archetype still hoards ~5 000–6 500 after full
+    transition (projects absorb only part of the surplus). Accepted; flagged as Risk #5.
 19. **Baseline runs assume zero Knowledge nodes** (true first run). Knowledge modifiers
-    in `04_Policy_Effect_Matrix.md` are specified but unsimulated; re-run the paper model
-    with nodes before implementing the tree's prices.
-20. **Sample runs use RNG seed 2030** and scripted strategies; other seeds shift event
+    in `04_Policy_Effect_Matrix.md` are specified but unsimulated in the corridors;
+    re-check the batch with nodes before repricing the tree.
+20. **Fixture runs use RNG seed 2030** and scripted strategies; other seeds shift crisis
     timing but not the structural outcomes (caps, feedback thresholds, and formulas are
-    deterministic). Run B could end as "survived, not neutral" instead of a +2.0 °C loss
-    on a kinder seed — both are losses, same lesson.
-21. **Procedural world generation is not yet in the balance model**; sample runs use the
-    canonical starting values above. Seeded variation (±10–20% on starts) is the first
-    thing to add once the corridor bands prove stable.
+    deterministic). Risky loses between 2055 and 2068 across the 20-seed batch — always
+    a +2.0 °C breach, same lesson.
+21. **Seeded start variation (±10–20%)** is in the batch harness; the corridor bands in
+    `05_Balance_Bands.md` are measured over 20 jittered seeds.
+22. **Answered crises are fully contained** (no damage, rider forfeited) rather than
+    partially mitigated — chosen for one-line readability. The response reward is priced
+    below the avoided damage so answering is good but never free of tempo cost.
+23. **Combos are deterministic tag algebra** — no RNG, no hidden synergies; the chain
+    multiplier (+10%/step, ×2 cap, −1 decay) is the entire escalation model. Knowledge
+    combo rewards pay first-fire-only so insight cannot be farmed.
+24. **Projects are strictly positive commitments**: no mid-project payouts, one attempt
+    per project per run, and a flat happiness/influence penalty for breaking one —
+    modelling credibility, not contract law.
+25. **Deck growth is condition-based, never time-based** (pillar: Every Timeline
+    Teaches); the six unlock conditions are chosen so a competent first run meets 4–6
+    of them.

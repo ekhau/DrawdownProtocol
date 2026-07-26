@@ -31,10 +31,7 @@ func autoplay_to_end(strategy: StringName) -> void:
 	var guard := 200
 	while run_state.phase != RunState.Phase.ENDED and guard > 0:
 		guard -= 1
-		var choice := Strategies.decide(strategy, run_state)
-		if choice["card"] != &"pass":
-			run_state.play_card(choice["card"], choice["target"])
-		run_state.resolve_year()
+		Strategies.play_turn(strategy, run_state)
 
 
 ## Debug: advance N years passing (no cards).

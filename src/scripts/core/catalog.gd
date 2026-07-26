@@ -8,17 +8,23 @@ extends RefCounted
 const CARDS_PATH := "res://data/cards.json"
 const EVENTS_PATH := "res://data/events.json"
 const KNOWLEDGE_PATH := "res://data/knowledge.json"
+const COMBOS_PATH := "res://data/combos.json"
+const PROJECTS_PATH := "res://data/projects.json"
 
 var cards: Array[Dictionary] = []
 var cards_by_id: Dictionary = {}        # String -> Dictionary (same refs as cards)
 var events: Array[Dictionary] = []      # sorted by ascending "order"
 var knowledge: Array[Dictionary] = []
 var knowledge_by_id: Dictionary = {}
+var combos: Array[Dictionary] = []      # catalog order = check order
+var projects: Array[Dictionary] = []
+var projects_by_id: Dictionary = {}
 
 
 static func load_default() -> Catalog:
 	var cat := Catalog.new()
-	cat._load_from(_read_json(CARDS_PATH), _read_json(EVENTS_PATH), _read_json(KNOWLEDGE_PATH))
+	cat._load_from(_read_json(CARDS_PATH), _read_json(EVENTS_PATH), _read_json(KNOWLEDGE_PATH),
+		_read_json(COMBOS_PATH), _read_json(PROJECTS_PATH))
 	return cat
 
 
@@ -28,7 +34,8 @@ static func _read_json(path: String) -> Dictionary:
 	return parsed
 
 
-func _load_from(cards_doc: Dictionary, events_doc: Dictionary, knowledge_doc: Dictionary) -> void:
+func _load_from(cards_doc: Dictionary, events_doc: Dictionary, knowledge_doc: Dictionary,
+		combos_doc: Dictionary = {}, projects_doc: Dictionary = {}) -> void:
 	cards.clear()
 	cards_by_id.clear()
 	for c: Dictionary in cards_doc.get("cards", []):
@@ -44,16 +51,30 @@ func _load_from(cards_doc: Dictionary, events_doc: Dictionary, knowledge_doc: Di
 	for n: Dictionary in knowledge_doc.get("nodes", []):
 		knowledge.append(n)
 		knowledge_by_id[String(n["id"])] = n
+	combos.clear()
+	for cb: Dictionary in combos_doc.get("combos", []):
+		combos.append(cb)
+	projects.clear()
+	projects_by_id.clear()
+	for p: Dictionary in projects_doc.get("projects", []):
+		projects.append(p)
+		projects_by_id[String(p["id"])] = p
 
 
 func card(id: StringName) -> Dictionary:
 	return cards_by_id.get(String(id), {})
 
 
-func extreme_events() -> Array[Dictionary]:
+func project(id: StringName) -> Dictionary:
+	return projects_by_id.get(String(id), {})
+
+
+## Crisis-deck entries: everything drawable at year start (crises + opportunities).
+func drawable_events() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for e in events:
-		if e.get("kind", "") == "extreme":
+		var kind: String = e.get("kind", "")
+		if kind == "crisis" or kind == "opportunity":
 			out.append(e)
 	return out
 
@@ -79,6 +100,10 @@ func duplicate_patched(unlocked_ids: Array) -> Catalog:
 	cat.knowledge = knowledge.duplicate(true)
 	for n in cat.knowledge:
 		cat.knowledge_by_id[String(n["id"])] = n
+	cat.combos = combos.duplicate(true)
+	cat.projects = projects.duplicate(true)
+	for p in cat.projects:
+		cat.projects_by_id[String(p["id"])] = p
 
 	for node_id in unlocked_ids:
 		var node: Dictionary = knowledge_by_id.get(String(node_id), {})

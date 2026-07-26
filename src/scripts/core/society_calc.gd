@@ -41,13 +41,21 @@ static func damage_mult(h: float, adapt: float) -> float:
 	return 1.0 - resilience(h, adapt) / float(Tuning.s("RESILIENCE_DAMAGE_DIVISOR"))
 
 
-## Social crisis probability; formula parameters come from events.json.
-static func social_crisis_p(h: float, warming_band: int, media: bool, formula: Dictionary) -> float:
-	var base := float(formula["base"])
-	if h < float(formula["happiness_threshold"]):
-		base = float(formula["base_low_happiness"])
-	var scales: Array = formula["band_scale"]
-	var p := base * float(scales[warming_band])
+## Crisis-deck draw weight for one entry; parameters come from events.json.
+## weights: per-band base weight; weight_mods (optional) scales it by social state.
+static func crisis_weight(entry: Dictionary, warming_band: int, h: float, media: bool) -> float:
+	var weights: Array = entry["weights"]
+	var w := float(weights[warming_band])
+	var mods: Dictionary = entry.get("weight_mods", {})
+	if mods.is_empty():
+		return w
+	if h < float(mods.get("happiness_threshold", 0.0)):
+		w *= float(mods.get("low_happiness_mult", 1.0))
 	if media:
-		p *= float(formula["media_multiplier"])
-	return p
+		w *= float(mods.get("media_mult", 1.0))
+	return w
+
+
+## Combo reward multiplier from the current chain value (before this combo).
+static func combo_mult(chain: int) -> float:
+	return 1.0 + float(Tuning.s("COMBO_CHAIN_STEP")) * mini(chain, int(Tuning.s("COMBO_CHAIN_CAP")))

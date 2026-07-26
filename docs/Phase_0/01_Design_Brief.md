@@ -2,7 +2,7 @@
 
 ## Elevator Pitch (30 seconds)
 
-You lead a small group with a huge mission: an NGO — or a small pioneering country — that must steer the whole world to carbon neutrality between 2030 and 2100. Each year you make one strategic move: transform industry, transport, or the agro-economy, restore carbon sinks, fund media and adaptation, or spend Influence to win allies whose money accelerates everything. Heat waves, mega fires, tsunamis, and social crises stress-test what you build — and every disaster is also a chance to rebuild better. Cross +2.0 °C and the run is lost; but the Knowledge you gained persists, and the next timeline starts smarter.
+You lead a small group with a huge mission: an NGO — or a small pioneering country — that must steer the whole world to carbon neutrality between 2030 and 2100. Every year the world deals you three crises — droughts, fires, floods, unrest, and the odd golden opportunity — and your policy cards are how you answer them: transform industry, transport, or the agro-economy, restore carbon sinks, fund media and adaptation, or spend Influence to win allies. Cards played together fire combos whose chains grow across the run; five-year projects grant permanent powers if you keep paying their upkeep; answering crises well grows your deck. Cross +2.0 °C and the run is lost; but the Knowledge you gained persists, and the next timeline starts smarter.
 
 ## Player Fantasy
 
@@ -14,7 +14,7 @@ You lead a small group with a huge mission: an NGO — or a small pioneering cou
 
 ## Player Goals
 
-- **In a run:** reach 2100 with the world carbon-neutral (emissions ≤ absorption) while keeping warming below +2.0 °C, money solvent, and people happy enough to sustain the model.
+- **In a run:** reach 2100 with the world carbon-neutral (emissions ≤ absorption) while keeping warming below +2.0 °C, money solvent, and people happy enough to sustain the model — answering the yearly crises, building combo chains, and holding long-term projects together along the way.
 - **Across runs:** earn Knowledge Points and unlock the Knowledge tree (affordable EVs, healthy sobriety, informed public...) so future runs start with real insight.
 - **Emotionally:** move from "the whole world is against us" to "the whole world is with us" — hope earned through cooperation and competence.
 
@@ -38,10 +38,10 @@ There is deliberately **one hard loss condition** (warming), so defeat is always
 
 ## Session Shape
 
-- One run: 71 yearly turns (2030–2100 inclusive), 10–20 minutes, most turns resolved in seconds.
-- The first two turns must teach the loop by playing it: pick a card, watch the three pillars move, read the log.
+- One run: 71 yearly turns (2030–2100 inclusive), 10–20 minutes; a turn is a quick tactical puzzle — three crises, a handful of cards, maybe a combo — resolved in seconds once chosen.
+- The first two turns must teach the loop by playing it: read the crisis bar, play a matching card, watch it contained and rewarded, feel the pillars move.
 - Run end always flows into the Knowledge tree: spend Knowledge Points, start a new timeline on a freshly generated world map.
 
 ## One-Line Player Promise
 
-*Every year, one wise move; every ally, a faster transition; every defeat, knowledge the world keeps.*
+*Every year, three crises and the cards to answer them; every combo, a faster transition; every defeat, knowledge the world keeps.*

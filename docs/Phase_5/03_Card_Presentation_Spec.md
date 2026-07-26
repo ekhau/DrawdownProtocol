@@ -1,108 +1,100 @@
 # Card Presentation and Selection Spec — The Drawdown Protocol (Phase 5)
 
-How the yearly choice is presented. Functional/structural spec only: layout, hierarchy,
-states, readability. Visual styling (colors, illustration, typography, card frames) is
-explicitly handed off to the solarpunk-ui-artist — see handoff notes at the end.
+How the yearly hand of choices is presented. Functional/structural spec only: layout,
+hierarchy, states, readability. Visual styling (colors, illustration, typography, card
+frames) is explicitly handed off to the solarpunk-ui-artist — see handoff notes at the end.
 
-## Reconciliation: full catalog, not a drawn hand
+## Reconciliation: full pool on the board, no drawn hand
 
-Plan.md's core loop says "draw policy options (example: 3 cards)". The Phase 1 balance
-model, its three seed-2030 fixtures, and the scripted strategies all assume **free choice
-from the full catalog** — an assumption Phase 1 left implicit. **Decision: the MVP
-presents the full 15-card catalog every year ("the Policy Board"); there is no draw.**
+Plan.md's original loop said "draw policy options (example: 3 cards)". **Decision,
+reaffirmed for the crisis loop: the player's whole AVAILABLE pool is presented every
+year ("the Policy Board"); there is no hand draw.** The randomness lives entirely on the
+*pressure* side (the 3-crisis draw); the *response* side stays reliable so the player
+can plan answers, combos, and projects deliberately (golden rule 5: decisions, not
+gambling). Variance in what is playable comes from resources, caps, and deck growth.
 
-Rationale:
-- **The fantasy is planning, not gambling.** The concept's promise is "spend money
-  wisely"; a draw would make the wise plan unavailable by luck. Meaningful-decision
-  density comes from trade-offs, not variance (golden rule 5).
-- **Variance is already covered.** Replayability comes from the procgen world and the
-  event system (Phase 0 pillar 4); draw luck would stack randomness on the *response*
-  side, where the player needs reliability to counter the random *pressure* side.
-- **15 cards in 6 categories is scannable.** Below the complexity threshold where a hand
-  becomes a readability tool (golden rule 6).
-- **The fixtures stay valid.** A drawn hand would invalidate every Phase 1 table and the
-  T13-P4 regression anchor.
-
-**Amendment A5 (flagged, not silent):** this records the free-choice assumption as
-balance assumption #22, to be folded into `../Phase_1/06_Assumptions.md` at its next
-revision (that file is out of scope to edit in this phase).
-**Deviation from Plan.md**, accepted: "draw policy options" is replaced by "present the
-Policy Board". A drawn-hand variant ("Advisor's Shortlist", 3 cards via a new
-`STREAM_HAND = 5`) is parked as a post-MVP experiment; adopting it requires balance
-re-validation and new fixtures — a design event, not a toggle.
+**Deck-growth exception to the old "never hidden" rule (deliberate, amendment A7):**
+cards with an `unlock` condition are HIDDEN until the run earns them — appearing with a
+banner is the reward beat. Every *available* card still always shows its blocked state
+and reason; only the not-yet-earned pool is invisible.
 
 ## The Policy Board (layout and hierarchy)
 
-Bottom third of the screen, always visible during `AWAIT_ACTION`; six category groups in
-fixed order — Industry, Transport, Agro-economy, Sinks, Society, Diplomacy — matching the
-board/HUD vocabulary. Cards render as compact chips; one chip expands on hover/focus.
+Bottom third of the screen, always visible during `AWAIT_ACTION`; seven category groups
+in fixed order — Industry, Transport, Agro-economy, Sinks, Society, Diplomacy,
+**Response** — plus the **Projects** column and the explicit "End the year" chip.
+Cards render as compact chips.
 
 ### Card chip anatomy (information hierarchy, top to bottom)
 
-1. **Name** (≤ 24 chars) + category icon slot + `sufficiency` badge slot when tagged.
-2. **Cost chips**: money always; influence only when > 0 (DIP1/DIP2). Rendered from
-   `effective_cost_money()` — the fire-discount price, live (`../Phase_4/02` single
-   source of truth for what the player reads).
-3. **Effect lines**: one line per effect op, generated from data via the template system
-   (`../Phase_4/06`) — e.g. `sector_progress` → "Transport +10%", `reforest` →
-   "+0.3 absorption/yr for 5 yrs", `ally` → "+1 ally: +20 money & +1 influence yearly".
-   Negative waivable happiness renders with its waiver status live:
-   "−3 happiness (waived: media)" when applicable.
-4. **State line** (only when not freely playable — see state matrix).
+1. **Name** + cost chips: money always; influence/happiness only when > 0. Rendered from
+   `effective_cost_money()` — the fire-discount price, live.
+2. **Effect + reward line**: one clause per effect op, then `-> +15M +3I` style reward
+   chips, then the card's combo/response **tags** (`[energy/relief]`) — tags are
+   gameplay-critical (they answer crises and build combos) and always visible.
+3. **State line** replaces line 2 when not freely playable (see state matrix).
 
-### Expanded card (hover 0.3 s or focus)
+### Expanded card (hover/tooltip)
 
-Adds: full effect breakdown with projected post-play values ("Industry 57% → 67%",
-computed via the resolver's requested-vs-applied preview — a joint project on a capped
-sector shows "+6 → +2, at cap"), `flavor` text, and for sufficiency cards the cap
-explainer: "Lifts this sector's ceiling from 70% to 100%."
+Adds: full effect breakdown with projected post-play values ("Industry 57% → 67%"),
+reward details, the tag list with its role spelled out ("answer crises, build combos"),
+`flavor` text, and for sufficiency cards the cap explainer.
 
-## Card state matrix (every state visible, every reason stated)
+## Card state matrix (every available card visible, every reason stated)
 
 | State | Trigger | Treatment | State line |
 |---|---|---|---|
 | Playable | `can_play() == OK` | Full strength, interactive | — |
-| Unaffordable (money) | check 2 fails | Dimmed, cost chip emphasized | "Need 150 money (have 112)" |
-| Unaffordable (influence) | check 3 | Dimmed, influence chip emphasized | "Need 25 influence (have 18)" |
-| Locked (allies) | check 4 | Dimmed + lock glyph slot | "Needs 2 allies (have 1)" |
-| Capped sector | check 7 | Dimmed + cap glyph | "Industry at 70% cap — play a sufficiency policy" |
-| Already active | media dup (check 6) | Checkmark treatment, non-interactive | "Active since 2031" |
-| No valid target | DIP1, no neutrals / 6 allies | Dimmed | "Every nation is with you" |
-| Year resolved | `action_taken` | Whole board dimmed | Played card gets "Enacted 2047" ribbon |
+| Unaffordable (money) | `no_money` | Dimmed | "Need 150 money (have 112)" |
+| Unaffordable (influence) | `no_influence` | Dimmed | "Need 25 influence (have 18)" |
+| Unaffordable (happiness) | `no_happiness` | Dimmed | "Need 5 happiness (have 3)" |
+| Locked (allies) | `locked_allies` | Dimmed + lock glyph slot | "Needs 2 allies (have 1)" |
+| Turn limit | `turn_limit` | Whole board dimmed | "Five cards a year is the limit — Space to resolve" |
+| Capped sector | `capped` | Dimmed + cap glyph | "Industry at 70% cap — play a sufficiency policy" |
+| Already active | `media_active` | Checkmark treatment | "Active since it was funded" |
+| No valid target | `no_target` | Dimmed | "Every nation is with you" |
+| Resolving / ended | `resolving` / `ended` | Board inert | "Resolving…" / "The run is over" |
+| Unlockable, not yet earned | `card_locked` | **Hidden** (A7) | — (arrives with its unlock banner) |
 
-Cards are **never hidden** (Plan.md: "prerequisite visibility"): a locked card is a goal
-the player can see — DIP2 visible from turn 1 teaches that alliances unlock scale.
-State reasons reuse `can_play()` error codes; the UI never re-derives eligibility.
+State reasons reuse `can_play()` codes; the UI never re-derives eligibility.
 
-## Selection and the one-card-per-year lock (UI side)
+## Multi-play flow (UI side)
 
-Model-side lock already exists (`../Phase_4/01`); the UI's job is making it legible:
+The model enforces resources and the 5-card cap; the UI's job is making the year's
+budget legible:
 
-1. Click chip → expanded card with **Enact** button (and **Choose partner…** flow for
-   DIP1, per `../Phase_3/04`'s modal prompt). Esc/right-click collapses.
-2. Enact → `play_card()`; on accept: ribbon on the chip, rest of board dims to the
-   "Year resolved" state, HUD pillar deltas animate, prompt switches to
-   "Space — resolve the year".
-3. **Pass is explicit**: a "Bank funds" chip sits at the board's end, always playable;
-   pressing Space with no action first shows a one-time inline confirm on the prompt
-   ("Resolve without acting? Space again to confirm") — passing is legal strategy
-   (Phase 1 runs bank 15–19 years) but must never happen by accident.
-4. A rejected `play_card()` (race with state, bug) flashes the state line — the UI
-   trusts the model's verdict over its own cached state, always.
+1. Click chip → `play_card()` immediately (single-click play; DIP1 opens the partner
+   prompt per `../Phase_3/04`). On accept: HUD deltas, crisis panel refresh (an answer
+   may have landed), combo banners, prompt updates to "N/5 cards played, M crises open".
+2. A rejected `play_card()` shows the reason on the prompt — the UI trusts the model's
+   verdict over its own cached state, always.
+3. **Projects column**: each project chip shows upkeep ×years and its payoff tooltip;
+   click launches (paying now). An ACTIVE project chip shows years left; abandoning
+   takes a second confirming click ("costs trust" on the prompt) — commitment must
+   never break by accident.
+4. **End of year is explicit**: Space resolves once any card was played; with zero plays
+   Space asks for a confirming second press ("Resolve without acting?"), and the "End
+   the year (bank funds)" chip resolves directly. Banking is legal strategy but must
+   never happen by accident.
 
-## First-run onboarding hook (Plan.md Phase 7 delivers it; the seam is here)
+## First-run onboarding hook
 
-The board supports a `highlight_filter` (set of card ids) the tutorial can set — no
-other onboarding logic lives in this layer.
+The tutorial (data-driven, `data/tutorial.json`) spotlights the tray, the crisis panel
+and the Projects column; the board exposes rect anchors for the spotlight
+(`project_column_rect()`); no other onboarding logic lives in this layer.
 
 ## Handoff notes — solarpunk-ui-artist
 
-- Category icon set (6), `sufficiency` badge, lock/cap/checkmark glyphs, "Enacted"
-  ribbon: slots and sizes fixed by this spec (chip ≈ 180×92 @1080p, expanded ≈ 320×420);
-  imagery, palette, and frame style are yours — including how "dimmed" reads without
-  losing legibility (contrast floor: state lines readable at all states).
-- Cost chips need money vs influence instantly distinguishable by shape, not only color.
-- The waiver state ("−3 happiness (waived)") deserves a visual moment — it is the
-  media/window payoff loop made visible.
-- Reserve a treatment for `sufficiency` cards as a family — they are the game's thesis.
+- Category icon set (7 incl. Response), `sufficiency` badge, lock/cap/checkmark glyphs,
+  tag chips (10 tags — small, color-coded, consistent with the crisis panel's answer
+  tags), reward chips, and the project state ribbon (available / active-N-years /
+  completed / failed): slots and sizes are this spec's contract; imagery, palette and
+  frame style are yours.
+- Cost chips need money vs influence vs happiness instantly distinguishable by shape,
+  not only color.
+- The **combo moment** is the game's biggest juice beat: banner + chain multiplier
+  deserve a family treatment that scales with the chain (x1.0 modest → x2.0 jubilant).
+- The **unlock moment** (a new card materializing in the tray) is the deck-growth
+  payoff — it should feel like a gift, not a patch note.
+- The waiver state ("−3 happiness (waived)") still deserves its visual moment.
 - No card illustrations required for MVP; the chip must work text-first.

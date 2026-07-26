@@ -15,8 +15,9 @@ belong in data files, never hard-coded (golden rule 9).
 
 | Variable | Symbol | Definition | Unit | Start | Expected range |
 |---|---|---|---|---|---|
-| Money | `M` | Spendable funds (abstract billions) | funds | 100 | 0–~6 500; healthy play stays > 0 with reserves 100–500 mid-run |
-| Yearly income | — | `100 + 20 × allies`, reduced ×0.75 if H < 40, ×0.5 if H < 25 | funds/yr | 100 | 50–220 |
+| Money | `M` | Spendable funds (abstract billions) | funds | 100 | 0–~6 500; healthy play stays > 0 with reserves ~60–500 mid-run |
+| Yearly income | — | `100 + 20 × allies + project passives`, reduced ×0.75 if H < 40, ×0.5 if H < 25 | funds/yr | 100 | 50–260 |
+| Card rewards | — | Resources returned by played cards, crisis responses and combos (money / influence / happiness / knowledge) | mixed | — | per catalog; combo rewards scaled by the chain multiplier |
 
 ## Pillar 2 — Carbon Balance
 
@@ -61,16 +62,44 @@ belong in data files, never hard-coded (golden rule 9).
 > allies. Plan.md Phase 4's "resilience update logic" maps onto the `R` formula and the
 > happiness pipeline below.
 
+## The Crisis Year (turn-scoped state)
+
+| Variable | Definition | Range |
+|---|---|---|
+| `pending_crises[]` | The 3 events drawn at year start: id, kind (crisis/opportunity), target region, answered state, answering card | exactly 3 per year |
+| `cards played` | Card plays this year; hard cap `MAX_CARDS_PER_TURN` | 0–5 |
+| `tags this year` | Multiset of tags on this year's played cards; drives crisis answers and combo checks | — |
+| `combos this year` | Combos fired this year (each at most once per year) | 0–8 |
+
+## Combos and Deck Growth (run-scoped)
+
+| Variable | Definition | Range |
+|---|---|---|
+| `combo_chain` | +1 per combo fired; −1 on a comboless year (min 0). Reward multiplier `1 + 0.1 × min(chain, 10)` | 0–~50; multiplier 1.0–2.0 |
+| `combos_total` | Combos fired this run (deck-growth unlock counter) | 0–~70 |
+| `crises_answered_total` | Crises + opportunities answered this run (unlock counter) | 0–~213 |
+| `projects_completed` | Projects sustained to completion (unlock counter) | 0–4 |
+| `kp_earned` | In-run Knowledge from first-fire combo rewards and seized opportunities; added to the end-of-run KP award | 0–~4 |
+| `unlocked_card_ids[]` | Cards added to the pool by unlock conditions this run | 0–6 in MVP |
+
+## Long-Term Projects
+
+| Variable | Definition | Range |
+|---|---|---|
+| `active_projects[]` | Running projects: id + years of upkeep left; charged at every year start | 0–2 (`PROJECT_MAX_ACTIVE`) |
+| `passives` | Aggregated completion powers: `income_money`, `income_influence`, `happiness_per_year`, `absorption_per_year` | permanent once earned |
+| `project_history` | Terminal state per attempted project: completed / failed (unpaid upkeep) / abandoned; one attempt per run | — |
+
 ## Simulation State Flags
 
 | Variable | Definition |
 |---|---|
 | `band` | Warming band: 0 stable (< 1.5), 1 Overshoot I (≥ 1.5), 2 Overshoot II (≥ 1.75) |
-| `media` | Independent Media Fund active (suff. cards lose happiness penalty; +1 Influence/yr; social crisis probability halved) |
+| `media` | Independent Media Fund active (suff. cards lose happiness penalty; +1 Influence/yr; social-crisis draw weight halved) |
 | `window` | Social-crisis policy window open (next sufficiency card has no happiness cost) |
-| `fire_discount` | Rebuild-better: next restoration card at 50% cost |
-| `flood_rebuild` | Rebuild-better: +5% transport progress free next year |
-| `fires` | Cumulative mega fires (3 ⇒ Amazon dieback feedback) |
+| `fire_discount` | Rebuild-better: next restoration card at 50% cost (set only when a fire actually strikes) |
+| `flood_rebuild` | Rebuild-better: +5% transport progress free next year (set only when a flood actually strikes) |
+| `fires` | Cumulative unanswered mega fires (3 ⇒ Amazon dieback feedback) |
 | `permafrost`, `ocean_weak`, `amazon` | One-time feedback loops already triggered |
 | `reforest[]` | Maturing restoration programs: list of (Gt/yr, years remaining) |
 
@@ -78,5 +107,5 @@ belong in data files, never hard-coded (golden rule 9).
 
 | Variable | Definition | Unit | Range |
 |---|---|---|---|
-| Knowledge Points | `KP = decades survived + sectors ≥ 70% + allies ÷ 2 + 3 if win` | points/run | ~4–16 per run |
+| Knowledge Points | `KP = decades survived + sectors ≥ 70% + allies ÷ 2 + 3 if win + kp_earned` | points/run | ~2–18 per run |
 | Knowledge nodes | Unlocked entries of the Knowledge tree (e.g. Affordable EVs, Healthy Sobriety, Informed Public) | — | ~6 nodes in MVP |

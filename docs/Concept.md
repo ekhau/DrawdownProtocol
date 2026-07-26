@@ -6,7 +6,7 @@ A Godot 4 prototype for a 2D isometric rogue-lite climate strategy and diplomacy
 
 ### Elevator Pitch
 
-You lead a group of people — a climate NGO, an association, or a small pioneering country — determined to steer the world to carbon neutrality between 2030 and 2100. Each year you spend money and influence to transform three key sectors (industry, transport, agro-economy) and to win countries over to the transition. Random disasters — heat waves, mega fires, tsunamis, social crises — stress-test what you have built, but every crisis is also a chance to rebuild the system better. If the world crosses the global warming limit, the run is lost — yet the knowledge you gained persists, making every new attempt start smarter.
+You lead a group of people — a climate NGO, an association, or a small pioneering country — determined to steer the world to carbon neutrality between 2030 and 2100. Every year the world deals you **three crises** — droughts, floods, fires, political turmoil, and sometimes a rare opportunity — and your policy cards are how you answer them. Cards cost money, influence, or happiness and pay resources back; played together they trigger **combos** whose chains grow across the run; **five-year projects** grant permanent powers if you sustain them. Answering crises well makes your deck grow. If the world crosses the global warming limit, the run is lost — yet the knowledge you gained persists, making every new attempt start smarter.
 
 ### Player Role and Fantasy
 
@@ -28,11 +28,11 @@ Pushing hard on one pillar strains the others; every meaningful decision trades 
 
 ### Core Loop (One Run = 2030–2100)
 
-1. **Plan the year.** Allocate money and influence across actions: transform a sector, aid an ally, fund media and education, restore a carbon sink.
-2. **Negotiate.** Spend **Influence** to build alliances with other countries. Allies unlock bigger joint projects and contribute money to the energy transition — the world's budget grows with every partner.
-3. **Advance the year.** The simulation resolves: emissions, absorption, temperature, happiness, and each country's trajectory update.
-4. **Face events.** Random events (heat wave, tsunami, social crisis, mega fire) test the resilience of what you built — and open windows to rebuild differently (see Random Events below).
-5. **Adapt.** Read the outcome, rebalance the three pillars, repeat until 2100 — or until the world overheats.
+1. **The year opens under pressure.** Income arrives, running projects charge their upkeep, and **three random events land**: crises (drought, heat wave, mega fire, flood, crop failure, energy crunch, social crisis) and, sometimes, opportunities (a climate summit, an investment wave, a youth movement). Each shows what it will cost if ignored — and which card tags answer it.
+2. **Answer with cards.** Play as many policy cards as your resources allow (up to five a year). Each card has a cost in Money / Influence / Happiness and gives back rewards in Money / Influence / Happiness / Knowledge. A card whose tag matches an open crisis **contains it on the spot** — no damage, plus a response reward. Cards are simultaneously your crisis toolkit and your transition engine: the same year's plays transform sectors, restore sinks, and win allies.
+3. **Chain combos.** Cards played together synergize: complete a combo's tag set (bikes + clean grids, forests + water, diplomats + engineers + citizens) and it fires instantly with bonus resources. Every combo grows a **chain** that multiplies future combo rewards — the engine that lets a practiced coalition outrun the harder crises of the late century.
+4. **Commit to projects.** Launch long-term projects that charge resources every year for five years; seeing one through grants a permanent power — passive income, growing sinks, lasting wellbeing, or new allies. Walking away, or failing to pay, burns trust.
+5. **Resolve and adapt.** The simulation advances: emissions, absorption, temperature, happiness. Every crisis you left unanswered strikes — and even then opens a window to rebuild better. Read the outcome, rebalance the three pillars, repeat until 2100 — or until the world overheats.
 
 ### The Three Key Sectors
 
@@ -71,16 +71,39 @@ The goal is a **carbon-neutral world by 2100**. Neutrality is a balance, not a p
 
 A winning end state must hold all three pillars: solvent finances, emissions ≤ absorption, and a population happy enough to sustain the model beyond 2100.
 
-### Random Events: Threats and Opportunities
+### Crises: Three a Year, and Cards Are the Answer
 
-Each run features random events that stress-test the resilience of the player's system:
+The crisis draw is the central pressure of every turn. Three events are drawn each year from a weighted deck:
 
+- **Droughts and crop failures** — bleed money, strain food systems, weaken sinks.
 - **Big heat waves** — strain health, happiness, and energy demand.
 - **Tsunamis and floods** — devastate coastal infrastructure.
 - **Mega fires** — destroy forests, flipping carbon sinks into carbon sources.
-- **Social and humanitarian crises** — happiness collapses, allies waver, budgets bleed.
+- **Energy crunches and social crises** — budgets bleed, allies waver, legitimacy erodes.
+- **Opportunities** — summits, green investment waves, youth movements: pure upside for whoever shows up with the right card.
 
-Events are deliberately designed as **opportunities as much as threats**: a destroyed highway can be rebuilt as a rail line; a burned monoculture can regrow as resilient mixed forest; a social crisis can legitimize a fairer policy that was previously unacceptable. Rebuilding *better* after a disaster is often cheaper per ton of carbon than transforming intact infrastructure — the game rewards players who see openings in chaos.
+The deck escalates with warming: past +1.5 °C crises are drawn more often and opportunities less; social crises surge when happiness collapses and calm when independent media informs the public. Every crisis lists its **response tags** — play any card carrying one of them that year and the crisis is contained: no damage, and the world pays you back for competent leadership (money, influence, happiness, sometimes knowledge).
+
+What you cannot answer still teaches. Unanswered events are deliberately **opportunities as much as threats**: a destroyed highway can be rebuilt as a rail line; a burned monoculture can regrow as resilient mixed forest; a social crisis can legitimize a fairer policy that was previously unacceptable. Rebuilding *better* after a disaster is often cheaper per ton of carbon than transforming intact infrastructure — the game rewards players who see openings in chaos.
+
+### Combos: the Heart of the Fun
+
+Cards are designed to be played in concert. Each carries tags — water, food, energy, mobility, forest, coast, health, civic, treaty, relief — and named combos fire the instant a year's plays complete their tag set:
+
+- **Green Corridor** (mobility + energy): clean vehicles need clean grids.
+- **Water Cycle** (water + forest): forests make rain; rain makes forests.
+- **Grand Bargain** (treaty + energy + civic): diplomats, engineers and citizens at one table.
+- **Drawdown Surge** (forest + water + food + energy): every system pulling carbon the same year.
+
+A combo is loud and immediate: a banner, bonus resources, sometimes a direct effect on the world. Every combo fired raises the **combo chain**, and each chain step multiplies future combo rewards (up to double); a year without a combo lets the chain slip. Early combos are small change; a deep chain late in the run is how a practiced coalition funds answers to three simultaneous Overshoot-strength crises. Discovering a combo for the first time also yields Knowledge — insight, once learned, is permanent.
+
+### Long-Term Projects: the Strategic Arc
+
+Alongside the tactical scramble of the crisis year, the player can commit to **projects** — the Global Sink Trust, a Continental Rail Compact, Universal Services, a World Climate Accord. A project charges its upkeep every year for five years. Sustained to completion, it grants a **permanent power**: passive income, ever-growing absorption, lasting wellbeing, or new allies and deeper relations. Abandoning a project — or missing a payment because the crises drained you — cancels it and costs happiness and influence: the world remembers broken promises. Projects give a run its spine: the question is never only "how do I survive this year?" but "can I afford to keep my promises while surviving it?"
+
+### A Deck That Grows With Your Deeds
+
+The starting deck covers the basics; the rest of the catalog is earned in play. Answering crises unlocks mutual-aid networks; chaining combos unlocks food commons and transition festivals; winning allies unlocks the Climate Club; transforming industry unlocks industrial symbiosis; completing a project unlocks blue carbon restoration. New cards appear mid-run with fanfare — the deck's growth *is* the scoreboard of how well you have played, and it widens the answers available against the harder late-run crises.
 
 ### Rogue-lite Meta-Progression: Knowledge
 
@@ -126,16 +149,4 @@ Knowledge nodes unlock new actions, cheapen existing ones, or change how populat
 
 ## Current Prototype Status
 
-The playable prototype predates parts of this vision. It currently implements: yearly turns 2030–2100, one policy card per year, extreme events, a resilience meter, defeat at +2.0 °C, and Insight Points spent in a Paradigm Hub (the ancestor of the Knowledge tree). Diplomacy, the three-sector model, the world map, and Knowledge are design targets for the next iteration.
-
-### Prototype Controls
-
-- Space: Advance year
-- H: Open or close Paradigm Hub
-- Mouse: Pick policy cards and unlock paradigms
-
-## Run
-
-Use the custom Godot binary:
-
-/home/dnicolas/Lab/godot/bin/godot.linuxbsd.editor.dev.x86_64 --path /home/dnicolas/Lab/DrawdownProtocol/godot/drawdown_protocol --editor
+The playable prototype in `../src/` implements this vision end-to-end: yearly turns 2030–2100 with the 3-crisis draw, multi-card play with costs and rewards, the combo chain, five-year projects, deck growth, the three-sector model with sufficiency caps, diplomacy as cards, the 12-region procgen world board, Overshoot bands and feedback loops, defeat at +2.0 °C, and Knowledge Points spent in the Knowledge tree. See `../src/README.md` for controls, architecture, verification, and deliberate deviations.

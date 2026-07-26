@@ -29,8 +29,8 @@ static func evaluate(year: int, temp: float, n: float) -> RunStatus:
 ```
 
 - Inputs are this year's post-step-7 values (`T_new`, N from step 3) — feedback loops
-  triggered this year can push T over the line this same year (Run B dies in 2099 partly
-  on feedback-degraded sinks).
+  triggered this year can push T over the line this same year (the Risky archetype dies
+  mid-2060s on feedback-degraded, fire-eaten sinks).
 - **Precedence:** breaching +2.0 °C in 2100 is still `LOSS_LIMIT_BREACHED` — the
   temperature limit outranks the calendar, exactly as the concept frames it.
 - The +1.5 °C threshold never appears here: Overshoot is a state (band change signal),
@@ -51,7 +51,7 @@ else:
 After `ENDED`: `play_card()` returns `ERR_UNAVAILABLE`, `resolve_year()` is a no-op
 returning the terminal record. No signal is ever emitted twice — asserted in tests.
 
-## Knowledge Points award (Phase 1 formula, unchanged)
+## Knowledge Points award (Phase 1 formula plus in-run insight)
 
 ```gdscript
 static func knowledge_points(status: RunStatus, year: int, sectors, allies: int) -> int:
@@ -60,10 +60,12 @@ static func knowledge_points(status: RunStatus, year: int, sectors, allies: int)
     kp += allies / 2
     if status == RunStatus.WIN_NEUTRAL: kp += 3
     return kp
+# RunState adds kp_earned on top: knowledge rewards accrued during the run from
+# first-fire combo discoveries and seized opportunities (~0–4 per run).
 ```
 
-Fixture anchors (seed 2030): Safe WIN 15 · Risky LOSS_LIMIT_BREACHED (2099) 9 ·
-Mixed WIN 16. Soft loss earns everything except the +3 — reaching 2100 with a
+Fixture anchors (seed 2030): Safe WIN 18 · Risky LOSS_LIMIT_BREACHED (2064) 4 ·
+Mixed WIN 18. Soft loss earns everything except the +3 — reaching 2100 with a
 transformed-but-not-neutral world must feel like progress, not a wipe (pillar 4:
 every timeline teaches).
 

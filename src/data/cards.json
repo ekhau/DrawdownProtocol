@@ -1,85 +1,573 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "cards": [
-    { "id": "IND1", "name": "Industrial Efficiency", "category": "ind",
-      "cost_money": 80, "cost_influence": 0, "tags": [],
+    {
+      "id": "IND1",
+      "name": "Industrial Efficiency",
+      "category": "ind",
+      "cost_money": 80,
+      "cost_influence": 0,
+      "tags": [
+        "energy"
+      ],
       "flavor": "Every wasted joule was a choice.",
-      "effects": [ { "op": "sector_progress", "sector": "ind", "amount": 8, "lifts_cap": false } ] },
-
-    { "id": "IND2", "name": "Clean Energy Grid", "category": "ind",
-      "cost_money": 150, "cost_influence": 0, "tags": [],
+      "effects": [
+        {
+          "op": "sector_progress",
+          "sector": "ind",
+          "amount": 6,
+          "lifts_cap": false
+        }
+      ]
+    },
+    {
+      "id": "IND2",
+      "name": "Clean Energy Grid",
+      "category": "ind",
+      "cost_money": 150,
+      "cost_influence": 0,
+      "tags": [
+        "energy"
+      ],
       "flavor": "Sun and wind, wired to the furnaces.",
-      "effects": [ { "op": "sector_progress", "sector": "ind", "amount": 15, "lifts_cap": false } ] },
-
-    { "id": "IND3", "name": "Circular Economy", "category": "ind",
-      "cost_money": 120, "cost_influence": 0, "tags": ["sufficiency"],
+      "effects": [
+        {
+          "op": "sector_progress",
+          "sector": "ind",
+          "amount": 10,
+          "lifts_cap": false
+        }
+      ]
+    },
+    {
+      "id": "IND3",
+      "name": "Circular Economy",
+      "category": "ind",
+      "cost_money": 120,
+      "cost_influence": 0,
+      "tags": [
+        "sufficiency"
+      ],
       "flavor": "Nothing is waste; everything is feedstock.",
-      "effects": [ { "op": "sector_progress", "sector": "ind", "amount": 10, "lifts_cap": true },
-                   { "op": "happiness", "amount": 1, "waivable": false } ] },
-
-    { "id": "TRA1", "name": "Rail & Bike Networks", "category": "tra",
-      "cost_money": 80, "cost_influence": 0, "tags": ["sufficiency"],
+      "effects": [
+        {
+          "op": "sector_progress",
+          "sector": "ind",
+          "amount": 8,
+          "lifts_cap": true
+        },
+        {
+          "op": "happiness",
+          "amount": 1,
+          "waivable": false
+        }
+      ]
+    },
+    {
+      "id": "IND4",
+      "name": "Industrial Symbiosis",
+      "category": "ind",
+      "cost_money": 90,
+      "cost_influence": 0,
+      "tags": [
+        "energy"
+      ],
+      "unlock": {
+        "kind": "sector_progress",
+        "sector": "ind",
+        "gte": 40
+      },
+      "rewards": {
+        "money": 20
+      },
+      "flavor": "One factory's exhaust is another's furnace.",
+      "effects": [
+        {
+          "op": "sector_progress",
+          "sector": "ind",
+          "amount": 8,
+          "lifts_cap": false
+        }
+      ]
+    },
+    {
+      "id": "TRA1",
+      "name": "Rail & Bike Networks",
+      "category": "tra",
+      "cost_money": 80,
+      "cost_influence": 0,
+      "tags": [
+        "sufficiency",
+        "mobility",
+        "health"
+      ],
       "flavor": "The fastest way through a city was never a car.",
-      "effects": [ { "op": "sector_progress", "sector": "tra", "amount": 10, "lifts_cap": true },
-                   { "op": "happiness", "amount": 2, "waivable": false } ] },
-
-    { "id": "TRA2", "name": "Affordable EVs", "category": "tra",
-      "cost_money": 140, "cost_influence": 0, "tags": [],
+      "effects": [
+        {
+          "op": "sector_progress",
+          "sector": "tra",
+          "amount": 8,
+          "lifts_cap": true
+        },
+        {
+          "op": "happiness",
+          "amount": 2,
+          "waivable": false
+        }
+      ]
+    },
+    {
+      "id": "TRA2",
+      "name": "Affordable EVs",
+      "category": "tra",
+      "cost_money": 140,
+      "cost_influence": 0,
+      "tags": [
+        "mobility"
+      ],
       "flavor": "Electric, efficient, and priced for everyone.",
-      "effects": [ { "op": "sector_progress", "sector": "tra", "amount": 15, "lifts_cap": false } ] },
-
-    { "id": "TRA3", "name": "Walkable Cities", "category": "tra",
-      "cost_money": 60, "cost_influence": 0, "tags": ["sufficiency"],
+      "effects": [
+        {
+          "op": "sector_progress",
+          "sector": "tra",
+          "amount": 10,
+          "lifts_cap": false
+        }
+      ]
+    },
+    {
+      "id": "TRA3",
+      "name": "Walkable Cities",
+      "category": "tra",
+      "cost_money": 60,
+      "cost_influence": 0,
+      "tags": [
+        "sufficiency",
+        "mobility"
+      ],
       "flavor": "Streets returned to the people who live on them.",
-      "effects": [ { "op": "sector_progress", "sector": "tra", "amount": 8, "lifts_cap": true },
-                   { "op": "happiness", "amount": -3, "waivable": true } ] },
-
-    { "id": "AGR1", "name": "Plant-Rich Diet Campaign", "category": "agr",
-      "cost_money": 60, "cost_influence": 0, "tags": ["sufficiency"],
+      "effects": [
+        {
+          "op": "sector_progress",
+          "sector": "tra",
+          "amount": 6,
+          "lifts_cap": true
+        },
+        {
+          "op": "happiness",
+          "amount": -3,
+          "waivable": true
+        }
+      ]
+    },
+    {
+      "id": "AGR1",
+      "name": "Plant-Rich Diet Campaign",
+      "category": "agr",
+      "cost_money": 60,
+      "cost_influence": 0,
+      "tags": [
+        "sufficiency",
+        "food",
+        "health"
+      ],
       "flavor": "Good for the land, good for the heart.",
-      "effects": [ { "op": "sector_progress", "sector": "agr", "amount": 10, "lifts_cap": true },
-                   { "op": "happiness", "amount": -3, "waivable": true } ] },
-
-    { "id": "AGR2", "name": "Agroecology Transition", "category": "agr",
-      "cost_money": 100, "cost_influence": 0, "tags": [],
+      "effects": [
+        {
+          "op": "sector_progress",
+          "sector": "agr",
+          "amount": 8,
+          "lifts_cap": true
+        },
+        {
+          "op": "happiness",
+          "amount": -3,
+          "waivable": true
+        }
+      ]
+    },
+    {
+      "id": "AGR2",
+      "name": "Agroecology Transition",
+      "category": "agr",
+      "cost_money": 100,
+      "cost_influence": 0,
+      "tags": [
+        "food",
+        "water"
+      ],
       "flavor": "Farms that feed the soil as well as the people.",
-      "effects": [ { "op": "sector_progress", "sector": "agr", "amount": 12, "lifts_cap": false },
-                   { "op": "sink_now", "amount": 0.2 } ] },
-
-    { "id": "SNK1", "name": "Reforestation Program", "category": "sink",
-      "cost_money": 70, "cost_influence": 0, "tags": ["restoration"],
+      "effects": [
+        {
+          "op": "sector_progress",
+          "sector": "agr",
+          "amount": 8,
+          "lifts_cap": false
+        },
+        {
+          "op": "sink_now",
+          "amount": 0.2
+        }
+      ]
+    },
+    {
+      "id": "AGR3",
+      "name": "Food Commons",
+      "category": "agr",
+      "cost_money": 70,
+      "cost_influence": 0,
+      "tags": [
+        "food",
+        "civic"
+      ],
+      "unlock": {
+        "kind": "combos",
+        "count": 4
+      },
+      "flavor": "A meal shared is a system changed.",
+      "effects": [
+        {
+          "op": "sector_progress",
+          "sector": "agr",
+          "amount": 6,
+          "lifts_cap": false
+        },
+        {
+          "op": "happiness",
+          "amount": 1,
+          "waivable": false
+        }
+      ]
+    },
+    {
+      "id": "SNK1",
+      "name": "Reforestation Program",
+      "category": "sink",
+      "cost_money": 70,
+      "cost_influence": 0,
+      "tags": [
+        "restoration",
+        "forest"
+      ],
       "flavor": "Plant today what must breathe for a century.",
-      "effects": [ { "op": "reforest", "per_year": 0.3, "years": 5 } ] },
-
-    { "id": "SNK2", "name": "Peatland & Ocean Repair", "category": "sink",
-      "cost_money": 90, "cost_influence": 0, "tags": ["restoration"],
+      "effects": [
+        {
+          "op": "reforest",
+          "per_year": 0.3,
+          "years": 5
+        }
+      ]
+    },
+    {
+      "id": "SNK2",
+      "name": "Peatland & Ocean Repair",
+      "category": "sink",
+      "cost_money": 90,
+      "cost_influence": 0,
+      "tags": [
+        "restoration",
+        "water"
+      ],
       "flavor": "The oldest carbon capture technology on Earth.",
-      "effects": [ { "op": "reforest", "per_year": 0.2, "years": 5 },
-                   { "op": "adapt", "amount": 5 } ] },
-
-    { "id": "ADP1", "name": "Adaptive Infrastructure", "category": "society",
-      "cost_money": 90, "cost_influence": 0, "tags": [],
+      "effects": [
+        {
+          "op": "reforest",
+          "per_year": 0.2,
+          "years": 5
+        },
+        {
+          "op": "adapt",
+          "amount": 5
+        }
+      ]
+    },
+    {
+      "id": "SNK3",
+      "name": "Blue Carbon Program",
+      "category": "sink",
+      "cost_money": 60,
+      "cost_influence": 0,
+      "tags": [
+        "restoration",
+        "coast"
+      ],
+      "unlock": {
+        "kind": "projects_completed",
+        "count": 1
+      },
+      "flavor": "Mangroves hold the coast and the carbon.",
+      "effects": [
+        {
+          "op": "reforest",
+          "per_year": 0.25,
+          "years": 4
+        }
+      ]
+    },
+    {
+      "id": "ADP1",
+      "name": "Adaptive Infrastructure",
+      "category": "society",
+      "cost_money": 90,
+      "cost_influence": 0,
+      "tags": [
+        "coast",
+        "relief"
+      ],
       "flavor": "Build for the storms we already ordered.",
-      "effects": [ { "op": "adapt", "amount": 15 } ] },
-
-    { "id": "SOC1", "name": "Independent Media Fund", "category": "society",
-      "cost_money": 50, "cost_influence": 0, "tags": [],
+      "effects": [
+        {
+          "op": "adapt",
+          "amount": 15
+        }
+      ]
+    },
+    {
+      "id": "SOC1",
+      "name": "Independent Media Fund",
+      "category": "society",
+      "cost_money": 50,
+      "cost_influence": 0,
+      "tags": [
+        "civic"
+      ],
       "flavor": "A public that understands will demand the change.",
-      "effects": [ { "op": "media" } ] },
-
-    { "id": "SOC2", "name": "Global Wellbeing Fund", "category": "society",
-      "cost_money": 100, "cost_influence": 0, "tags": [],
+      "effects": [
+        {
+          "op": "media"
+        }
+      ]
+    },
+    {
+      "id": "SOC2",
+      "name": "Global Wellbeing Fund",
+      "category": "society",
+      "cost_money": 100,
+      "cost_influence": 0,
+      "tags": [
+        "health"
+      ],
       "flavor": "A transition nobody enjoys is a transition nobody keeps.",
-      "effects": [ { "op": "wellbeing", "amount": 3 } ] },
-
-    { "id": "DIP1", "name": "Form Alliance", "category": "diplomacy",
-      "cost_money": 50, "cost_influence": 25, "tags": [],
+      "effects": [
+        {
+          "op": "wellbeing",
+          "amount": 3
+        }
+      ]
+    },
+    {
+      "id": "SOC3",
+      "name": "Transition Festivals",
+      "category": "society",
+      "cost_money": 40,
+      "cost_influence": 0,
+      "tags": [
+        "civic"
+      ],
+      "unlock": {
+        "kind": "combos",
+        "count": 8
+      },
+      "rewards": {
+        "influence": 3
+      },
+      "flavor": "Celebrate what works and it spreads.",
+      "effects": [
+        {
+          "op": "wellbeing",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "DIP1",
+      "name": "Form Alliance",
+      "category": "diplomacy",
+      "cost_money": 50,
+      "cost_influence": 25,
+      "tags": [
+        "treaty"
+      ],
       "flavor": "We cannot command the world. We can convince it.",
-      "effects": [ { "op": "ally" } ] },
-
-    { "id": "DIP2", "name": "Joint Transition Project", "category": "diplomacy",
-      "cost_money": 120, "cost_influence": 15, "requires": { "allies_min": 2 }, "tags": [],
+      "effects": [
+        {
+          "op": "ally"
+        }
+      ]
+    },
+    {
+      "id": "DIP2",
+      "name": "Joint Transition Project",
+      "category": "diplomacy",
+      "cost_money": 120,
+      "cost_influence": 15,
+      "requires": {
+        "allies_min": 2
+      },
+      "tags": [
+        "treaty"
+      ],
       "flavor": "Too big for any one of us. Exactly right for all of us.",
-      "effects": [ { "op": "joint_progress", "amount": 6 } ] }
+      "effects": [
+        {
+          "op": "joint_progress",
+          "amount": 5
+        }
+      ]
+    },
+    {
+      "id": "DIP3",
+      "name": "Climate Club",
+      "category": "diplomacy",
+      "cost_money": 80,
+      "cost_influence": 10,
+      "requires": {
+        "allies_min": 3
+      },
+      "tags": [
+        "treaty"
+      ],
+      "unlock": {
+        "kind": "allies",
+        "count": 3
+      },
+      "rewards": {
+        "money": 25
+      },
+      "flavor": "Members trade in the currency of the future.",
+      "effects": [
+        {
+          "op": "joint_progress",
+          "amount": 4
+        }
+      ]
+    },
+    {
+      "id": "RSP1",
+      "name": "Emergency Relief Corps",
+      "category": "response",
+      "cost_money": 30,
+      "cost_influence": 0,
+      "tags": [
+        "relief",
+        "health"
+      ],
+      "rewards": {
+        "influence": 3
+      },
+      "flavor": "First on the ground, last to leave.",
+      "effects": [
+        {
+          "op": "adapt",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "RSP2",
+      "name": "Water Stewardship",
+      "category": "response",
+      "cost_money": 35,
+      "cost_influence": 0,
+      "tags": [
+        "water"
+      ],
+      "rewards": {
+        "money": 10
+      },
+      "flavor": "Every drop budgeted like the treasure it is.",
+      "effects": [
+        {
+          "op": "sink_now",
+          "amount": 0.1
+        }
+      ]
+    },
+    {
+      "id": "RSP3",
+      "name": "Coastal Defense Works",
+      "category": "response",
+      "cost_money": 40,
+      "cost_influence": 0,
+      "tags": [
+        "coast"
+      ],
+      "flavor": "The sea negotiates with no one; the shore must.",
+      "effects": [
+        {
+          "op": "adapt",
+          "amount": 4
+        }
+      ]
+    },
+    {
+      "id": "RSP4",
+      "name": "Community Kitchens",
+      "category": "response",
+      "cost_money": 25,
+      "cost_influence": 0,
+      "tags": [
+        "food",
+        "civic"
+      ],
+      "rewards": {
+        "influence": 2
+      },
+      "flavor": "Nobody organizes like people fed together.",
+      "effects": [
+        {
+          "op": "happiness",
+          "amount": 1,
+          "waivable": false
+        }
+      ]
+    },
+    {
+      "id": "RSP5",
+      "name": "Grid Repair Crews",
+      "category": "response",
+      "cost_money": 35,
+      "cost_influence": 0,
+      "tags": [
+        "energy",
+        "relief"
+      ],
+      "rewards": {
+        "money": 15
+      },
+      "flavor": "Keep the lights on; keep the trust on.",
+      "effects": [
+        {
+          "op": "adapt",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "RSP6",
+      "name": "Mutual Aid Network",
+      "category": "response",
+      "cost_money": 30,
+      "cost_influence": 0,
+      "tags": [
+        "relief",
+        "civic"
+      ],
+      "unlock": {
+        "kind": "crises_answered",
+        "count": 4
+      },
+      "rewards": {
+        "influence": 4
+      },
+      "flavor": "The disaster plan is knowing your neighbors.",
+      "effects": [
+        {
+          "op": "happiness",
+          "amount": 2,
+          "waivable": false
+        }
+      ]
+    }
   ]
 }

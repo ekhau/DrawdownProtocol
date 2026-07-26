@@ -37,52 +37,64 @@ func test_happiness_drift() -> void:
 	eq(float(d["stress"]), 1.0, "Overshoot II stress")
 
 
-func _social_formula() -> Dictionary:
+func _event_def(id: String) -> Dictionary:
 	for ev in Catalog.load_default().events:
-		if String(ev["id"]) == "social_crisis":
-			return ev["probability_formula"]
+		if String(ev["id"]) == id:
+			return ev
 	return {}
 
 
-func test_social_crisis_probability() -> void:  # T10-P4
-	var f := _social_formula()
-	approx(SocietyCalc.social_crisis_p(39.9, 0, false, f), 0.25, 1e-9, "low happiness base")
-	approx(SocietyCalc.social_crisis_p(40.0, 0, false, f), 0.05, 1e-9, "threshold at exactly 40")
-	approx(SocietyCalc.social_crisis_p(39.9, 2, false, f), 0.375, 1e-9, "band 2 scale x1.5")
-	approx(SocietyCalc.social_crisis_p(39.9, 2, true, f), 0.1875, 1e-9, "media halves")
-	approx(SocietyCalc.social_crisis_p(60.0, 1, true, f), 0.03125, 1e-9, "happy + media: near-never")
+func test_crisis_draw_weights() -> void:  # T10-P4
+	var social := _event_def("social_crisis")
+	approx(SocietyCalc.crisis_weight(social, 0, 60.0, false), 0.5, 1e-9, "band 0 base weight")
+	approx(SocietyCalc.crisis_weight(social, 2, 60.0, false), 1.2, 1e-9, "band 2 weight")
+	approx(SocietyCalc.crisis_weight(social, 0, 39.9, false), 1.5, 1e-9, "low happiness x3")
+	approx(SocietyCalc.crisis_weight(social, 0, 40.0, false), 0.5, 1e-9, "threshold at exactly 40")
+	approx(SocietyCalc.crisis_weight(social, 0, 39.9, true), 0.75, 1e-9, "media halves")
+	var heat := _event_def("heat_wave")
+	approx(SocietyCalc.crisis_weight(heat, 1, 20.0, true), 1.4, 1e-9,
+		"no weight_mods: happiness and media ignored")
+
+
+func test_combo_mult() -> void:
+	approx(SocietyCalc.combo_mult(0), 1.0, 1e-9, "first combo x1.0")
+	approx(SocietyCalc.combo_mult(5), 1.5, 1e-9, "chain 5 => x1.5")
+	approx(SocietyCalc.combo_mult(10), 2.0, 1e-9, "chain cap => x2.0")
+	approx(SocietyCalc.combo_mult(25), 2.0, 1e-9, "beyond cap stays x2.0")
+
+
+func _forced_crisis(rs: RunState, id: String, region: RegionData) -> Dictionary:
+	var crisis := {
+		"id": StringName(id), "kind": "crisis",
+		"region_id": region.id if region != null else &"",
+		"answered": false, "answered_by": &"",
+	}
+	rs.pending_crises = [crisis]
+	return crisis
 
 
 func test_social_crisis_flat_damage() -> void:  # T7-P5
 	# scaled_by_resilience: false => identical damages at R=0 and R=100.
-	var social: Dictionary = {}
-	for ev in Catalog.load_default().events:
-		if String(ev["id"]) == "social_crisis":
-			social = ev
 	for setup in [[0.0, 0.0], [100.0, 60.0]]:
 		var rs := RunState.new_run(WorldGen.generate(11, true), Catalog.load_default(), [])
 		rs.happiness = setup[0]
 		rs.adapt = setup[1]
 		rs.influence = 50.0
 		rs.money = 500.0
-		var rec := TurnRecord.new()
-		rs._apply_event(social, SocietyCalc.damage_mult(rs.happiness, rs.adapt), rec)
-		var damages: Dictionary = rec.events[0]["damages"]
-		eq(float(damages["influence"]), 10.0, "flat influence damage at R=%s" % rs.resilience())
-		eq(float(damages["money"]), 20.0, "flat money damage at R=%s" % rs.resilience())
+		var crisis := _forced_crisis(rs, "social_crisis", rs.world[3])
+		rs._apply_crisis_hit(crisis, SocietyCalc.damage_mult(rs.happiness, rs.adapt))
+		var damages: Dictionary = crisis["damages"]
+		eq(float(damages["influence"]), 8.0, "flat influence damage at R=%s" % rs.resilience())
+		eq(float(damages["money"]), 15.0, "flat money damage at R=%s" % rs.resilience())
 
 
-func test_scaled_event_damage() -> void:  # T9-P4 applied
-	var heat: Dictionary = {}
-	for ev in Catalog.load_default().events:
-		if String(ev["id"]) == "heat_wave":
-			heat = ev
+func test_scaled_crisis_damage() -> void:  # T9-P4 applied
 	var rs := RunState.new_run(WorldGen.generate(11, true), Catalog.load_default(), [])
 	rs.happiness = 100.0
 	rs.adapt = 60.0  # R = 100 => mult 0.5
 	rs.money = 500.0
-	var rec := TurnRecord.new()
-	rs._apply_event(heat, SocietyCalc.damage_mult(rs.happiness, rs.adapt), rec)
-	var damages: Dictionary = rec.events[0]["damages"]
+	var crisis := _forced_crisis(rs, "heat_wave", rs.world[3])
+	rs._apply_crisis_hit(crisis, SocietyCalc.damage_mult(rs.happiness, rs.adapt))
+	var damages: Dictionary = crisis["damages"]
 	eq(float(damages["money"]), 10.0, "heat money damage halved at R=100")
 	eq(float(damages["happiness"]), 1.5, "heat happiness damage halved at R=100")

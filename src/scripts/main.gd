@@ -21,6 +21,7 @@ var _mode := Mode.PLAY
 var _selected_region: StringName = &""
 var _targeting_card: StringName = &""
 var _pass_armed := false
+var _abandon_armed: StringName = &""
 var _suppress_banners := false
 
 
@@ -75,6 +76,7 @@ func _build_scene() -> void:
 	tray = CardTray.new()
 	hud_layer.add_child(tray)
 	tray.card_chosen.connect(_on_card_chosen)
+	tray.project_chosen.connect(_on_project_chosen)
 	tray.pass_chosen.connect(_on_pass_chosen)
 	banners = BannerLayer.new()
 	hud_layer.add_child(banners)
@@ -129,16 +131,21 @@ func _start_run(seed_value: int) -> void:
 	rs.card_played.connect(_on_card_played)
 	rs.year_advanced.connect(_on_year_advanced)
 	rs.event_struck.connect(_on_event_struck)
+	rs.crisis_answered.connect(_on_crisis_answered)
+	rs.combo_triggered.connect(_on_combo_triggered)
+	rs.card_unlocked.connect(_on_card_unlocked)
+	rs.project_changed.connect(_on_project_changed)
 	rs.warming_band_changed.connect(_on_band_changed)
 	rs.ally_changed.connect(_on_ally_changed)
 	rs.run_ended.connect(_on_run_ended)
 
 	board.bind_world(rs)
-	tray.build(rs.catalog)
+	tray.build(rs)
 	tray.refresh(rs)
 	top_bar.refresh(rs)
 	dock.clear_log()
 	dock.clear_region()
+	dock.show_crises(rs)
 	banners.skip_all()
 	vignette.set_band(rs.warming_band())
 	end_screen.visible = false
@@ -200,7 +207,7 @@ func _on_advance_pressed() -> void:
 		Mode.PLAY:
 			banners.skip_all()  # double-Space skips the beat replay
 			var rs := sim.run_state
-			if not rs.action_taken and not _pass_armed:
+			if rs.cards_played_this_turn() == 0 and not _pass_armed:
 				_pass_armed = true
 				_update_prompt()
 				return
@@ -237,11 +244,39 @@ func _on_card_chosen(card_id: StringName) -> void:
 func _on_pass_chosen() -> void:
 	if _mode != Mode.PLAY or hub.visible or sim.run_state == null:
 		return
-	if sim.run_state.action_taken:
-		return
 	banners.skip_all()
 	sim.run_state.resolve_year()
 	_pass_armed = false
+	_update_prompt()
+
+
+func _on_project_chosen(project_id: StringName) -> void:
+	if _mode != Mode.PLAY or hub.visible or sim.run_state == null:
+		return
+	var rs := sim.run_state
+	var is_active := false
+	for ps in rs.active_projects:
+		if ps.id == project_id:
+			is_active = true
+	if is_active:
+		# Two-click abandon confirm (commitment must never break by accident).
+		if _abandon_armed == project_id:
+			_abandon_armed = &""
+			rs.abandon_project(project_id)
+		else:
+			_abandon_armed = project_id
+			top_bar.set_prompt("Abandon %s? Click it again to confirm (costs trust)"
+				% rs.catalog.project(project_id).get("name", String(project_id)))
+		return
+	_abandon_armed = &""
+	var reason := rs.can_start_project_reason(project_id)
+	if reason != &"ok":
+		top_bar.set_prompt("Cannot launch: " + _reason_text(reason))
+		return
+	rs.start_project(project_id)
+	tray.refresh(rs)
+	top_bar.refresh(rs)
+	tutorial.notify(&"project_started")
 	_update_prompt()
 
 
@@ -301,6 +336,10 @@ func _tutorial_anchor(target: StringName) -> Rect2:
 			return top_bar.carbon_label.get_global_rect()
 		&"card_tray":
 			return tray.get_global_rect()
+		&"crisis_bar":
+			return dock.crisis_rect()
+		&"project_column":
+			return tray.project_column_rect()
 		&"log_dock":
 			return dock.get_global_rect()
 		&"prompt":
@@ -326,12 +365,13 @@ func _on_card_played(card_id: StringName, accepted: bool) -> void:
 		top_bar.refresh(rs)
 		tray.refresh(rs)
 		board.refresh(rs)
+		dock.show_crises(rs)
 		if _selected_region != &"":
 			dock.show_region(rs, _selected_region)
 		debug_overlay.refresh()
 		tutorial.notify(&"card_played")
 	else:
-		top_bar.set_prompt("Cannot enact: " + _reason_text(rs.can_play_reason(card_id)))
+		top_bar.set_prompt("Cannot play: " + _reason_text(rs.can_play_reason(card_id)))
 		return
 	_update_prompt()
 
@@ -342,19 +382,60 @@ func _on_year_advanced(rec: TurnRecord) -> void:
 	tray.refresh(rs)
 	board.refresh(rs)
 	dock.append_log(rec.year, rec.log_lines)
+	dock.show_crises(rs)
 	if _selected_region != &"":
 		dock.show_region(rs, _selected_region)
 	if not _suppress_banners:
-		for ev in rec.events:
-			var hit_line := rs._event_hit_line(ev)
-			banners.push("damage", hit_line)
-			if ev["opportunity"] != &"":
-				banners.push("opportunity", LogFormatter.render("events", String(ev["id"]) + "_opp"))
+		for crisis in rec.crises:
+			if crisis["answered"] or crisis["kind"] == "opportunity":
+				continue  # answered beats already played at answer time
+			banners.push("damage", rs._crisis_hit_line(crisis))
+			if crisis.get("opportunity", &"") != &"":
+				banners.push("opportunity", LogFormatter.render("events", String(crisis["id"]) + "_opp"))
 		for fb in rec.feedbacks:
 			banners.push("interstitial", LogFormatter.render("events", String(fb) + "_hit"))
 	debug_overlay.refresh()
 	tutorial.notify(&"year_advanced")
 	_update_prompt()
+
+
+func _on_crisis_answered(crisis_id: StringName, _card_id: StringName) -> void:
+	var rs := sim.run_state
+	dock.show_crises(rs)
+	if not _suppress_banners:
+		banners.push("opportunity", rs.crisis_answered_line(crisis_id))
+
+
+func _on_combo_triggered(_combo_id: StringName, _chain: int, _mult: float) -> void:
+	var rs := sim.run_state
+	if not _suppress_banners and not rs.turn_combos().is_empty():
+		banners.push("combo", rs.combo_line(rs.turn_combos().back()))
+
+
+func _on_card_unlocked(card_id: StringName) -> void:
+	var rs := sim.run_state
+	tray.build(rs)
+	tray.refresh(rs)
+	if not _suppress_banners:
+		banners.push("hope", LogFormatter.render("system", "card_unlocked", {
+			"name": rs.catalog.card(card_id).get("name", String(card_id)),
+		}))
+
+
+func _on_project_changed(project_id: StringName, status: StringName) -> void:
+	var rs := sim.run_state
+	tray.refresh(rs)
+	top_bar.refresh(rs)
+	if _suppress_banners:
+		return
+	var pname: String = rs.catalog.project(project_id).get("name", String(project_id))
+	match status:
+		&"completed":
+			banners.push("hope", "PROJECT COMPLETE: %s - its promise is now permanent." % pname)
+		&"failed":
+			banners.push("damage", "Project collapses unpaid: %s. Partners remember." % pname)
+		&"abandoned":
+			banners.push("damage", "Project abandoned: %s. Trust is spent." % pname)
 
 
 func _on_event_struck(_event_id: StringName, region_id: StringName, opportunity: StringName) -> void:
@@ -422,11 +503,16 @@ func _reason_text(reason: StringName) -> String:
 	match reason:
 		&"no_money": return "not enough money"
 		&"no_influence": return "not enough influence"
+		&"no_happiness": return "not enough happiness"
 		&"locked_allies": return "needs more allies"
 		&"capped": return "sector at its cap - play a sufficiency policy"
 		&"media_active": return "already active"
 		&"no_target": return "no neutral nation left"
-		&"action_taken": return "one policy per year - Space to resolve"
+		&"turn_limit": return "five cards a year is the limit - Space to resolve"
+		&"max_active": return "two projects at once is the limit"
+		&"already_active": return "already under way"
+		&"already_done": return "concluded this run"
+		&"resolving": return "the year is resolving"
 		&"ended": return "the run is over"
 	return String(reason)
 
@@ -440,9 +526,10 @@ func _update_prompt() -> void:
 		Mode.TARGETING:
 			top_bar.set_prompt("Choose a partner nation - click a highlighted region (Esc cancels)")
 		Mode.PLAY:
+			var rs := sim.run_state
 			if _pass_armed:
 				top_bar.set_prompt("Resolve without acting? Space again to confirm")
-			elif sim.run_state.action_taken:
-				top_bar.set_prompt("Space - resolve the year")
 			else:
-				top_bar.set_prompt("Pick one policy for %d, then Space  |  H knowledge  F3 debug" % sim.run_state.year)
+				var open_count := rs.unanswered_crises().size()
+				top_bar.set_prompt("%d - %d/%d cards played, %d crises open  |  Space resolves  H knowledge  F3 debug" % [
+					rs.year, rs.cards_played_this_turn(), int(Tuning.s("MAX_CARDS_PER_TURN")), open_count])

@@ -9,6 +9,7 @@ var money_label: Label
 var carbon_label: Label
 var happiness_label: Label
 var influence_label: Label
+var chain_label: Label
 var prompt_label: Label
 var gauge: WarmingGauge
 var seed_label: Label
@@ -39,6 +40,8 @@ func _ready() -> void:
 	happiness_label.tooltip_text = "Happiness: wellbeing and social acceptance.\nBelow 40: income x0.75 and social crises. Below 25: income x0.5."
 	influence_label = _big_label(row, "", Color("c6a8e0"))
 	influence_label.tooltip_text = "Influence and allies. Allies add +20 money and +1 influence yearly.\nSpent on alliances (25) and joint projects (15)."
+	chain_label = _big_label(row, "", Color("e8d48a"))
+	chain_label.tooltip_text = "Combo chain: every combo grows it, a comboless year shrinks it.\nEach chain step adds +10% to combo rewards (up to +100%)."
 
 	gauge = WarmingGauge.new()
 	row.add_child(gauge)
@@ -86,6 +89,8 @@ func refresh(rs: RunState) -> void:
 	carbon_label.text = "E %.1f | A %.1f | net %+.1f" % [e, rs.absorption, n]
 	happiness_label.text = "Happiness %d" % roundi(rs.happiness)
 	influence_label.text = "Influence %d | Allies %d" % [roundi(rs.influence), rs.allies]
+	chain_label.text = "Chain x%d (+%d%%)" % [rs.combo_chain,
+		roundi((SocietyCalc.combo_mult(rs.combo_chain) - 1.0) * 100.0)]
 	gauge.set_temp(rs.temp, rs.warming_band())
 	seed_label.text = "seed %d" % rs.run_seed
 

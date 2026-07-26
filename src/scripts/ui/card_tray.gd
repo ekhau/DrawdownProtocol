@@ -1,19 +1,25 @@
 class_name CardTray
 extends PanelContainer
-## The Policy Board: the full 15-card catalog every year, grouped by category,
-## plus the explicit "Bank funds" pass chip. Cards are NEVER hidden; every
-## blocked state shows its reason (docs/Phase_5/03 state matrix).
+## The Policy Board: the player's current card pool grouped by category, a
+## Projects column, and the explicit "End the year" chip. Available cards are
+## never hidden and every blocked state shows its reason (docs/Phase_5/03
+## state matrix); locked cards (deck growth) stay off the board until their
+## unlock moment - appearing IS the reward.
 
 signal card_chosen(card_id: StringName)
+signal project_chosen(project_id: StringName)
 signal pass_chosen
 
-const CATEGORY_ORDER := ["ind", "tra", "agr", "sink", "society", "diplomacy"]
+const CATEGORY_ORDER := ["ind", "tra", "agr", "sink", "society", "diplomacy", "response"]
 const CATEGORY_LABELS := {
 	"ind": "Industry", "tra": "Transport", "agr": "Agro-economy",
 	"sink": "Sinks", "society": "Society", "diplomacy": "Diplomacy",
+	"response": "Response",
 }
 
-var _chips: Dictionary = {}  # StringName -> Button
+var _chips: Dictionary = {}          # StringName -> Button (cards)
+var _project_chips: Dictionary = {}  # StringName -> Button
+var _project_col: VBoxContainer
 var _pass_chip: Button
 var _rs: RunState
 
@@ -35,10 +41,13 @@ func _ready() -> void:
 	offset_bottom = 0
 
 
-func build(catalog: Catalog) -> void:
+## Build chips for the run's AVAILABLE pool; called again on every unlock.
+func build(rs: RunState) -> void:
+	_rs = rs
 	for child in get_children():
 		child.queue_free()
 	_chips.clear()
+	_project_chips.clear()
 	var columns := HBoxContainer.new()
 	columns.add_theme_constant_override("separation", 10)
 	add_child(columns)
@@ -52,19 +61,39 @@ func build(catalog: Catalog) -> void:
 		header.add_theme_font_size_override("font_size", 12)
 		header.add_theme_color_override("font_color", Color("9aa694"))
 		col.add_child(header)
-		for card in catalog.cards:
+		for card in rs.available_cards():
 			if String(card["category"]) != cat:
 				continue
 			var chip := Button.new()
 			chip.alignment = HORIZONTAL_ALIGNMENT_LEFT
-			chip.add_theme_font_size_override("font_size", 12)
-			chip.custom_minimum_size = Vector2(0, 40)
+			chip.add_theme_font_size_override("font_size", 11)
+			chip.custom_minimum_size = Vector2(0, 38)
 			chip.focus_mode = Control.FOCUS_NONE  # Space must always mean "advance year"
 			var id := StringName(String(card["id"]))
 			chip.pressed.connect(func() -> void: card_chosen.emit(id))
 			col.add_child(chip)
 			_chips[id] = chip
-	# The explicit pass chip at the board's end.
+	# Projects column: five-year commitments with per-year upkeep.
+	_project_col = VBoxContainer.new()
+	_project_col.add_theme_constant_override("separation", 3)
+	_project_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	columns.add_child(_project_col)
+	var proj_header := Label.new()
+	proj_header.text = "Projects (5-yr)"
+	proj_header.add_theme_font_size_override("font_size", 12)
+	proj_header.add_theme_color_override("font_color", Color("e8d48a"))
+	_project_col.add_child(proj_header)
+	for project in rs.catalog.projects:
+		var chip := Button.new()
+		chip.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		chip.add_theme_font_size_override("font_size", 11)
+		chip.custom_minimum_size = Vector2(0, 38)
+		chip.focus_mode = Control.FOCUS_NONE
+		var pid := StringName(String(project["id"]))
+		chip.pressed.connect(func() -> void: project_chosen.emit(pid))
+		_project_col.add_child(chip)
+		_project_chips[pid] = chip
+	# The explicit end-of-year chip at the board's end.
 	var pass_col := VBoxContainer.new()
 	pass_col.add_theme_constant_override("separation", 3)
 	columns.add_child(pass_col)
@@ -74,12 +103,19 @@ func build(catalog: Catalog) -> void:
 	pass_header.add_theme_color_override("font_color", Color("9aa694"))
 	pass_col.add_child(pass_header)
 	_pass_chip = Button.new()
-	_pass_chip.text = "Bank funds\n(pass this year)"
+	_pass_chip.text = "End the year\n(bank funds)"
 	_pass_chip.add_theme_font_size_override("font_size", 12)
-	_pass_chip.custom_minimum_size = Vector2(120, 40)
+	_pass_chip.custom_minimum_size = Vector2(110, 40)
 	_pass_chip.focus_mode = Control.FOCUS_NONE
 	_pass_chip.pressed.connect(func() -> void: pass_chosen.emit())
 	pass_col.add_child(_pass_chip)
+
+
+## Tutorial spotlight anchor for the Projects column.
+func project_column_rect() -> Rect2:
+	if _project_col == null:
+		return Rect2()
+	return _project_col.get_global_rect()
 
 
 func refresh(rs: RunState) -> void:
@@ -91,14 +127,78 @@ func refresh(rs: RunState) -> void:
 		var cost := "%dM" % roundi(rs.effective_cost_money(id))
 		if float(card.get("cost_influence", 0)) > 0:
 			cost += " %dI" % int(card.get("cost_influence", 0))
+		if float(card.get("cost_happiness", 0)) > 0:
+			cost += " %dH" % int(card.get("cost_happiness", 0))
 		if rs.fire_discount and card.get("tags", []).has("restoration"):
 			cost += " (half price!)"
 		var line2 := _state_line(reason, card, rs)
-		chip.text = "%s  [%s]%s" % [card["name"], cost, ("\n" + line2) if not line2.is_empty() else "\n" + _effect_summary(card, rs)]
+		if line2.is_empty():
+			line2 = _effect_summary(card, rs)
+		chip.text = "%s  [%s]\n%s" % [card["name"], cost, line2]
 		chip.modulate = Color.WHITE if reason == &"ok" else Color(1, 1, 1, 0.45)
 		chip.tooltip_text = _build_tooltip(card, rs, reason)
+	for pid in _project_chips:
+		_refresh_project_chip(pid, rs)
 	if _pass_chip != null:
-		_pass_chip.modulate = Color.WHITE if not rs.action_taken and rs.phase == RunState.Phase.AWAIT_ACTION else Color(1, 1, 1, 0.45)
+		_pass_chip.modulate = Color.WHITE if rs.phase == RunState.Phase.AWAIT_ACTION else Color(1, 1, 1, 0.45)
+
+
+func _refresh_project_chip(pid: StringName, rs: RunState) -> void:
+	var chip: Button = _project_chips[pid]
+	var p := rs.catalog.project(pid)
+	var upkeep := "%dM" % roundi(float(p.get("upkeep_money", 0)))
+	if float(p.get("upkeep_influence", 0)) > 0:
+		upkeep += " %dI" % int(p.get("upkeep_influence", 0))
+	var status := String(rs.project_history.get(String(pid), ""))
+	var active_years := -1
+	for ps in rs.active_projects:
+		if ps.id == pid:
+			active_years = ps.years_left
+	if active_years >= 0:
+		chip.text = "%s\nACTIVE - %d yrs left (click to abandon)" % [p["name"], active_years]
+		chip.modulate = Color.WHITE
+	elif status == "completed":
+		chip.text = "%s\nCOMPLETED" % p["name"]
+		chip.modulate = Color(1, 1, 1, 0.45)
+	elif not status.is_empty():
+		chip.text = "%s\n%s" % [p["name"], status.to_upper()]
+		chip.modulate = Color(1, 1, 1, 0.45)
+	else:
+		var reason := rs.can_start_project_reason(pid)
+		chip.text = "%s  [%s/yr x%dy]\n%s" % [p["name"], upkeep, int(p.get("years", 5)),
+			_project_state_line(reason, p)]
+		chip.modulate = Color.WHITE if reason == &"ok" else Color(1, 1, 1, 0.45)
+	chip.tooltip_text = _project_tooltip(p, rs)
+
+
+func _project_state_line(reason: StringName, p: Dictionary) -> String:
+	match reason:
+		&"ok": return "Launch (pays first year now)"
+		&"no_money": return "Need %d money" % roundi(float(p.get("upkeep_money", 0)))
+		&"no_influence": return "Need %d influence" % roundi(float(p.get("upkeep_influence", 0)))
+		&"max_active": return "Two projects at once is the limit"
+		&"already_done": return "Concluded this run"
+		&"ended": return "The run is over"
+	return String(reason)
+
+
+func _project_tooltip(p: Dictionary, _rs: RunState) -> String:
+	var lines: PackedStringArray = []
+	lines.append("%s - a %d-year commitment" % [p["name"], int(p.get("years", 5))])
+	lines.append("Upkeep every year: %d money%s" % [roundi(float(p.get("upkeep_money", 0))),
+		(", %d influence" % int(p.get("upkeep_influence", 0))) if float(p.get("upkeep_influence", 0)) > 0 else ""])
+	var completion: Dictionary = p.get("completion", {})
+	for eff: Dictionary in completion.get("effects", []):
+		lines.append("On completion: %s" % String(eff.get("op", "")).replace("_", " "))
+	for key in completion.get("passive", {}):
+		lines.append("Permanent: %s +%s/yr" % [String(key).replace("_", " "),
+			LogFormatter.fmt(completion["passive"][key])])
+	var penalty: Dictionary = p.get("abandon_penalty", {})
+	lines.append("Abandon or fail to pay: -%s happiness, -%s influence" % [
+		LogFormatter.fmt(penalty.get("happiness", 0)), LogFormatter.fmt(penalty.get("influence", 0))])
+	if not String(p.get("flavor", "")).is_empty():
+		lines.append("\"%s\"" % p["flavor"])
+	return "\n".join(lines)
 
 
 ## Card state matrix: every state visible, every reason stated (doc 03).
@@ -110,8 +210,12 @@ func _state_line(reason: StringName, card: Dictionary, rs: RunState) -> String:
 			return "Need %d money (have %d)" % [roundi(rs.effective_cost_money(card["id"])), roundi(rs.money)]
 		&"no_influence":
 			return "Need %d influence (have %d)" % [int(card.get("cost_influence", 0)), roundi(rs.influence)]
+		&"no_happiness":
+			return "Need %d happiness (have %d)" % [int(card.get("cost_happiness", 0)), roundi(rs.happiness)]
 		&"locked_allies":
 			return "Needs %d allies (have %d)" % [int(card.get("requires", {}).get("allies_min", 0)), rs.allies]
+		&"turn_limit":
+			return "Five cards a year is the limit - Space to resolve"
 		&"capped":
 			var sector_name := ""
 			for eff in card.get("effects", []):
@@ -122,15 +226,11 @@ func _state_line(reason: StringName, card: Dictionary, rs: RunState) -> String:
 			return "Active since it was funded"
 		&"no_target":
 			return "Every nation is with you" if rs.allies >= 6 else "No neutral nation left"
-		&"action_taken":
-			return "Enacted this year" if rs.records.size() >= 0 and _was_played_this_year(card, rs) else "Year resolved - Space to advance"
+		&"resolving":
+			return "Resolving..."
 		&"ended":
 			return "The run is over"
 	return String(reason)
-
-
-func _was_played_this_year(card: Dictionary, rs: RunState) -> bool:
-	return rs._pending_action.get("action", &"") == StringName(String(card["id"]))
 
 
 func _effect_summary(card: Dictionary, rs: RunState) -> String:
@@ -160,6 +260,20 @@ func _effect_summary(card: Dictionary, rs: RunState) -> String:
 				parts.append("Media: waives sufficiency costs")
 			"ally":
 				parts.append("+1 ally (+20M +1I yearly)")
+	var rewards: Dictionary = card.get("rewards", {})
+	if not rewards.is_empty():
+		var gains: PackedStringArray = []
+		for key in ["money", "influence", "happiness", "knowledge"]:
+			if float(rewards.get(key, 0)) > 0:
+				gains.append("+%s%s" % [LogFormatter.fmt(rewards[key]),
+					{"money": "M", "influence": "I", "happiness": "H", "knowledge": "K"}[key]])
+		parts.append("-> " + " ".join(gains))
+	var combo_tags: PackedStringArray = []
+	for tag in card.get("tags", []):
+		if DataValidator.COMBO_TAGS.has(String(tag)):
+			combo_tags.append(String(tag))
+	if combo_tags.size() > 0:
+		parts.append("[%s]" % "/".join(combo_tags))
 	return ", ".join(parts)
 
 
@@ -168,9 +282,19 @@ func _build_tooltip(card: Dictionary, rs: RunState, reason: StringName) -> Strin
 	lines.append("%s [%s]" % [card["name"], card["id"]])
 	if card.get("tags", []).has("sufficiency"):
 		lines.append("SUFFICIENCY - lifts this sector's ceiling from 70% to 100%")
-	lines.append("Cost: %d money%s" % [roundi(rs.effective_cost_money(card["id"])),
-		(", %d influence" % int(card.get("cost_influence", 0))) if float(card.get("cost_influence", 0)) > 0 else ""])
+	var cost_line := "Cost: %d money" % roundi(rs.effective_cost_money(card["id"]))
+	if float(card.get("cost_influence", 0)) > 0:
+		cost_line += ", %d influence" % int(card.get("cost_influence", 0))
+	if float(card.get("cost_happiness", 0)) > 0:
+		cost_line += ", %d happiness" % int(card.get("cost_happiness", 0))
+	lines.append(cost_line)
 	lines.append(_effect_summary(card, rs))
+	var combo_tags: PackedStringArray = []
+	for tag in card.get("tags", []):
+		if DataValidator.COMBO_TAGS.has(String(tag)):
+			combo_tags.append(String(tag))
+	if combo_tags.size() > 0:
+		lines.append("Tags (answer crises, build combos): " + ", ".join(combo_tags))
 	# Projected post-play values for sector cards (forecast, pillar 1).
 	for eff: Dictionary in card.get("effects", []):
 		if String(eff.get("op", "")) == "sector_progress":

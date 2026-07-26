@@ -71,13 +71,13 @@ static func warming_delta(n: float) -> float:
 #         if band(temp) != band(t_prev): emit warming_band_changed(band(temp))
 ```
 
-`warming_band_changed` fires in **both directions** — Overshoot exit (Run A crosses back
-below 1.5 in 2091) is the visual payoff of the whole run; the vignette must lift.
+`warming_band_changed` fires in **both directions** — Overshoot exit (winners cross back
+below 1.5 mid-century) is the visual payoff of the whole run; the vignette must lift.
 
-## Step 7 — one-time feedback loops (after events, using post-event state)
+## Step 7 — one-time feedback loops (after the crisis strikes, using post-strike state)
 
 ```gdscript
-# fires counter includes any fire from THIS year's step 6 (Phase 1 contract)
+# fires counter includes any UNANSWERED fire from THIS year's step 6 (Phase 1 contract)
 if not permafrost and temp >= PERMAFROST_T:
     permafrost = true;  e_extra += PERMAFROST_DE          # log: "Permafrost methane release"
 if not ocean_weak and temp >= OCEAN_T:
@@ -102,7 +102,7 @@ retroactively change this year's N (already used for dT).
 |---|---|
 | All sectors 0%, `e_extra 0` | E = 50.0 (canonical bases 20/15/15) |
 | All sectors 100% | E = 5.0 |
-| ind 70, tra 70, agr 70 | E = 18.5 (the Run B plateau) |
+| ind 70, tra 70, agr 70 | E = 18.5 (the tech-cap plateau) |
 | N = +30 | dT = +0.030 |
 | N = −20 | dT = −0.005 |
 | T 1.49 / 1.50 / 1.74 / 1.75 | band 0 / 1 / 1 / 2 |

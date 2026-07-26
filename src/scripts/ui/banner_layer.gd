@@ -40,7 +40,7 @@ func _ready() -> void:
 	_panel.add_child(_label)
 
 
-## kind: "damage" | "opportunity" | "interstitial" | "hope"
+## kind: "damage" | "opportunity" | "interstitial" | "hope" | "combo"
 func push(kind: String, text: String) -> void:
 	_queue.append({"kind": kind, "text": text})
 	if not _showing:
@@ -65,6 +65,7 @@ func _next() -> void:
 		"opportunity": color = "a0d890"
 		"interstitial": color = "f2c894"
 		"hope": color = "b8e8b0"
+		"combo": color = "e8d48a"
 	_style.border_color = Color(color)
 	_style.set_border_width_all(2)
 	_label.text = "[color=#%s]%s[/color]" % [color, String(beat["text"]).replace("[", "[lb]")]

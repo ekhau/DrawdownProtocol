@@ -1,6 +1,6 @@
 # Design Pillars — The Drawdown Protocol
 
-Five pillars. Every feature in the MVP scope table maps to at least one of them
+Six pillars. Every feature in the MVP scope table maps to at least one of them
 (see `03_MVP_Scope.md`, "Pillar" column). If a proposed feature maps to none, it is cut —
 that is the Phase 0 done criterion, applied as a standing rule.
 
@@ -19,12 +19,18 @@ thermometer. The player must always be able to answer "why did that number move?
 
 ## 2. Every Crisis Is a Door
 
-Events stress-test the system, but each one carries an opportunity rider. Fear is real;
-despair is never the designed response.
+Three events land every year — the central pressure of the turn — but each is answerable
+with the right card, and each pays back competence. What goes unanswered still carries an
+opportunity rider. Fear is real; despair is never the designed response.
 
+- **Include:** visible response tags on every drawn crisis; containment plus a reward for
+  answering; response cards that make aid a real strategy.
 - **Include:** post-fire "rebuild better" discount on restoration cards; post-flood free
-  transport rebuild; social crisis opening a one-time window for a sufficiency policy.
-- **Include:** Overshoot escalation past +1.5 °C so pressure rises exactly when the science says it does.
+  transport rebuild; social crisis opening a one-time window for a sufficiency policy —
+  the doors that open when a crisis actually strikes.
+- **Include:** Overshoot escalation past +1.5 °C (heavier crisis draw weights) so pressure
+  rises exactly when the science says it does; opportunity events that thin out as the
+  world heats.
 - **Reject:** pure-punishment events with no follow-up choice; permanent unavoidable
   death-spirals; doomer flavor text; events that undo an hour of play with one roll.
 
@@ -59,3 +65,19 @@ Drawdown, EAT-Lancet). The game argues through systems, never through lecture te
 - **Reject:** silver-bullet cards (fusion, "fix-everything" geoengineering); climate-denial
   both-sidesism; moralizing pop-ups; numbers chosen for drama that contradict the sources
   without a written assumption (see `../Phase_1/06_Assumptions.md`).
+
+## 6. Answer, Combine, Commit
+
+The turn is a tactical puzzle with three time horizons: answer this year's crises,
+combine cards into combos that compound, commit to projects that pay off in five years.
+The fun is feeling all three click at once.
+
+- **Include:** multi-card years bound by resources (never by an arbitrary one-action
+  rule); combos that fire instantly with a visible banner and an escalating chain
+  multiplier; five-year projects whose completion is a permanent power and whose
+  abandonment costs trust; deck growth as the reward for playing well.
+- **Include:** cards that pay resources back, so a well-built turn feels generative,
+  not merely spent.
+- **Reject:** combos that need a lookup table to understand (two to four named tags,
+  always visible on the cards); hidden synergy math; projects that can be dropped
+  without consequence; unlocks handed out by time instead of deeds.

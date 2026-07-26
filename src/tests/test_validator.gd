@@ -1,6 +1,6 @@
 extends TestBase
 ## T1-P5 (shipped catalogs pass) and T2-P5 (mutation suite: broken variants
-## are rejected with the right rule id).
+## are rejected with the right rule id) over the crisis/combo/project schema.
 
 
 func _docs() -> Dictionary:
@@ -10,21 +10,22 @@ func _docs() -> Dictionary:
 		"knowledge": JSON.parse_string(FileAccess.get_file_as_string("res://data/knowledge.json")),
 		"templates": JSON.parse_string(FileAccess.get_file_as_string("res://data/log_templates.json")),
 		"tutorial": JSON.parse_string(FileAccess.get_file_as_string("res://data/tutorial.json")),
+		"combos": JSON.parse_string(FileAccess.get_file_as_string("res://data/combos.json")),
+		"projects": JSON.parse_string(FileAccess.get_file_as_string("res://data/projects.json")),
 	}
 
 
 func _validate(d: Dictionary) -> DataValidator:
 	var v := DataValidator.new()
-	v.validate_all(d["cards"], d["events"], d["knowledge"], d["templates"], d["tutorial"])
+	v.validate_all(d["cards"], d["events"], d["knowledge"], d["templates"],
+		d["tutorial"], d["combos"], d["projects"])
 	return v
 
 
 func test_shipped_catalogs_pass() -> void:  # T1-P5
 	var v := _validate(_docs())
 	eq(v.errors.size(), 0, "zero errors on shipped catalogs: %s" % "; ".join(v.errors))
-	eq(v.warnings.size(), 1, "exactly the documented warning set")
-	check(v.warnings.size() == 1 and v.warnings[0].begins_with("E7"),
-		"the one warning is heat_wave E7 (no opportunity rider)")
+	eq(v.warnings.size(), 0, "zero warnings on shipped catalogs: %s" % "; ".join(v.warnings))
 
 
 func _expect_rule(v: DataValidator, rule: String, msg: String) -> void:
@@ -33,6 +34,14 @@ func _expect_rule(v: DataValidator, rule: String, msg: String) -> void:
 		if e.begins_with(rule):
 			found = true
 	check(found, "%s (errors: %s)" % [msg, "; ".join(v.errors)])
+
+
+func _expect_warning(v: DataValidator, rule: String, msg: String) -> void:
+	var found := false
+	for w in v.warnings:
+		if w.begins_with(rule):
+			found = true
+	check(found, "%s (warnings: %s)" % [msg, "; ".join(v.warnings)])
 
 
 func test_mutation_duplicate_card_id() -> void:
@@ -74,7 +83,7 @@ func test_mutation_sufficiency_mismatch() -> void:
 	# TRA1 lifts cap; remove its tag.
 	for c in d["cards"]["cards"]:
 		if c["id"] == "TRA1":
-			c["tags"] = []
+			c["tags"] = ["mobility", "health"]
 	_expect_rule(_validate(d), "C6", "lifts_cap without sufficiency tag rejected (C6)")
 
 
@@ -85,17 +94,38 @@ func test_mutation_long_name() -> void:
 	_expect_rule(_validate(d), "C2", "over-long name rejected (C2)")
 
 
-func test_mutation_decreasing_probabilities() -> void:
+func test_mutation_bad_reward_key() -> void:
+	var d := _docs()
+	d["cards"] = d["cards"].duplicate(true)
+	d["cards"]["cards"][0]["rewards"] = {"reputation": 5}
+	_expect_rule(_validate(d), "C10", "unknown reward key rejected (C10)")
+
+
+func test_mutation_bad_unlock() -> void:
+	var d := _docs()
+	d["cards"] = d["cards"].duplicate(true)
+	d["cards"]["cards"][0]["unlock"] = {"kind": "moon_landing", "count": 1}
+	_expect_rule(_validate(d), "C11", "unknown unlock kind rejected (C11)")
+
+
+func test_mutation_unknown_tag() -> void:
+	var d := _docs()
+	d["cards"] = d["cards"].duplicate(true)
+	d["cards"]["cards"][0]["tags"] = ["vibes"]
+	_expect_rule(_validate(d), "C12", "unknown tag rejected (C12)")
+
+
+func test_mutation_decreasing_crisis_weights() -> void:
 	var d := _docs()
 	d["events"] = d["events"].duplicate(true)
-	d["events"]["events"][0]["probabilities"] = [0.40, 0.25, 0.10]
-	_expect_rule(_validate(d), "E3", "decreasing probabilities rejected (E3)")
+	d["events"]["events"][0]["weights"] = [2.0, 1.0, 0.5]
+	_expect_rule(_validate(d), "E3", "decreasing crisis weights rejected (E3)")
 
 
 func test_mutation_bad_target_tag() -> void:
 	var d := _docs()
 	d["events"] = d["events"].duplicate(true)
-	d["events"]["events"][1]["target"]["tags_any"] = ["volcanic"]
+	d["events"]["events"][2]["target"]["tags_any"] = ["volcanic"]
 	_expect_rule(_validate(d), "E4", "unknown target tag rejected (E4)")
 
 
@@ -106,10 +136,19 @@ func test_mutation_unknown_damage() -> void:
 	_expect_rule(_validate(d), "E5", "unknown damage key rejected (E5)")
 
 
+func test_mutation_opportunity_with_damages() -> void:
+	var d := _docs()
+	d["events"] = d["events"].duplicate(true)
+	for e in d["events"]["events"]:
+		if e["id"] == "climate_summit":
+			e["damages"] = {"money": 10}
+	_expect_rule(_validate(d), "E5", "opportunity with damages rejected (E5)")
+
+
 func test_mutation_unknown_flag() -> void:
 	var d := _docs()
 	d["events"] = d["events"].duplicate(true)
-	d["events"]["events"][1]["opportunity"] = {"set_flag": "mystery_bonus", "teaser": "?"}
+	d["events"]["events"][2]["opportunity"] = {"set_flag": "mystery_bonus", "teaser": "?"}
 	_expect_rule(_validate(d), "E6", "unknown consumable flag rejected (E6)")
 
 
@@ -118,6 +157,100 @@ func test_mutation_duplicate_order() -> void:
 	d["events"] = d["events"].duplicate(true)
 	d["events"]["events"][1]["order"] = 10
 	_expect_rule(_validate(d), "E1", "duplicate event order rejected (E1)")
+
+
+func test_mutation_missing_response() -> void:
+	var d := _docs()
+	d["events"] = d["events"].duplicate(true)
+	d["events"]["events"][0].erase("response")
+	_expect_rule(_validate(d), "E9", "crisis without a response rejected (E9)")
+
+
+func test_mutation_unanswerable_crisis() -> void:
+	var d := _docs()
+	d["events"] = d["events"].duplicate(true)
+	d["cards"] = d["cards"].duplicate(true)
+	# Make drought's only answer a tag that exists solely on an unlockable card.
+	for c in d["cards"]["cards"]:
+		if not c.has("unlock") and (c["tags"] as Array).has("water"):
+			c["tags"].erase("water")
+	d["events"]["events"][0]["response"] = {"tags_any": ["water"], "rewards": {}}
+	_expect_rule(_validate(d), "E10", "crisis unanswerable at run start rejected (E10)")
+
+
+func test_mutation_feedback_with_weights() -> void:
+	var d := _docs()
+	d["events"] = d["events"].duplicate(true)
+	for e in d["events"]["events"]:
+		if e["id"] == "permafrost_methane":
+			e["weights"] = [0.1, 0.1, 0.1]
+	_expect_rule(_validate(d), "E2", "feedback with weights rejected (E2)")
+
+
+func test_mutation_combo_single_tag() -> void:
+	var d := _docs()
+	d["combos"] = d["combos"].duplicate(true)
+	d["combos"]["combos"][0]["tags_required"] = ["energy"]
+	_expect_rule(_validate(d), "CB2", "single-tag combo rejected (CB2)")
+
+
+func test_mutation_combo_unknown_tag() -> void:
+	var d := _docs()
+	d["combos"] = d["combos"].duplicate(true)
+	d["combos"]["combos"][0]["tags_required"] = ["energy", "vibes"]
+	_expect_rule(_validate(d), "CB2", "unknown combo tag rejected (CB2)")
+
+
+func test_mutation_combo_no_payoff() -> void:
+	var d := _docs()
+	d["combos"] = d["combos"].duplicate(true)
+	d["combos"]["combos"][0]["rewards"] = {}
+	d["combos"]["combos"][0]["effects"] = []
+	_expect_rule(_validate(d), "CB3", "payoff-free combo rejected (CB3)")
+
+
+func test_mutation_combo_forbidden_op() -> void:
+	var d := _docs()
+	d["combos"] = d["combos"].duplicate(true)
+	d["combos"]["combos"][0]["effects"] = [{"op": "ally"}]
+	_expect_rule(_validate(d), "CB4", "ally op in combo rejected (CB4)")
+
+
+func test_mutation_combo_single_card_coverage() -> void:
+	var d := _docs()
+	d["combos"] = d["combos"].duplicate(true)
+	# TRA1 carries mobility+health: a combo needing exactly those is a one-card combo.
+	d["combos"]["combos"][0]["tags_required"] = ["mobility", "health"]
+	_expect_warning(_validate(d), "CB5", "single-card combo coverage warned (CB5)")
+
+
+func test_mutation_project_years_range() -> void:
+	var d := _docs()
+	d["projects"] = d["projects"].duplicate(true)
+	d["projects"]["projects"][0]["years"] = 1
+	_expect_rule(_validate(d), "PR1", "1-year project rejected (PR1)")
+
+
+func test_mutation_project_free_upkeep() -> void:
+	var d := _docs()
+	d["projects"] = d["projects"].duplicate(true)
+	d["projects"]["projects"][0]["upkeep_money"] = 0
+	d["projects"]["projects"][0]["upkeep_influence"] = 0
+	_expect_rule(_validate(d), "PR1", "free project rejected (PR1)")
+
+
+func test_mutation_project_unknown_passive() -> void:
+	var d := _docs()
+	d["projects"] = d["projects"].duplicate(true)
+	d["projects"]["projects"][0]["completion"]["passive"] = {"win_button": 1}
+	_expect_rule(_validate(d), "PR2", "unknown passive rejected (PR2)")
+
+
+func test_mutation_project_missing_penalty() -> void:
+	var d := _docs()
+	d["projects"] = d["projects"].duplicate(true)
+	d["projects"]["projects"][0].erase("abandon_penalty")
+	_expect_rule(_validate(d), "PR3", "missing abandon penalty rejected (PR3)")
 
 
 func test_mutation_knowledge_unknown_card() -> void:
@@ -170,23 +303,33 @@ func test_mutation_missing_template() -> void:
 	var d := _docs()
 	d["templates"] = d["templates"].duplicate(true)
 	d["templates"]["events"].erase("heat_wave_hit")
-	_expect_rule(_validate(d), "T1", "missing event template rejected (T1)")
+	_expect_rule(_validate(d), "T1", "missing crisis template rejected (T1)")
+	d = _docs()
+	d["templates"] = d["templates"].duplicate(true)
+	d["templates"]["events"].erase("climate_summit_seized")
+	_expect_rule(_validate(d), "T1", "missing opportunity template rejected (T1)")
+	d = _docs()
+	d["templates"] = d["templates"].duplicate(true)
+	d["templates"]["system"].erase("combo")
+	_expect_rule(_validate(d), "T1", "missing combo template rejected (T1)")
 
 
 func test_additive_card_is_regression_free() -> void:  # T10-P5
-	# Append a dummy 16th card via the authoring template: fixtures must not move.
+	# Append a dummy card via the authoring template: fixtures must not move.
 	var baseline := _fixture_lines()
 	var cards_doc: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/cards.json"))
 	cards_doc = cards_doc.duplicate(true)
 	cards_doc["cards"].append({
-		"id": "SOC3", "name": "Dummy Test Card", "category": "society",
+		"id": "SOC9", "name": "Dummy Test Card", "category": "society",
 		"cost_money": 10, "cost_influence": 0, "requires": {}, "tags": [],
 		"effects": [{"op": "wellbeing", "amount": 1}],
 	})
 	var cat := Catalog.new()
 	cat._load_from(cards_doc,
 		JSON.parse_string(FileAccess.get_file_as_string("res://data/events.json")),
-		JSON.parse_string(FileAccess.get_file_as_string("res://data/knowledge.json")))
+		JSON.parse_string(FileAccess.get_file_as_string("res://data/knowledge.json")),
+		JSON.parse_string(FileAccess.get_file_as_string("res://data/combos.json")),
+		JSON.parse_string(FileAccess.get_file_as_string("res://data/projects.json")))
 	var with_dummy := _fixture_lines_with_catalog(cat)
 	eq(baseline, with_dummy, "adding an unused card leaves the seed-2030 fixtures byte-identical")
 
@@ -203,9 +346,6 @@ func _fixture_lines_with_catalog(cat: Catalog) -> String:
 		var guard := 100
 		while rs.phase != RunState.Phase.ENDED and guard > 0:
 			guard -= 1
-			var choice := Strategies.decide(strat, rs)
-			if choice["card"] != &"pass":
-				rs.play_card(choice["card"], choice["target"])
-			rs.resolve_year()
+			Strategies.play_turn(strat, rs)
 		out.append(BatchRunsTool.csv_row(2030, strat, rs))
 	return "\n".join(out)

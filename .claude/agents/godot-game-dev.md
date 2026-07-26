@@ -100,6 +100,7 @@ Key game pillars to respect in every design and implementation decision:
    the fun, with clear extension points — prototype first, polish once validated.
 6. **Explain tradeoffs.** When multiple approaches exist (e.g. TileMap custom data vs.
    a separate grid model), recommend one and say why in one or two sentences.
+7. **Follow game designer golden rules** (docs/Golden_Rules.md): cut, don't half-build; avoid dominant strategies; keep the sim deterministic and data-driven; make the player feel their choices matter.
 
 Your final report back should state what you designed/changed, which files were touched,
 how it was verified, and any balance or design implications the main conversation

@@ -1,153 +1,130 @@
 # Card Catalog Data — The Drawdown Protocol (Phase 5)
 
-The complete content of `data/cards.json` and `data/knowledge.json`: every card from
-`../Phase_1/04_Policy_Effect_Matrix.md` expressed in the `../Phase_4/02` resolver schema.
-This file is the content-pipeline deliverable (golden rule 15): the JSON below is the
-authoritative first version, followed by the authoring template and conventions for
-adding cards without touching code (golden rule 9).
+The content of `data/cards.json`, `data/combos.json`, `data/projects.json` and
+`data/knowledge.json`: every card from `../Phase_1/04_Policy_Effect_Matrix.md` expressed
+in the `../Phase_4/02` resolver schema, plus the combo and project catalogs the
+crisis-response loop adds. This file is the content-pipeline deliverable (golden
+rule 15): schema, authoring templates, and conventions for adding content without
+touching code (golden rule 9). The shipped JSON in `src/data/` is the authoritative
+version; the tables in `../Phase_1/04` mirror it for design review.
 
-**Card text is generated, never authored.** Cost chips and effect lines on cards render
-from these fields through the `../Phase_4/06` template system — a card can never display
-a number the sim will not apply (pillar 1). Only `name` and optional `flavor` are prose.
+**Card text is generated, never authored.** Cost chips, reward chips, tag lists and
+effect lines render from these fields through the `../Phase_4/06` template system — a
+card can never display a number the sim will not apply (pillar 1). Only `name` and
+optional `flavor` are prose.
 
-## `data/cards.json` (complete, 15 cards — Plan.md's 10–15 range, top end)
+## `data/cards.json` (schema_version 2 — 26 cards: 20 starting + 6 unlockable)
+
+Representative entries showing every schema feature:
 
 ```json
-{
-  "schema_version": 1,
-  "cards": [
-    { "id": "IND1", "name": "Industrial Efficiency", "category": "ind",
-      "cost_money": 80, "cost_influence": 0, "tags": [],
-      "effects": [ { "op": "sector_progress", "sector": "ind", "amount": 8, "lifts_cap": false } ] },
+{ "id": "TRA1", "name": "Rail & Bike Networks", "category": "tra",
+  "cost_money": 80, "cost_influence": 0, "tags": ["sufficiency", "mobility", "health"],
+  "flavor": "The fastest way through a city was never a car.",
+  "effects": [ { "op": "sector_progress", "sector": "tra", "amount": 8, "lifts_cap": true },
+               { "op": "happiness", "amount": 2, "waivable": false } ] }
 
-    { "id": "IND2", "name": "Clean Energy Grid", "category": "ind",
-      "cost_money": 150, "cost_influence": 0, "tags": [],
-      "effects": [ { "op": "sector_progress", "sector": "ind", "amount": 15, "lifts_cap": false } ] },
+{ "id": "RSP5", "name": "Grid Repair Crews", "category": "response",
+  "cost_money": 35, "cost_influence": 0, "tags": ["energy", "relief"],
+  "rewards": { "money": 15 },
+  "flavor": "Keep the lights on; keep the trust on.",
+  "effects": [ { "op": "adapt", "amount": 2 } ] }
 
-    { "id": "IND3", "name": "Circular Economy", "category": "ind",
-      "cost_money": 120, "cost_influence": 0, "tags": ["sufficiency"],
-      "effects": [ { "op": "sector_progress", "sector": "ind", "amount": 10, "lifts_cap": true },
-                   { "op": "happiness", "amount": 1, "waivable": false } ] },
-
-    { "id": "TRA1", "name": "Rail & Bike Networks", "category": "tra",
-      "cost_money": 80, "cost_influence": 0, "tags": ["sufficiency"],
-      "effects": [ { "op": "sector_progress", "sector": "tra", "amount": 10, "lifts_cap": true },
-                   { "op": "happiness", "amount": 2, "waivable": false } ] },
-
-    { "id": "TRA2", "name": "Affordable EVs", "category": "tra",
-      "cost_money": 140, "cost_influence": 0, "tags": [],
-      "effects": [ { "op": "sector_progress", "sector": "tra", "amount": 15, "lifts_cap": false } ] },
-
-    { "id": "TRA3", "name": "Walkable Cities", "category": "tra",
-      "cost_money": 60, "cost_influence": 0, "tags": ["sufficiency"],
-      "effects": [ { "op": "sector_progress", "sector": "tra", "amount": 8, "lifts_cap": true },
-                   { "op": "happiness", "amount": -3, "waivable": true } ] },
-
-    { "id": "AGR1", "name": "Plant-Rich Diet Campaign", "category": "agr",
-      "cost_money": 60, "cost_influence": 0, "tags": ["sufficiency"],
-      "effects": [ { "op": "sector_progress", "sector": "agr", "amount": 10, "lifts_cap": true },
-                   { "op": "happiness", "amount": -3, "waivable": true } ] },
-
-    { "id": "AGR2", "name": "Agroecology Transition", "category": "agr",
-      "cost_money": 100, "cost_influence": 0, "tags": [],
-      "effects": [ { "op": "sector_progress", "sector": "agr", "amount": 12, "lifts_cap": false },
-                   { "op": "sink_now", "amount": 0.2 } ] },
-
-    { "id": "SNK1", "name": "Reforestation Program", "category": "sink",
-      "cost_money": 70, "cost_influence": 0, "tags": ["restoration"],
-      "effects": [ { "op": "reforest", "per_year": 0.3, "years": 5 } ] },
-
-    { "id": "SNK2", "name": "Peatland & Ocean Restoration", "category": "sink",
-      "cost_money": 90, "cost_influence": 0, "tags": ["restoration"],
-      "effects": [ { "op": "reforest", "per_year": 0.2, "years": 5 },
-                   { "op": "adapt", "amount": 5 } ] },
-
-    { "id": "ADP1", "name": "Adaptation Infrastructure", "category": "society",
-      "cost_money": 90, "cost_influence": 0, "tags": [],
-      "effects": [ { "op": "adapt", "amount": 15 } ] },
-
-    { "id": "SOC1", "name": "Independent Media Fund", "category": "society",
-      "cost_money": 50, "cost_influence": 0, "tags": [],
-      "effects": [ { "op": "media" } ] },
-
-    { "id": "SOC2", "name": "Global Wellbeing Fund", "category": "society",
-      "cost_money": 100, "cost_influence": 0, "tags": [],
-      "effects": [ { "op": "wellbeing", "amount": 3 } ] },
-
-    { "id": "DIP1", "name": "Form Alliance", "category": "diplomacy",
-      "cost_money": 50, "cost_influence": 25, "tags": [],
-      "effects": [ { "op": "ally" } ] },
-
-    { "id": "DIP2", "name": "Joint Transition Project", "category": "diplomacy",
-      "cost_money": 120, "cost_influence": 15, "requires": { "allies_min": 2 }, "tags": [],
-      "effects": [ { "op": "joint_progress", "amount": 6 } ] }
-  ]
-}
+{ "id": "RSP6", "name": "Mutual Aid Network", "category": "response",
+  "cost_money": 30, "cost_influence": 0, "tags": ["relief", "civic"],
+  "unlock": { "kind": "crises_answered", "count": 4 },
+  "rewards": { "influence": 4 },
+  "flavor": "The disaster plan is knowing your neighbors.",
+  "effects": [ { "op": "happiness", "amount": 2, "waivable": false } ] }
 ```
 
-The `restoration` tag is new (amendment **A4**, additive): the `fire_discount` flag needs
-a data-visible way to know which cards it discounts; `../Phase_4/02` hard-coded "category
-is sink" — the tag replaces that special case so future discountable cards need no code.
+Schema notes (all validated — `05_Data_Validation_And_Content_Pipeline.md`):
 
-## `data/knowledge.json` (complete, 6 nodes)
+- `cost_money` / `cost_influence` / `cost_happiness` — any mix, ≥ 0 (C4).
+- `rewards` — money/influence/happiness/knowledge, ≥ 0 (C10); a money reward at or above
+  the money cost draws a self-financing warning.
+- `tags` — from the fixed vocabulary (C12): ten combo/response tags (water, food,
+  energy, mobility, forest, coast, health, civic, treaty, relief) plus the rule tags
+  `sufficiency` (⇔ a `lifts_cap` effect, C6) and `restoration` (fire-discount target, A4).
+- `unlock` — optional deck-growth condition (C11): `crises_answered` / `combos` /
+  `allies` / `projects_completed` (`count` ≥ 1) or `sector_progress` (`sector`, `gte`).
+  Cards with `unlock` are hidden from the pool until earned mid-run.
+- `category` gains `response` — the cheap, broadly-tagged crisis toolkit family.
+
+## `data/combos.json` (8 combos)
 
 ```json
-{
-  "schema_version": 1,
-  "nodes": [
-    { "id": "affordable_evs", "name": "Affordable EVs", "kp_cost": 6,
-      "insight": "We know how to make electric cars people can buy.",
-      "patch": { "card": "TRA2", "cost_money": 84 } },
+{ "id": "green_corridor", "name": "Green Corridor",
+  "tags_required": ["mobility", "energy"],
+  "rewards": { "money": 25 },
+  "effects": [],
+  "flavor": "Clean vehicles need clean grids - build both, pay less." }
+```
 
-    { "id": "healthy_sobriety", "name": "Healthy Sobriety", "kp_cost": 8,
-      "insight": "Bikes and plant-rich food are good for climate and health.",
-      "patch": { "cards": ["AGR1", "TRA3"], "effect_happiness": 2 } },
+- `tags_required`: ≥ 2 tags from the vocabulary (CB2); duplicates allowed (a
+  hypothetical `["forest", "forest"]` needs two forest cards).
+- `rewards` and/or `effects` required (CB3); effect ops restricted to the simple set —
+  no `ally`, no `media` (CB4).
+- **No single card may cover a combo's whole tag set** (CB5 warning): a combo is by
+  definition a multi-card play.
+- Full catalog in `../Phase_1/04_Policy_Effect_Matrix.md` (Green Corridor, Water Cycle,
+  Land & Table, Streets Alive, Public Trust, Blue Shield, Grand Bargain, Drawdown Surge).
 
-    { "id": "informed_public", "name": "Informed Public", "kp_cost": 8,
-      "insight": "People who understand accept - even demand - sufficiency.",
-      "grant": { "media": true } },
+## `data/projects.json` (4 projects)
 
-    { "id": "restoration_playbook", "name": "Restoration Playbook", "kp_cost": 5,
-      "insight": "We have learned to regrow ecosystems fast.",
-      "patch": { "cards": ["SNK1", "SNK2"], "reforest_years": 3 } },
+```json
+{ "id": "global_sink_trust", "name": "Global Sink Trust",
+  "upkeep_money": 35, "upkeep_influence": 0, "years": 5,
+  "completion": { "effects": [ { "op": "sink_now", "amount": 1.0 } ],
+                  "passive": { "absorption_per_year": 0.15 } },
+  "abandon_penalty": { "happiness": 3, "influence": 8 },
+  "flavor": "A permanent endowment for the world's lungs." }
+```
 
-    { "id": "coalition_diplomacy", "name": "Coalition Diplomacy", "kp_cost": 10,
-      "insight": "Trust, once earned, is easier the next time.",
-      "patch": { "card": "DIP1", "cost_influence": 15 } },
+- `years` 2–10, non-zero upkeep, penalty required (PR1/PR3 — commitment must bite).
+- `completion.effects`: simple ops plus `ally` (auto-target); `completion.passive` keys:
+  `income_money`, `income_influence`, `happiness_per_year`, `absorption_per_year` (PR2).
 
-    { "id": "crisis_ready", "name": "Crisis-Ready Design", "kp_cost": 12,
-      "insight": "We build for the disasters we know are coming.",
-      "grant": { "adapt": 10 } }
-  ]
-}
+## `data/knowledge.json` (6 nodes — unchanged)
+
+```json
+{ "id": "affordable_evs", "name": "Affordable EVs", "kp_cost": 6,
+  "insight": "We know how to make electric cars people can buy.",
+  "patch": { "card": "TRA2", "cost_money": 84 } }
 ```
 
 `insight` is player-facing: the Knowledge Hub shows it as the node's one-sentence
 explanation (pillar 4: every unlock must be explainable as a real insight).
 
-## Authoring template and conventions (golden rule 15)
+## Authoring templates and conventions (golden rule 15)
 
 New card checklist — no code edits at any step:
 
 1. Copy the template below into `cards.json`; fill fields.
-2. `id`: 3-letter category prefix + ordinal (`IND4`, `SOC3`); never reuse a retired id
-   (analytics history keys on it). `name`: Title Case, ≤ 24 characters (card header width).
-3. `category` ∈ `ind|tra|agr|sink|society|diplomacy` (drives board grouping and icon slot).
-4. `effects` use only ops from the `../Phase_4/02` enumeration — the validator rejects
-   unknown ops (`05_Data_Validation_And_Content_Pipeline.md`).
-5. Sufficiency cards: tag `sufficiency` AND `lifts_cap: true` on their sector op
-   (validator cross-checks the pair).
+2. `id`: 3-letter category prefix + ordinal (`IND5`, `RSP7`); never reuse a retired id
+   (analytics history keys on it). `name`: Title Case, ≤ 24 characters.
+3. `category` ∈ `ind|tra|agr|sink|society|diplomacy|response`.
+4. `tags` from the vocabulary only; check which crises the tags answer
+   (`02_Event_Catalog_Data.md`) and which combos they feed — that IS the design.
+5. Sufficiency cards: tag `sufficiency` AND `lifts_cap: true` on their sector op.
 6. Run the validation + fixture + corridor workflow from doc 05 before committing.
 
 ```json
 { "id": "", "name": "", "category": "",
-  "cost_money": 0, "cost_influence": 0,
-  "requires": {}, "tags": [],
+  "cost_money": 0, "cost_influence": 0, "cost_happiness": 0,
+  "rewards": {}, "requires": {}, "tags": [],
   "flavor": "",
   "effects": [] }
+
+{ "id": "", "name": "", "tags_required": [], "rewards": {}, "effects": [], "flavor": "" }
+
+{ "id": "", "name": "", "upkeep_money": 0, "upkeep_influence": 0, "years": 5,
+  "completion": { "effects": [], "passive": {} },
+  "abandon_penalty": { "happiness": 0, "influence": 0 }, "flavor": "" }
 ```
 
 Balance guardrails for authors (from `../Phase_1/04` watch list): progress-per-100-money
-should stay in the 8–12 range for non-sufficiency sector cards; anything touching all
-three sectors must cost Influence; new happiness sources must be weaker than SOC2 per
-money spent before 2070.
+in the 6–14 range for non-sufficiency sector cards (C9 warning); response cards priced
+so card reward + response reward stays below the avoided damage; anything touching all
+three sectors must cost Influence; money rewards must stay below money costs; new
+happiness sources must be weaker than SOC2 per money spent before 2070.
