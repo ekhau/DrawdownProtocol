@@ -25,7 +25,7 @@
 - Carte evenement detruit la moitite de la population, moins d'argent mais moins d'emission 
 - Clarté, ajouter un index
 - Slay the spire
-- Diminué le nombre de regions sur la carte (3)
+- Diminué le nombre de regions sur la carte (3)e
 - choisir parmi 3 société spécialisé asymétrique
 - 1 crise par tout (qui te coute des ressources)
 
@@ -40,3 +40,5 @@
 
 - Main de 4 cartes avec un magasin OU des boon à la Hades ou les deux (genre boon qui augment ton magasin/ta main)
 - Deckbuilding, je paye la carte au moment ou je la prends, ou je la paye quand je la joue 
+
+- Current problem: At crisis nothing append, no pop up

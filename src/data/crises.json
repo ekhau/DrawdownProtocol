@@ -1,0 +1,252 @@
+{
+  "crises": [
+    {
+      "id": "heatwave",
+      "name": "Heatwave",
+      "kind": "crisis",
+      "flavor": "A week above 45°C. The city gasps.",
+      "responses": [
+        { "name": "Cooling centers", "archetype": "pay", "effects": [{ "type": "money", "amount": -2 }] },
+        { "name": "Ride it out", "archetype": "absorb", "effects": [{ "type": "support", "amount": -2 }] },
+        {
+          "name": "Green streets",
+          "archetype": "invest",
+          "effects": [
+            { "type": "money", "amount": -5 },
+            { "type": "sector_emissions", "sector": "housing", "amount": -1 },
+            { "type": "support", "amount": 1 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "megafire",
+      "name": "Megafire",
+      "kind": "crisis",
+      "flavor": "The hills are burning. Smoke over the skyline.",
+      "responses": [
+        { "name": "Firefighting surge", "archetype": "pay", "effects": [{ "type": "money", "amount": -3 }] },
+        { "name": "Call on neighbour cities", "archetype": "absorb", "effects": [{ "type": "support", "amount": -2 }] },
+        { "name": "Let it burn", "archetype": "mortgage", "effects": [{ "type": "absorption", "amount": -1 }] }
+      ]
+    },
+    {
+      "id": "river_flood",
+      "name": "River Flood",
+      "kind": "crisis",
+      "flavor": "The river takes back its floodplain — and three districts.",
+      "responses": [
+        { "name": "Emergency repairs", "archetype": "pay", "effects": [{ "type": "money", "amount": -3 }] },
+        {
+          "name": "Cheap rebuild",
+          "archetype": "mortgage",
+          "effects": [{ "type": "sector_emissions", "sector": "housing", "amount": 1 }]
+        },
+        {
+          "name": "Sponge city",
+          "archetype": "invest",
+          "effects": [
+            { "type": "money", "amount": -6 },
+            { "type": "absorption", "amount": 1 },
+            { "type": "support", "amount": 1 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "drought",
+      "name": "Drought",
+      "kind": "crisis",
+      "flavor": "Reservoirs at 20%. The harvest is failing.",
+      "responses": [
+        { "name": "Import food", "archetype": "pay", "effects": [{ "type": "money", "amount": -3 }] },
+        { "name": "Ration water", "archetype": "absorb", "effects": [{ "type": "support", "amount": -2 }] },
+        {
+          "name": "Intensive irrigation",
+          "archetype": "mortgage",
+          "effects": [{ "type": "sector_emissions", "sector": "food", "amount": 1 }]
+        }
+      ]
+    },
+    {
+      "id": "economic_slump",
+      "name": "Economic Slump",
+      "kind": "crisis",
+      "flavor": "Markets down, factories idle, the budget bleeds.",
+      "responses": [
+        { "name": "Austerity", "archetype": "absorb", "effects": [{ "type": "support", "amount": -2 }] },
+        {
+          "name": "Dirty stimulus",
+          "archetype": "mortgage",
+          "effects": [
+            { "type": "money", "amount": 3 },
+            { "type": "sector_emissions", "sector": "industry", "amount": 1 }
+          ]
+        },
+        {
+          "name": "Green stimulus",
+          "archetype": "invest",
+          "effects": [
+            { "type": "money", "amount": -5 },
+            { "type": "income_per_turn", "amount": 1 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fuel_price_shock",
+      "name": "Fuel Price Shock",
+      "kind": "crisis",
+      "flavor": "Oil triples overnight. Queues at every pump.",
+      "responses": [
+        { "name": "Subsidize the pump", "archetype": "pay", "effects": [{ "type": "money", "amount": -3 }] },
+        {
+          "name": "Let prices bite",
+          "archetype": "absorb",
+          "effects": [
+            { "type": "support", "amount": -3 },
+            { "type": "sector_emissions", "sector": "transport", "amount": -1 }
+          ]
+        },
+        {
+          "name": "Windfall tax",
+          "archetype": "pay",
+          "effects": [
+            { "type": "money", "amount": 3 },
+            { "type": "support", "amount": -2 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "climate_refugees",
+      "name": "Climate Refugees",
+      "kind": "crisis",
+      "flavor": "Ten thousand people at the gates, fleeing a drowned coast.",
+      "responses": [
+        {
+          "name": "Welcome & integrate",
+          "archetype": "invest",
+          "effects": [
+            { "type": "money", "amount": -3 },
+            { "type": "support", "amount": 1 }
+          ]
+        },
+        {
+          "name": "Transit camps",
+          "archetype": "pay",
+          "effects": [
+            { "type": "money", "amount": -1 },
+            { "type": "support", "amount": -1 }
+          ]
+        },
+        { "name": "Close the gates", "archetype": "absorb", "effects": [{ "type": "support", "amount": -2 }] }
+      ]
+    },
+    {
+      "id": "storm_surge",
+      "name": "Storm Surge",
+      "kind": "crisis",
+      "flavor": "The sea comes over the barriers at 3 a.m.",
+      "responses": [
+        { "name": "Sea walls", "archetype": "pay", "effects": [{ "type": "money", "amount": -4 }] },
+        { "name": "Take the hit", "archetype": "absorb", "effects": [{ "type": "support", "amount": -3 }] },
+        {
+          "name": "Managed retreat, wetland buffer",
+          "archetype": "invest",
+          "effects": [
+            { "type": "money", "amount": -6 },
+            { "type": "absorption", "amount": 1 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toxic_smog",
+      "name": "Toxic Smog",
+      "kind": "crisis",
+      "flavor": "A brown lid on the city. Hospitals fill.",
+      "responses": [
+        { "name": "Health emergency", "archetype": "pay", "effects": [{ "type": "money", "amount": -2 }] },
+        { "name": "Traffic ban week", "archetype": "absorb", "effects": [{ "type": "support", "amount": -2 }] },
+        {
+          "name": "Clean air act",
+          "archetype": "invest",
+          "effects": [
+            { "type": "money", "amount": -5 },
+            { "type": "support", "amount": -1 },
+            { "type": "sector_emissions", "sector": "transport", "amount": -1 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "insurance_collapse",
+      "name": "Insurance Collapse",
+      "kind": "crisis",
+      "flavor": "No insurer will touch the waterfront anymore.",
+      "responses": [
+        { "name": "Public backstop", "archetype": "pay", "effects": [{ "type": "money", "amount": -4 }] },
+        {
+          "name": "Let it fail",
+          "archetype": "mortgage",
+          "effects": [
+            { "type": "income_per_turn", "amount": -1 },
+            { "type": "support", "amount": -1 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "record_renewables",
+      "name": "Record Renewables Year",
+      "kind": "windfall",
+      "flavor": "Wind and sun outproduce every forecast.",
+      "responses": [
+        { "name": "Sell the surplus", "archetype": "pay", "effects": [{ "type": "money", "amount": 4 }] },
+        {
+          "name": "Retire the coal plant early",
+          "archetype": "invest",
+          "effects": [
+            { "type": "sector_emissions", "sector": "industry", "amount": -1 },
+            { "type": "support", "amount": -1 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "youth_climate_wave",
+      "name": "Youth Climate Wave",
+      "kind": "windfall",
+      "flavor": "A generation takes the streets — for you, if you'll have them.",
+      "responses": [
+        {
+          "name": "Embrace and fund the movement",
+          "archetype": "invest",
+          "effects": [
+            { "type": "money", "amount": -2 },
+            { "type": "support", "amount": 2 }
+          ]
+        },
+        { "name": "Warm words", "archetype": "pay", "effects": [{ "type": "support", "amount": 1 }] }
+      ]
+    },
+    {
+      "id": "mild_winter",
+      "name": "Mild Winter",
+      "kind": "windfall",
+      "flavor": "Heating demand collapses. Nobody has seen snow since November.",
+      "responses": [
+        {
+          "name": "A strange, quiet season",
+          "archetype": "pay",
+          "effects": [
+            { "type": "money", "amount": 2 },
+            { "type": "gross_this_turn", "amount": -4 },
+            { "type": "support", "amount": -1 }
+          ]
+        }
+      ]
+    }
+  ]
+}

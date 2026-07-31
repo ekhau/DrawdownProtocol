@@ -1,106 +1,60 @@
 # The Drawdown Protocol
 
-A rogue-lite climate strategy and diplomacy simulation, built with Godot 4.
+A rogue-lite deckbuilder about fighting global warming. Each run is a simulated timeline: steer one city from **+1.5° in 2030** to **carbon neutrality before the world hits +2.0°**. Timelines fail — that's the job. Every failed run is data, every won run is a blueprint.
 
-You lead one city-state in a race against the **Climate Clock**: 15 turns of
-five years each, 2030–2100, to make the *whole world* absorb more carbon than
-it emits — before warming crosses the +2.0 °C tipping point. Each turn deals
-three events (droughts, record heat waves, unrest, the odd opportunity) and a
-market of project cards to fund with Money, Influence, or even Happiness.
-Answer the crises, bend the great powers' emission curves with treaties and
-funded transitions, chain combos into a compounding engine, and pass the
-five-yearly summits — reach global net zero at any turn and the run is won on
-the spot. Overheat, or let Happiness hit zero and the city revolt, and it is
-lost — but every ending pays Knowledge, some defeats unlock new cards, and
-every card you ever fund teaches its real-world solution in the Codex.
+**Status (2026-08-01): first playable prototype.** The project restarted from a blank slate on 2026-07-31 (previous design cycles live in git history up to commit `8d76938`); the MVP was designed, specced, implemented, and balance-tested the next day. It runs, the headless test suite passes 14/14, and the balance harness hits its targets. What it needs now is human playtesting.
 
-Full concept: [docs/Concept.md](docs/Concept.md) · Roadmap:
-[docs/Plan.md](docs/Plan.md) · Working principles:
-[docs/GoldenRules.md](docs/GoldenRules.md)
+## The game in one paragraph
 
-## Current status
-
-**A playable vertical slice lives in [src/](src/)** and is green end-to-end:
-
-- The full 15-turn race 2030–2100: income + project upkeep → **3 events
-  drawn** (some spike emissions on draw; some inject bonus cards into the
-  market behind resource gates) → a **market of 4 offers** dealt from your
-  pool → fund up to 5 cards → global ledger → the clock ticks → summit
-  verdicts → feedback loops → the world's blocs advance their curves.
-- **The Climate Clock as the adversary**: a single HUD gauge (0–100%, tipping
-  at 100% = +2.0 °C) with next-turn forecast and the run's curve as a
-  sparkline; it climbs by itself every turn because four named **world
-  blocs** keep emitting — only treaties, funded transitions abroad, and
-  allies bend them.
-- Defeats: the tipping point, **the revolt** (Happiness 0 — and losing that
-  way permanently unlocks the Public Support Fund), or a net-positive 2100.
-  Victory: **carbon neutrality at any turn**, with the curve visibly
-  plunging.
-- 33-card catalog with happiness-cost dilemma cards (Industrial Carbon
-  Levy), **push-your-luck research** with odds printed on the card (Fusion
-  Moonshot 35%, Direct Air Capture 50%), event-injected bonus cards, deck
-  growth, and a **codex entry on every card** (C key) unlocked by first play.
-- **3 starting city archetypes** — Port City, Industrial City, and the
-  meta-locked Political Capital — with different stats, market leans, and
-  strategic identities; picker on first boot, persistent across runs.
-- **Summits (COPs)** at turns 4/8/12 with targets announced from turn 1,
-  rewards on success and faith-loss on failure; 8 tag-set **combos** with the
-  chain multiplier and cascade feedback; 4 three-turn **projects** with
-  permanent passives.
-- **Run-end post-mortem** naming the pivotal turn per outcome family
-  (overheat / revolt / timeout / the drawdown moment).
-- Tier A world: 12 procedurally generated regions on a dashboard board, plus
-  the world-blocs panel; meta-progression: Knowledge tree (7 nodes), defeat
-  lessons, codex collection, archetype unlock; 13-step tutorial.
-- Deterministic sim (six seeded streams; same seed + same decisions =
-  byte-identical records), fully data-driven content in `src/data/*.json` —
-  add a card, crisis, combo, project, world bloc, archetype, or summit
-  without touching code.
-- Tests: 17 headless suites / **727 checks passing**, a UI smoke test driving
-  the real scene through the city picker, market, and post-mortem, golden
-  fixture regression (canonical anchors: Safe WIN 2095 · Risky REVOLT 2065 ·
-  Mixed WIN 2095), and a 20-seed × 3-strategy batch enforcing the rate
-  corridor (Risky never wins; Safe ≥ 50%, Mixed ≥ 40% — market variance is a
-  design feature).
-
-See [src/README.md](src/README.md) for how to run it, controls, architecture,
-and deliberate deviations from the specs.
-
-### Design phases (docs/)
-
-| Phase | Contents | Status |
-|---|---|---|
-| [Phase 0](docs/Phase_0/) | Design brief, pillars, MVP scope, metric dictionary, risks | Done (clock-race redesign) |
-| [Phase 1](docs/Phase_1/) | Paper balance model, sample runs, event/policy tables | Done (per-turn model) |
-| Phase 2 | Project setup | Folded into the prototype |
-| [Phase 3](docs/Phase_3/) | World model, procgen, board rendering, interaction | Done (Tier A implemented; Tier B isometric diorama deferred) |
-| [Phase 4](docs/Phase_4/) | Core simulation engine specs (incl. post-mortem) | Done |
-| [Phase 5](docs/Phase_5/) | Card/event/actor/summit catalogs, presentation, validation | Done |
-| Phases 6–7 | Meta-progression, UX and feedback | Implemented in the prototype |
-| Phases 8–9 | Balancing iteration, packaging/export | Not started (open tuning list in Phase 1/06) |
-
-Cut or stubbed for the MVP (per the golden rules: cut, don't half-build):
-Tier B isometric diorama, audio, mid-run save/load, title screen, export
-presets, archetype-exclusive cards.
-
-## Quick start
-
-Requires a Godot 4 editor binary (this checkout uses a local engine build in
-`godot/bin/`, which is gitignored — any Godot 4.x should work):
-
-```sh
-godot --path src                                            # play
-godot --headless --path src --import                        # first import after checkout
-src/tools/content_check.sh                                  # validator + test suite + batch
-```
+One turn = one year. Every year: face a **crisis** (2–3 responses, every one costly — pay money, spend support, or take a permanent scar; costs climb with the thermometer; rare **windfalls** bring good news with a sting), then **buy policy cards** from a market, collect **income** (dirty sectors pay now, emit forever), and watch the **climate** advance by your net emissions. Win by reaching structural net zero; lose at +2.0° or when support collapses. Three eras deepen the problem — *The Easy Wins* (2030s), *The Hard Core* (2040s), *The Drawdown* (2050s) — and hard-to-abate emission floors mean the last tons can't be cut until the era that unlocks the tech: every run must cross all three acts.
 
 ## Repository layout
 
-| Path | Contents |
-|---|---|
-| [docs/](docs/) | Concept, roadmap, golden rules, and per-phase design specs |
-| [src/](src/) | The Godot 4 prototype (scripts, scenes, data, tests, tools) |
-| [data/](data/) | Board layout design notes and mockup for the Tier A dashboard |
-| [proto_olivier/](proto_olivier/) | Partner prototype workspace (placeholder) |
-| `godot/` | Local Godot engine source + prebuilt binary (untracked) |
-| [agents/](agents/), [.claude/](.claude/) | Claude Code agent profiles (game dev, solarpunk UI art) |
+```
+docs/
+  01_Design_Brief.md          the one-pager: fantasy, pillars, rogue-lite mapping, scope guardrails
+  02_MVP_Spec.md              full MVP spec: rules, all card/crisis data, UI, architecture, done criteria
+  03_Implementation_Plan.md   the 9-step build plan (all steps complete)
+  Design_History.md           the decision log: every design choice, its alternatives, and why
+  random_ideas.md             raw notes and playtest feedback that seeded the design
+src/                          Godot 4.3 project — the playable prototype
+  data/                       ALL game numbers as JSON (config, cards, crises, combos) — rebalancing needs zero code
+  scripts/core/               pure headless simulation (no scene-tree dependency)
+  scripts/autoload/game.gd    five-verb façade between sim and UI
+  scripts/ui/ + scenes/       the interface — listens to signals, computes nothing
+  tests/                      headless test suite + bot players + balance harness
+```
+
+## Running it
+
+All commands run from the repo root, using the Godot build included in this repository (`godot/`):
+
+- **Play:** `./godot/bin/godot.linuxbsd.editor.dev.x86_64 --path src` — mouse only; a `?` button shows the rules.
+- **Tests:** `./godot/bin/godot.linuxbsd.editor.dev.x86_64 --headless --path src -s res://tests/run_tests.gd` — 14 checks covering determinism, pacing, band scaling, era gating, combos.
+- **Balance harness:** `./godot/bin/godot.linuxbsd.editor.dev.x86_64 --headless --path src -s res://tests/balance.gd` — 40 seeds × 6 bot profiles printed against the done criteria. The rebalance loop is: edit JSON → run harness → read table.
+
+Any Godot 4.3+ install works too (`godot --path src`).
+
+## Architecture (why changes are cheap)
+
+Three rules carry the design — details in [02_MVP_Spec.md §5](docs/02_MVP_Spec.md):
+
+1. **The sim runs without the scene tree.** Core logic is pure `RefCounted` classes, so tests run headless and bots can simulate hundreds of runs in seconds.
+2. **Effects are data.** Every card, crisis response, windfall, and combo bonus is a JSON list of effect atoms resolved by one function — the only code allowed to mutate state, which also emits the signals and writes the turn log. Adding content is a JSON edit.
+3. **Five-verb UI.** The interface may only call `new_run / choose_response / buy_card / reroll / end_turn` and repaints from signals. Reskinning touches zero game logic.
+
+## Prototype résumé — what the first balance pass found
+
+Built per the plan, then immediately run through the harness, which caught three things on day one (full story in [Design_History.md](docs/Design_History.md)):
+
+1. **The 2038 insta-win.** Cut supply was so generous that stockpiled money closed the whole emissions gap the moment Act II unlocked. Fix: **hard-to-abate floors per era** — net zero is structurally unreachable before Act III, making "depth over time" mechanical.
+2. **The Mild Winter false win.** A windfall's one-turn emissions dip triggered victory. Fix: winning requires **structural** net zero; transient effects only slow the clock.
+3. **Always-Absorb dies.** Answering every crisis with support loses 40/40 runs to support collapse — kept, because "absorb only when flush" is exactly what the dilemma engine should teach.
+
+Current numbers: doing nothing loses on turn 13 (~2042) at +2.03°; perfect-play bots win 2044–2045 at ~+1.73°, predicting a human win window of 2045–2050 — the real-world net-zero window, on purpose.
+
+## Known open questions (for playtesting)
+
+- The dirty-money temptation is too cheap: greedy bots currently match clean bots. The sting likely needs sharpening.
+- Bot pacing is a proxy — the four playtest questions in [02_MVP_Spec.md](docs/02_MVP_Spec.md) (temptation, tension, combo discovery, crisis dilemmas) need human answers.
+- Deliberately out of scope for the MVP: meta-progression, breakthroughs, city archetypes, deckbuilding, codex, art/audio, save/load.

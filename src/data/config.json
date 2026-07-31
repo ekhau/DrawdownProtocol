@@ -1,0 +1,73 @@
+{
+  "start_year": 2030,
+  "start_temp": 1.5,
+  "lose_temp": 2.0,
+  "warming_per_net_emission": 0.002,
+  "start_money": 10,
+  "start_support": 10,
+  "support_cap": 12,
+  "start_absorption": 3,
+  "market_size": 3,
+  "reroll_cost": 1,
+  "crisis_start_turn": 2,
+  "bands": [
+    { "id": "A", "min_temp": 0.0, "cost_bump": 0 },
+    { "id": "B", "min_temp": 1.7, "cost_bump": 1 },
+    { "id": "C", "min_temp": 1.85, "cost_bump": 2 }
+  ],
+  "eras": [
+    {
+      "id": "act1",
+      "name": "Act I — The Easy Wins",
+      "from_year": 2030,
+      "banner": "The low-hanging fruit: grid, buses, insulation.",
+      "palette": "magma",
+      "min_sector_emissions": { "industry": 5, "transport": 3, "food": 2, "housing": 2 }
+    },
+    {
+      "id": "act2",
+      "name": "Act II — The Hard Core",
+      "from_year": 2038,
+      "banner": "Heavy decarbonization now possible: steel, freight, dense cities.",
+      "palette": "viridis",
+      "min_sector_emissions": { "industry": 3, "transport": 2, "food": 1, "housing": 1 }
+    },
+    {
+      "id": "act3",
+      "name": "Act III — The Drawdown",
+      "from_year": 2044,
+      "banner": "Go net-negative: restoration and repair.",
+      "palette": "parula",
+      "min_sector_emissions": { "industry": 0, "transport": 0, "food": 0, "housing": 0 }
+    }
+  ],
+  "sectors": [
+    { "id": "industry", "name": "Industry", "emissions": 8, "income": 6 },
+    { "id": "transport", "name": "Transport", "emissions": 6, "income": 1 },
+    { "id": "food", "name": "Food", "emissions": 5, "income": 1 },
+    { "id": "housing", "name": "Housing", "emissions": 4, "income": 1 }
+  ],
+  "palettes": {
+    "magma": [
+      { "t": 0.0, "color": "#1d1147" },
+      { "t": 0.25, "color": "#51127c" },
+      { "t": 0.5, "color": "#b73779" },
+      { "t": 0.75, "color": "#fc8961" },
+      { "t": 1.0, "color": "#fcfdbf" }
+    ],
+    "viridis": [
+      { "t": 0.0, "color": "#440154" },
+      { "t": 0.25, "color": "#3b528b" },
+      { "t": 0.5, "color": "#21918c" },
+      { "t": 0.75, "color": "#5ec962" },
+      { "t": 1.0, "color": "#fde725" }
+    ],
+    "parula": [
+      { "t": 0.0, "color": "#352a87" },
+      { "t": 0.25, "color": "#0f6bde" },
+      { "t": 0.5, "color": "#16b5b1" },
+      { "t": 0.75, "color": "#b0bd4c" },
+      { "t": 1.0, "color": "#f9fb15" }
+    ]
+  }
+}
