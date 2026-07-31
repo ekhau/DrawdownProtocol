@@ -1,10 +1,12 @@
 extends TestBase
-## The crisis loop: 3-per-year draw, tag-matched answering, contained vs
+## The crisis loop: 3-per-turn draw, tag-matched answering, contained vs
 ## struck resolution, opportunity events, and the crises_answered unlock path.
 
 
 func _fresh() -> RunState:
-	return RunState.new_run(WorldGen.generate(2030, true), Catalog.load_default(), [])
+	var rs := RunState.new_run(WorldGen.generate(2030, true), Catalog.load_default(), [])
+	rs.market_enforced = false
+	return rs
 
 
 func _force(rs: RunState, id: String, region: RegionData, kind: String = "crisis") -> Dictionary:
@@ -17,13 +19,13 @@ func _force(rs: RunState, id: String, region: RegionData, kind: String = "crisis
 	return crisis
 
 
-func test_three_crises_drawn_each_year() -> void:
+func test_three_crises_drawn_each_turn() -> void:
 	var rs := _fresh()
 	for i in 5:
-		eq(rs.pending_crises.size(), 3, "exactly 3 crises drawn (year %d)" % rs.year)
+		eq(rs.pending_crises.size(), 3, "exactly 3 events drawn (year %d)" % rs.year)
 		var seen := {}
 		for crisis in rs.pending_crises:
-			check(not seen.has(String(crisis["id"])), "no duplicate crisis in one year")
+			check(not seen.has(String(crisis["id"])), "no duplicate crisis in one turn")
 			seen[String(crisis["id"])] = true
 			check(not rs.crisis_def(crisis["id"]).is_empty(), "drawn id resolves in the catalog")
 			check(["crisis", "opportunity"].has(String(crisis["kind"])), "drawable kinds only")
@@ -33,10 +35,12 @@ func test_three_crises_drawn_each_year() -> void:
 func test_draw_is_deterministic() -> void:
 	var a := _fresh()
 	var b := _fresh()
-	for i in 10:
+	for i in 8:
 		eq(str(a.pending_crises), str(b.pending_crises), "same seed => same draw (year %d)" % a.year)
 		a.resolve_year()
 		b.resolve_year()
+		if a.phase == RunState.Phase.ENDED:
+			break
 
 
 func test_answering_contains_the_crisis() -> void:
@@ -51,7 +55,7 @@ func test_answering_contains_the_crisis() -> void:
 	eq(crisis["answered_by"], &"RSP2", "answering card recorded")
 	eq(rs.crises_answered_total, 1, "answer counter up")
 	approx(rs.absorption, a0 + 0.1, 1e-9, "card effect applied")
-	approx(rs.influence, i0 + 2.0, 1e-9, "drought response reward: +2 influence")
+	approx(rs.influence, i0 + 3.0, 1e-9, "drought response reward: +3 influence")
 	var h0 := rs.happiness
 	var rec := rs.resolve_year()
 	eq(rec.crises[0]["answered"], true, "record keeps the answered state")
@@ -114,7 +118,7 @@ func test_opportunity_seized_and_missed() -> void:
 	_force(rs, "green_investment_wave", null, "opportunity")
 	var m0 := rs.money
 	rs.play_card(&"IND1")  # energy tag seizes the wave
-	approx(rs.money, m0 - 80.0 + 30.0, 1e-9, "seized: +30 funds on top of the card")
+	approx(rs.money, m0 - 90.0 + 50.0, 1e-9, "seized: +50 funds on top of the card")
 	var rec := rs.resolve_year()
 	eq(rec.crises[0]["answered"], true, "seized recorded")
 	# Missed: nothing happens, nothing lost.
@@ -126,7 +130,7 @@ func test_opportunity_seized_and_missed() -> void:
 	eq(rec.crises[0]["answered"], false, "missed recorded")
 	check(not rec.crises[0].has("damages"), "a missed opportunity never damages")
 	check(rs.money >= money0 - 0.001, "no money lost")
-	check(rs.happiness >= h0 - 1.001, "only drift touches happiness")  # band stress possible
+	check(rs.happiness >= h0 - 2.001, "only drift touches happiness")  # band stress possible
 
 
 func test_crises_answered_unlock() -> void:
@@ -137,6 +141,7 @@ func test_crises_answered_unlock() -> void:
 		_force(rs, "drought", region)
 		rs.play_card(&"RSP2")
 		rs.resolve_year()
+		rs.market_enforced = false
 		rs.pending_crises = []
 	eq(rs.crises_answered_total, 4, "four crises answered")
 	check(rs.unlocked_card_ids.has(&"RSP6"), "RSP6 unlocked at 4 answers")
@@ -155,6 +160,7 @@ func test_social_crisis_ally_loss_and_window() -> void:
 	var target := rs.neutral_regions()[0]
 	rs.play_card(&"DIP1", target.id)
 	rs.resolve_year()
+	rs.market_enforced = false
 	_force(rs, "social_crisis", target)
 	var i0 := rs.influence
 	rs.resolve_year()

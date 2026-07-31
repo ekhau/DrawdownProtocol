@@ -1,71 +1,42 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "events": [
     {
       "id": "drought",
       "name": "Drought",
       "kind": "crisis",
       "order": 10,
-      "weights": [
-        0.8,
-        1.3,
-        1.8
-      ],
+      "weights": [0.8, 1.3, 1.8],
       "target": {
         "tags_any": [],
-        "weight_boost": {
-          "arid": 2.0
-        }
+        "weight_boost": { "arid": 2.0 }
       },
       "scaled_by_resilience": true,
-      "damages": {
-        "money": 15,
-        "happiness": 2,
-        "absorption": 0.3
-      },
+      "damages": { "money": 30, "happiness": 4, "absorption": 0.6 },
       "scar": "parched",
       "response": {
-        "tags_any": [
-          "water",
-          "food"
-        ],
-        "rewards": {
-          "money": 8,
-          "influence": 2
-        }
+        "tags_any": ["water", "food"],
+        "rewards": { "money": 15, "influence": 3 }
       },
       "opportunity": null
     },
     {
       "id": "heat_wave",
-      "name": "Heat Wave",
+      "name": "Record Heat Wave",
       "kind": "crisis",
       "order": 15,
-      "weights": [
-        0.8,
-        1.4,
-        2.0
-      ],
+      "weights": [0.8, 1.4, 2.0],
       "target": {
         "tags_any": [],
-        "weight_boost": {
-          "arid": 1.5
-        }
+        "weight_boost": { "arid": 1.5 }
       },
       "scaled_by_resilience": true,
-      "damages": {
-        "happiness": 3,
-        "money": 20
-      },
+      "on_draw": { "e_extra": 1.0 },
+      "bonus_card": { "card": "HWP1", "requires": { "happiness_gte": 40 } },
+      "damages": { "happiness": 6, "money": 40 },
       "response": {
-        "tags_any": [
-          "health",
-          "relief"
-        ],
-        "rewards": {
-          "influence": 3,
-          "happiness": 1
-        }
+        "tags_any": ["health", "relief"],
+        "rewards": { "influence": 4, "happiness": 2 }
       },
       "opportunity": null
     },
@@ -74,36 +45,18 @@
       "name": "Mega Fire",
       "kind": "crisis",
       "order": 20,
-      "weights": [
-        0.6,
-        1.2,
-        1.8
-      ],
+      "weights": [0.6, 1.2, 1.8],
       "target": {
-        "tags_any": [
-          "forested",
-          "arid"
-        ],
+        "tags_any": ["forested", "arid"],
         "weight_boost": {}
       },
       "scaled_by_resilience": true,
-      "damages": {
-        "absorption": 0.8,
-        "money": 10,
-        "happiness": 1
-      },
-      "counters": {
-        "fires": 1
-      },
+      "damages": { "absorption": 1.6, "money": 20, "happiness": 2 },
+      "counters": { "fires": 1 },
       "scar": "burned",
       "response": {
-        "tags_any": [
-          "forest",
-          "relief"
-        ],
-        "rewards": {
-          "money": 8
-        }
+        "tags_any": ["forest", "relief"],
+        "rewards": { "money": 15 }
       },
       "opportunity": {
         "set_flag": "fire_discount",
@@ -115,35 +68,21 @@
       "name": "Flood & Tsunami",
       "kind": "crisis",
       "order": 25,
-      "weights": [
-        0.6,
-        1.0,
-        1.5
-      ],
+      "weights": [0.6, 1.0, 1.5],
       "target": {
-        "tags_any": [
-          "coastal"
-        ],
+        "tags_any": ["coastal"],
         "weight_boost": {}
       },
       "scaled_by_resilience": true,
-      "damages": {
-        "money": 30,
-        "happiness": 2
-      },
+      "damages": { "money": 60, "happiness": 4 },
       "scar": "flooded",
       "response": {
-        "tags_any": [
-          "coast",
-          "relief"
-        ],
-        "rewards": {
-          "influence": 3
-        }
+        "tags_any": ["coast", "relief"],
+        "rewards": { "influence": 4 }
       },
       "opportunity": {
         "set_flag": "flood_rebuild",
-        "teaser": "transport rebuilt better next year"
+        "teaser": "transport rebuilt better next turn"
       }
     },
     {
@@ -151,31 +90,16 @@
       "name": "Crop Failure",
       "kind": "crisis",
       "order": 30,
-      "weights": [
-        0.5,
-        1.0,
-        1.5
-      ],
+      "weights": [0.5, 1.0, 1.5],
       "target": {
         "tags_any": [],
-        "weight_boost": {
-          "arid": 1.5
-        }
+        "weight_boost": { "arid": 1.5 }
       },
       "scaled_by_resilience": true,
-      "damages": {
-        "money": 20,
-        "happiness": 2
-      },
+      "damages": { "money": 40, "happiness": 4 },
       "response": {
-        "tags_any": [
-          "food",
-          "water"
-        ],
-        "rewards": {
-          "money": 8,
-          "happiness": 1
-        }
+        "tags_any": ["food", "water"],
+        "rewards": { "money": 15, "happiness": 2 }
       },
       "opportunity": null
     },
@@ -184,28 +108,16 @@
       "name": "Energy Crunch",
       "kind": "crisis",
       "order": 35,
-      "weights": [
-        0.8,
-        1.0,
-        1.2
-      ],
+      "weights": [0.8, 1.0, 1.2],
       "target": {
         "tags_any": [],
         "weight_boost": {}
       },
       "scaled_by_resilience": false,
-      "damages": {
-        "money": 25,
-        "happiness": 2
-      },
+      "damages": { "money": 50, "happiness": 4 },
       "response": {
-        "tags_any": [
-          "energy",
-          "civic"
-        ],
-        "rewards": {
-          "money": 12
-        }
+        "tags_any": ["energy", "civic"],
+        "rewards": { "money": 20 }
       },
       "opportunity": null
     },
@@ -214,11 +126,7 @@
       "name": "Social Crisis",
       "kind": "crisis",
       "order": 40,
-      "weights": [
-        0.5,
-        0.8,
-        1.2
-      ],
+      "weights": [0.5, 0.8, 1.2],
       "weight_mods": {
         "low_happiness_mult": 3.0,
         "happiness_threshold": 40,
@@ -226,24 +134,13 @@
       },
       "target": {
         "tags_any": [],
-        "weight_boost": {
-          "ally": 2.0
-        }
+        "weight_boost": { "ally": 2.0 }
       },
       "scaled_by_resilience": false,
-      "damages": {
-        "influence": 8,
-        "money": 15,
-        "ally_lost": 1
-      },
+      "damages": { "influence": 12, "money": 30, "happiness": 3, "ally_lost": 1 },
       "response": {
-        "tags_any": [
-          "civic",
-          "relief"
-        ],
-        "rewards": {
-          "influence": 5
-        }
+        "tags_any": ["civic", "relief"],
+        "rewards": { "influence": 8 }
       },
       "opportunity": {
         "set_flag": "window",
@@ -252,26 +149,17 @@
     },
     {
       "id": "climate_summit",
-      "name": "Climate Summit",
+      "name": "Treaty Conference",
       "kind": "opportunity",
       "order": 50,
-      "weights": [
-        1.2,
-        1.0,
-        0.8
-      ],
+      "weights": [1.2, 1.0, 0.8],
       "target": {
         "tags_any": [],
         "weight_boost": {}
       },
       "response": {
-        "tags_any": [
-          "treaty"
-        ],
-        "rewards": {
-          "influence": 8,
-          "money": 15
-        }
+        "tags_any": ["treaty"],
+        "rewards": { "influence": 10, "money": 30 }
       }
     },
     {
@@ -279,22 +167,14 @@
       "name": "Green Investment Wave",
       "kind": "opportunity",
       "order": 55,
-      "weights": [
-        1.0,
-        0.9,
-        0.7
-      ],
+      "weights": [1.0, 0.9, 0.7],
       "target": {
         "tags_any": [],
         "weight_boost": {}
       },
       "response": {
-        "tags_any": [
-          "energy"
-        ],
-        "rewards": {
-          "money": 30
-        }
+        "tags_any": ["energy"],
+        "rewards": { "money": 50 }
       }
     },
     {
@@ -302,24 +182,14 @@
       "name": "Youth Movement",
       "kind": "opportunity",
       "order": 60,
-      "weights": [
-        1.0,
-        1.0,
-        1.0
-      ],
+      "weights": [1.0, 1.0, 1.0],
       "target": {
         "tags_any": [],
         "weight_boost": {}
       },
       "response": {
-        "tags_any": [
-          "civic",
-          "health"
-        ],
-        "rewards": {
-          "happiness": 3,
-          "influence": 3
-        }
+        "tags_any": ["civic", "health"],
+        "rewards": { "happiness": 4, "influence": 4 }
       }
     },
     {
@@ -328,12 +198,8 @@
       "kind": "feedback",
       "order": 90,
       "one_shot": true,
-      "trigger": {
-        "temp_gte": 1.75
-      },
-      "effect": {
-        "e_extra": 2.0
-      }
+      "trigger": { "temp_gte": 1.75 },
+      "effect": { "e_extra": 2.0 }
     },
     {
       "id": "ocean_sink_weakening",
@@ -341,12 +207,8 @@
       "kind": "feedback",
       "order": 91,
       "one_shot": true,
-      "trigger": {
-        "temp_gte": 1.9
-      },
-      "effect": {
-        "absorption": -2.0
-      }
+      "trigger": { "temp_gte": 1.9 },
+      "effect": { "absorption": -2.0 }
     },
     {
       "id": "amazon_dieback",
@@ -354,12 +216,8 @@
       "kind": "feedback",
       "order": 92,
       "one_shot": true,
-      "trigger": {
-        "fires_gte": 3
-      },
-      "effect": {
-        "absorption": -3.0
-      }
+      "trigger": { "fires_gte": 3 },
+      "effect": { "absorption": -3.0 }
     }
   ]
 }

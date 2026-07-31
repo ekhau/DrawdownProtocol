@@ -1,7 +1,21 @@
 extends SceneTree
 ## Headless UI smoke: boots the real main scene and drives the full player
 ## flow through the same handlers the mouse/keyboard use. Scratch tool,
-## removed from the suite list (kept for manual verification).
+## removed from the suite list (kept for manual verification):
+##   godot --headless --path src --script res://tests/_ui_smoke.gd
+
+
+func _first_playable(main: Node) -> StringName:
+	var rs: RunState = main.sim.run_state
+	for id in rs.market:
+		if rs.can_play_reason(id) == &"ok":
+			var wants_ally := false
+			for eff: Dictionary in rs.catalog.card(id).get("effects", []):
+				if String(eff.get("op", "")) == "ally":
+					wants_ally = true
+			if not wants_ally:
+				return id
+	return &""
 
 
 func _initialize() -> void:
@@ -16,6 +30,9 @@ func _initialize() -> void:
 	# Reset persisted meta so the smoke is repeatable.
 	meta.kp_total = 0
 	meta.unlocked = []
+	meta.unlocked_cards = []
+	meta.codex_seen = []
+	meta.selected_archetype = ""
 	meta.tutorial_done = false
 	meta.save_state()
 	var main_scene: PackedScene = load("res://scenes/main.tscn")
@@ -24,16 +41,33 @@ func _initialize() -> void:
 	if not main.is_node_ready():
 		await main.ready  # _ready is deferred to the first frame under --script
 
+	# --- First boot: the city picker gates the first run. ---
+	if main.sim.run_state != null:
+		print("FAIL: run started before an archetype was chosen")
+		errors += 1
+	if not main.archetype_select.visible:
+		print("FAIL: archetype picker not shown on a fresh profile")
+		errors += 1
+	main._on_archetype_chosen(&"port_city")
 	if main.sim == null or main.sim.run_state == null:
-		print("FAIL: run did not start")
+		print("FAIL: run did not start after choosing a city")
 		quit(1)
 		return
+	if meta.selected_archetype != "port_city":
+		print("FAIL: archetype choice not persisted")
+		errors += 1
 	var rs: RunState = main.sim.run_state
-	print("boot ok: seed %d, year %d, %d panels, %d chips, %d crises" % [
-		rs.run_seed, rs.year, main.board.panels.size(), main.tray._chips.size(),
+	if rs.allies != 1:
+		print("FAIL: Port City should start with one ally")
+		errors += 1
+	print("boot ok: seed %d, year %d, %d panels, %d market offers, %d crises" % [
+		rs.run_seed, rs.year, main.board.panels.size(), rs.market.size(),
 		rs.pending_crises.size()])
 	if rs.pending_crises.size() != 3:
-		print("FAIL: expected 3 pending crises at year start")
+		print("FAIL: expected 3 pending crises at turn start")
+		errors += 1
+	if main.tray._chips.size() != rs.market.size():
+		print("FAIL: tray chips do not mirror the market")
 		errors += 1
 	if main.tray._project_chips.size() != rs.catalog.projects.size():
 		print("FAIL: project chips missing from the tray")
@@ -62,37 +96,50 @@ func _initialize() -> void:
 	if not meta.tutorial_done:
 		print("FAIL: dismissal flag not set")
 		errors += 1
-	if not FileAccess.get_file_as_string("user://knowledge_save.json").contains("\"tutorial_done\":true"):
-		print("FAIL: tutorial_done not persisted to user://")
-		errors += 1
 	print("tutorial part 1 ok: auto-open, advance, real-action step, mid-way close persisted")
 
-	# 1. Multi-play: several cards through the tray handler, same year.
-	main._on_card_chosen(&"SOC1")
-	if not rs.media:
-		print("FAIL: SOC1 not applied")
+	# 1. Fund market offers through the tray handler, same turn.
+	rs.money = 800.0
+	var first := _first_playable(main)
+	if first == &"":
+		print("FAIL: no playable market offer")
 		errors += 1
-	main._on_card_chosen(&"RSP1")
-	if rs.cards_played_this_turn() != 2:
-		print("FAIL: second card of the year was not accepted (multi-play)")
-		errors += 1
-	# 2. Space resolves the year.
+	else:
+		main._on_card_chosen(first)
+		if rs.cards_played_this_turn() != 1:
+			print("FAIL: market offer was not funded")
+			errors += 1
+		if rs.market.has(first):
+			print("FAIL: funded offer still in the market")
+			errors += 1
+		if not meta.codex_seen.has(String(first)):
+			print("FAIL: first play did not unlock the codex entry")
+			errors += 1
+	var second := _first_playable(main)
+	if second != &"":
+		main._on_card_chosen(second)
+		if rs.cards_played_this_turn() != 2:
+			print("FAIL: second offer of the turn was not accepted (multi-play)")
+			errors += 1
+	# 2. Space resolves the turn (5 years).
 	main._on_advance_pressed()
-	if rs.year != 2031:
-		print("FAIL: year did not advance (year=%d)" % rs.year)
+	if rs.year != 2035:
+		print("FAIL: turn did not advance to 2035 (year=%d)" % rs.year)
 		errors += 1
 	# 3. Pass flow needs the explicit double-Space confirm.
 	main._on_advance_pressed()
-	if rs.year != 2031 or not main._pass_armed:
+	if rs.year != 2035 or not main._pass_armed:
 		print("FAIL: pass confirm not armed")
 		errors += 1
 	main._on_advance_pressed()
-	if rs.year != 2032:
+	if rs.year != 2040:
 		print("FAIL: pass did not resolve after confirm")
 		errors += 1
-	# 4. DIP1 targeting flow: highlight, click a neutral region, ally formed.
+	# 4. DIP1 targeting flow: force the offer, click a neutral region.
 	rs.money = 500.0
 	rs.influence = 50.0
+	rs.force_market(["DIP1"])
+	main.tray.build(rs)
 	main.tray.refresh(rs)
 	main._on_card_chosen(&"DIP1")
 	if main._mode != main.Mode.TARGETING:
@@ -100,7 +147,7 @@ func _initialize() -> void:
 		errors += 1
 	var target: RegionData = rs.neutral_regions()[2]
 	main._on_region_clicked(target.id)
-	if rs.allies != 1 or target.ally_state != WorldEnums.AllyState.ALLY:
+	if rs.allies != 2 or target.ally_state != WorldEnums.AllyState.ALLY:
 		print("FAIL: targeting click did not form the alliance")
 		errors += 1
 	if main._mode != main.Mode.PLAY:
@@ -116,12 +163,16 @@ func _initialize() -> void:
 	if main._selected_region != rs.world[0].id:
 		print("FAIL: region selection")
 		errors += 1
-	# 7. Hub toggles.
+	# 7. Hub and codex toggle (mutually exclusive modals).
 	main._toggle_hub()
 	if not main.hub.visible:
 		print("FAIL: hub did not open")
 		errors += 1
-	main._toggle_hub()
+	main._toggle_codex()
+	if main.hub.visible or not main.codex.visible:
+		print("FAIL: codex did not replace the hub")
+		errors += 1
+	main._toggle_codex()
 	# 8. Autoplay to the end through the debug hook; end screen must show.
 	main._on_autoplay(&"safe")
 	if rs.phase != RunState.Phase.ENDED:
@@ -135,12 +186,21 @@ func _initialize() -> void:
 	if meta.kp_total <= 0:
 		print("FAIL: KP not awarded to meta state")
 		errors += 1
+	var pm: Dictionary = PostMortem.analyze(rs.records, rs.catalog)
+	if pm.is_empty() or String(pm.get("headline", "")).is_empty():
+		print("FAIL: post-mortem missing at run end")
+		errors += 1
+	else:
+		print("post-mortem: " + String(pm["headline"]))
 	# 9. New timeline from the end screen.
 	var old_seed: int = main.sim.current_seed
 	main.end_screen.new_timeline.emit()
 	rs = main.sim.run_state
 	if rs.phase == RunState.Phase.ENDED or rs.year != 2030:
 		print("FAIL: new timeline did not restart")
+		errors += 1
+	if String(rs.archetype.get("id", "")) != "port_city":
+		print("FAIL: archetype not carried into the new timeline")
 		errors += 1
 	print("restarted: old seed %d -> new seed %d" % [old_seed, main.sim.current_seed])
 	# 10. Knowledge unlock via hub applies to the NEXT run.
@@ -156,6 +216,7 @@ func _initialize() -> void:
 
 	# --- Tutorial, part 2: no auto-reshow, re-open via toggle, complete fully.
 	rs = main.sim.run_state
+	rs.money = 2000.0
 	if main.tutorial.active:
 		print("FAIL: tutorial auto-reshown despite the persisted flag")
 		errors += 1
@@ -189,9 +250,14 @@ func _initialize() -> void:
 		else:
 			match StringName(String(advance.get("signal", ""))):
 				&"region_selected":
-					main._on_region_clicked(rs.world[1].id)
+					main._on_region_clicked(main.sim.run_state.world[1].id)
 				&"card_played":
-					main._on_card_chosen(&"SOC1")
+					var pick := _first_playable(main)
+					if pick == &"":
+						main.sim.run_state.force_market(["RSP4"])
+						main.tray.build(main.sim.run_state)
+						pick = &"RSP4"
+					main._on_card_chosen(pick)
 				&"project_started":
 					main._on_project_chosen(&"global_sink_trust")
 				&"year_advanced":

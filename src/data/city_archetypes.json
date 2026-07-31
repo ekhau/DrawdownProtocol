@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "archetypes": [
+    { "id": "port_city", "name": "Port City",
+      "tagline": "Trade routes are treaty routes.",
+      "strategy_hint": "Starts allied and influence-rich. Lean on diplomacy: treaties and foreign transitions are your cheapest tons.",
+      "money_mult": 0.9,
+      "influence_bonus": 8,
+      "happiness_delta": 0,
+      "sector_mult": { "ind": 0.9, "tra": 1.3, "agr": 0.9 },
+      "income_mult": 1.0,
+      "influence_income_bonus": 2,
+      "start_allies": 1,
+      "market_weights": { "treaty": 1.8, "coast": 1.5, "water": 1.2 } },
+
+    { "id": "industrial_city", "name": "Industrial City",
+      "tagline": "The furnace that must reinvent itself.",
+      "strategy_hint": "Rich but filthy: industry emits half again as much. Spend the surplus fast or the clock buries you.",
+      "money_mult": 1.4,
+      "influence_bonus": -5,
+      "happiness_delta": -5,
+      "sector_mult": { "ind": 1.5, "tra": 1.0, "agr": 0.9 },
+      "income_mult": 1.2,
+      "influence_income_bonus": 0,
+      "start_allies": 0,
+      "market_weights": { "energy": 1.8, "sufficiency": 1.4, "health": 1.2 } },
+
+    { "id": "political_capital", "name": "Political Capital",
+      "tagline": "Poor in funds, rich in leverage.",
+      "strategy_hint": "Income runs 25% short, but influence flows. Convert leverage into allies, treaties and other people's money.",
+      "money_mult": 0.7,
+      "influence_bonus": 15,
+      "happiness_delta": 2,
+      "sector_mult": { "ind": 0.9, "tra": 1.0, "agr": 1.0 },
+      "income_mult": 0.75,
+      "influence_income_bonus": 3,
+      "start_allies": 0,
+      "market_weights": { "civic": 1.6, "treaty": 1.6, "health": 1.2 },
+      "unlock": { "knowledge": "capital_charter" } }
+  ]
+}

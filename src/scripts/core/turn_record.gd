@@ -5,6 +5,7 @@ extends RefCounted
 ## Spec: docs/Phase_4/06_Turn_Log_And_Analytics.md (YearReport == TurnRecord, A2).
 
 var year: int = 0
+var turn: int = 0                            # 1-based decision-turn index
 # step 1 - income and projects
 var income_money: float = 0.0
 var income_influence: float = 0.0
@@ -13,11 +14,14 @@ var rebuild_bonus_applied: bool = false
 var rebuild_bonus_amount: float = 0.0
 var project_events: Array[Dictionary] = []
 #   [{id, event: launched|charged|completed|failed|abandoned, cost_money,
-#     cost_influence, years_left}]
+#     cost_influence, turns_left}]
 # step 1b - crisis draw (outcome fields filled during step 6)
 var crises: Array[Dictionary] = []
-#   [{id, kind, region_id, answered, answered_by, mult,
+#   [{id, kind, region_id, answered, answered_by, mult, on_draw_e,
 #     damages: {money, happiness, absorption, influence}, ally_lost, opportunity}]
+# step 1c - the project market offered this turn
+var market_offered: Array[StringName] = []   # draw order; bonus injections last
+var market_bonus: Array[StringName] = []     # subset injected by events
 # step 2 - player actions (0..MAX_CARDS_PER_TURN card plays, in play order)
 var actions: Array[Dictionary] = []
 #   [{card, target, cost_money, cost_influence, cost_happiness,
@@ -27,16 +31,23 @@ var actions: Array[Dictionary] = []
 var combos_fired: Array[Dictionary] = []     # [{id, chain, mult, rewards}]
 var combo_chain: int = 0                     # chain value after this year
 var cards_unlocked: Array[StringName] = []   # unlocked during this year
-# steps 3-4 - climate
+# steps 3-4 - climate (emissions = city + world actors)
 var emissions: float = 0.0
+var emissions_city: float = 0.0
+var emissions_world: float = 0.0
 var absorption: float = 0.0
 var net: float = 0.0
 var sink_matured: float = 0.0
 var sink_stress: float = 0.0
 var warming_delta: float = 0.0
 var temp: float = 0.0
+var clock_pct: float = 0.0                   # warming as % of the tipping track
 var band: int = 0
 var band_prev: int = 0
+# step 6b - the summit scheduled this turn ({} when none)
+var summit: Dictionary = {}                  # {id, met, value, target, gains|penalty}
+# step 7b - world actors AFTER their between-turn advance
+var actors: Array[Dictionary] = []           # [{id, emissions, trend}]
 # step 5 - society drift
 var co_benefit: float = 0.0
 var overshoot_stress: float = 0.0
@@ -90,26 +101,40 @@ func to_dict() -> Dictionary:
 	var unlocks: Array = []
 	for u in cards_unlocked:
 		unlocks.append(String(u))
+	var market_rows: Array = []
+	for m in market_offered:
+		market_rows.append(String(m))
+	var bonus_rows: Array = []
+	for m in market_bonus:
+		bonus_rows.append(String(m))
 	return {
 		"year": year,
+		"turn": turn,
 		"income_money": income_money,
 		"income_influence": income_influence,
 		"income_penalty": String(income_penalty),
 		"rebuild_bonus_applied": rebuild_bonus_applied,
 		"project_events": project_events,
 		"crises": crisis_rows,
+		"market_offered": market_rows,
+		"market_bonus": bonus_rows,
 		"actions": action_rows,
 		"combos_fired": combos_fired,
 		"combo_chain": combo_chain,
 		"cards_unlocked": unlocks,
 		"emissions": emissions,
+		"emissions_city": emissions_city,
+		"emissions_world": emissions_world,
 		"absorption": absorption,
 		"net": net,
 		"sink_matured": sink_matured,
 		"sink_stress": sink_stress,
 		"warming_delta": warming_delta,
 		"temp": temp,
+		"clock_pct": clock_pct,
 		"band": band,
+		"summit": summit,
+		"actors": actors,
 		"co_benefit": co_benefit,
 		"overshoot_stress": overshoot_stress,
 		"happiness": happiness,

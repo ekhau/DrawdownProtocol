@@ -1,6 +1,7 @@
 class_name RightDock
 extends PanelContainer
-## Right dock: the year's three crises (top), Region Inspector (middle) and
+## Right dock: the turn's three events (top), the world's blocs (the other
+## emitters you can only move with diplomacy), Region Inspector (middle) and
 ## turn log (bottom). Reserved space so selection never occludes the board
 ## (data/board_layout_notes.md).
 
@@ -10,6 +11,7 @@ const OPPORTUNITY_OPEN := Color("e8d48a")
 
 var crisis_box: VBoxContainer
 var _crisis_header: Label
+var _world_panel: RichTextLabel
 var _inspector: RichTextLabel
 var _log: RichTextLabel
 
@@ -35,13 +37,25 @@ func _ready() -> void:
 	add_child(vbox)
 
 	_crisis_header = Label.new()
-	_crisis_header.text = "CRISES THIS YEAR"
+	_crisis_header.text = "EVENTS THIS TURN"
 	_crisis_header.add_theme_font_size_override("font_size", 11)
 	_crisis_header.add_theme_color_override("font_color", Color("9aa694"))
 	vbox.add_child(_crisis_header)
 	crisis_box = VBoxContainer.new()
 	crisis_box.add_theme_constant_override("separation", 4)
 	vbox.add_child(crisis_box)
+
+	var world_header := Label.new()
+	world_header.text = "THE WORLD'S BLOCS - your diplomacy targets"
+	world_header.add_theme_font_size_override("font_size", 11)
+	world_header.add_theme_color_override("font_color", Color("9aa694"))
+	vbox.add_child(world_header)
+	_world_panel = RichTextLabel.new()
+	_world_panel.bbcode_enabled = true
+	_world_panel.fit_content = true
+	_world_panel.add_theme_font_size_override("normal_font_size", 11)
+	_world_panel.tooltip_text = "The rest of the world emits on its own curves.\nFund a Transition cuts the biggest bloc; an Emissions Treaty bends the steepest.\nEvery ally damps the combined drift by 0.2/turn."
+	vbox.add_child(_world_panel)
 
 	var insp_header := Label.new()
 	insp_header.text = "REGION INSPECTOR"
@@ -74,6 +88,21 @@ func crisis_rect() -> Rect2:
 	var top := _crisis_header.get_global_rect()
 	var bottom := crisis_box.get_global_rect()
 	return top.merge(bottom)
+
+
+## The world's blocs: emissions and drift arrows, plus the ally damping.
+func show_world(rs: RunState) -> void:
+	var lines: PackedStringArray = []
+	for a in rs.world_actors:
+		var trend := float(a["trend"])
+		var arrow := "[color=#e0a080]/\\ +%.1f[/color]" % trend if trend > 0.0 \
+				else "[color=#a0d890]-- held[/color]"
+		var floored := " (at floor)" if float(a["emissions"]) <= float(a["floor"]) + 0.001 else ""
+		lines.append("%s  [b]%.1f Gt[/b]  %s%s" % [String(a["name"]), float(a["emissions"]), arrow, floored])
+	var damp := rs.allies * float(Tuning.s("ACTOR_TREND_PER_ALLY"))
+	lines.append("[color=#9aa694]World %.1f Gt, drift +%.1f/turn (allies damp %.1f)[/color]" % [
+		rs.world_emissions(), rs.world_trend(), damp])
+	_world_panel.text = "\n".join(lines)
 
 
 ## One panel per pending crisis: threat, answer tags, live answered state.
@@ -193,7 +222,7 @@ func show_region(rs: RunState, region_id: StringName) -> void:
 		WorldEnums.AllyState.PLAYER_HOME:
 			lines.append("[color=#5fb3b3]The coalition's home.[/color]")
 		WorldEnums.AllyState.ALLY:
-			lines.append("[color=#d9a441]Ally: +20 money, +1 influence yearly.[/color]")
+			lines.append("[color=#d9a441]Ally: +40 money, +2 influence per turn; damps world drift.[/color]")
 		_:
 			lines.append("Neutral - Form Alliance: 50 money + 25 influence")
 	if r.scars.size() > 0:

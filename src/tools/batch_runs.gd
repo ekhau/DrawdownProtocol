@@ -5,9 +5,10 @@ extends SceneTree
 ##     --seeds 100 --strategy safe --csv out.csv [--canonical] [--start-seed 1]
 ## Runs N seeds x strategy through the real sim (no UI), writes one CSV row per
 ## run: seed, strategy, outcome, end_year, kp + decade samples of T/N/M/H
-## (the docs/Phase_1/05_Balance_Bands.md metrics). Exits non-zero on any
-## world-gen invariant violation or structural-outcome violation
-## (safe/mixed must win, risky must never win) when --enforce is passed.
+## (the docs/Phase_1/05_Balance_Bands.md metrics). With --enforce, exits
+## non-zero on a structural-corridor violation. The corridor (market variance
+## is a design feature, so rates, not certainties): risky NEVER wins; safe
+## wins at least half its seeds; mixed at least 40%.
 
 const DECADES := [2040, 2050, 2060, 2070, 2080, 2090, 2100]
 
@@ -54,18 +55,31 @@ func _initialize() -> void:
 	lines.append(header)
 
 	var violations := 0
+	var wins := {}
+	var runs := {}
 	for s in range(start_seed, start_seed + seeds):
 		for strat in strategies:
 			var rs := Strategies.autoplay(strat, s, canonical)
 			lines.append(csv_row(s, strat, rs))
 			var last: TurnRecord = rs.records.back()
 			var won := last.end_status == &"WIN_NEUTRAL"
+			runs[strat] = int(runs.get(strat, 0)) + 1
+			if won:
+				wins[strat] = int(wins.get(strat, 0)) + 1
 			if strat == &"risky" and won:
 				print("VIOLATION: risky won on seed %d" % s)
 				violations += 1
-			elif strat != &"risky" and not won:
-				print("VIOLATION: %s lost on seed %d (%s, %d)" % [strat, s, last.end_status, last.year])
-				violations += 1
+	# Rate corridor (the market's variance is deliberate; see Phase_1/05).
+	const MIN_RATE := {&"safe": 0.5, &"mixed": 0.4}
+	for strat in strategies:
+		if not MIN_RATE.has(strat):
+			continue
+		var rate := float(wins.get(strat, 0)) / maxf(1.0, float(runs.get(strat, 0)))
+		print("%s win rate: %d/%d (%.0f%%)" % [strat, wins.get(strat, 0), runs.get(strat, 0), rate * 100.0])
+		if rate < float(MIN_RATE[strat]):
+			print("VIOLATION: %s win rate %.0f%% below the %.0f%% corridor" % [
+				strat, rate * 100.0, float(MIN_RATE[strat]) * 100.0])
+			violations += 1
 
 	var out := "\n".join(lines) + "\n"
 	if csv_path.is_empty():

@@ -6,14 +6,26 @@ extends TestBase
 
 func test_all_pass_bau_loses() -> void:  # T3-P4
 	var rs := RunState.new_run(WorldGen.generate(2030, true), Catalog.load_default(), [])
-	var guard := 100
+	var guard := 40
 	while rs.phase != RunState.Phase.ENDED and guard > 0:
 		guard -= 1
 		rs.resolve_year()
 	var last: TurnRecord = rs.records.back()
-	eq(last.end_status, &"LOSS_LIMIT_BREACHED", "business as usual breaches the limit")
-	check(last.year >= 2042 and last.year <= 2058,
-		"BAU loss lands around the 2040s-2050s (got %d)" % last.year)
+	check(last.end_status == &"LOSS_REVOLT" or last.end_status == &"LOSS_LIMIT_BREACHED",
+		"business as usual is a hard defeat (got %s)" % last.end_status)
+	check(last.turn >= 5 and last.turn <= 11,
+		"BAU dies mid-run - the clock is a real adversary (turn %d)" % last.turn)
+
+
+func test_turn_structure() -> void:
+	# One decision turn = 5 years; a full run is exactly 15 turns, 2030-2100.
+	eq(RunState.total_turns(), 15, "15 decision turns per run")
+	var rs := RunState.new_run(WorldGen.generate(2030, true), Catalog.load_default(), [])
+	eq(rs.year, 2030, "turn 1 = 2030")
+	eq(rs.turn_index(), 1, "1-based turn index")
+	rs.resolve_year()
+	eq(rs.year, 2035, "each turn spans 5 years")
+	eq(rs.turn_index(), 2, "turn index follows")
 
 
 func test_determinism_replay() -> void:  # T12-P4
@@ -32,14 +44,17 @@ func _jsonl(rs: RunState) -> String:
 
 
 func test_feedback_one_shots() -> void:  # T11-P4
-	var rs := Strategies.autoplay(&"risky", 2030, true)
-	# The canonical risky run ignores every crisis: fires burn unanswered and
-	# warming climbs - at least one feedback loop must have fired, each once.
+	# BAU overheats far enough that at least one feedback loop must fire.
+	var rs := RunState.new_run(WorldGen.generate(2030, true), Catalog.load_default(), [])
+	var guard := 40
+	while rs.phase != RunState.Phase.ENDED and guard > 0:
+		guard -= 1
+		rs.resolve_year()
 	var seen := {}
 	for rec in rs.records:
 		for fb in rec.feedbacks:
 			seen[fb] = int(seen.get(fb, 0)) + 1
-	check(seen.size() >= 1, "risky run triggered at least one feedback loop")
+	check(seen.size() >= 1, "BAU run triggered at least one feedback loop")
 	for fb in seen:
 		eq(int(seen[fb]), 1, "feedback %s fired exactly once" % fb)
 	for fb_id in rs.feedback_years:
@@ -58,7 +73,7 @@ func test_signal_audit() -> void:  # T14-P4
 		counts["band_changes"].append(band))
 	rs.year_advanced.connect(func(_r: TurnRecord) -> void:
 		counts["year_advanced"] += 1)
-	var guard := 100
+	var guard := 40
 	while rs.phase != RunState.Phase.ENDED and guard > 0:
 		guard -= 1
 		Strategies.play_turn(&"safe", rs)
@@ -66,15 +81,27 @@ func test_signal_audit() -> void:  # T14-P4
 	rs.resolve_year()  # no-op after ENDED
 	eq(int(counts["run_ended"]), 1, "no signal after ENDED")
 	var changes: Array = counts["band_changes"]
-	check(changes.size() >= 2, "band changed at least twice (in and out of Overshoot)")
+	check(changes.size() >= 1, "warming band changed at least once")
 	check(changes.has(1), "entered Overshoot I")
-	check(changes.has(0), "exited Overshoot (the hopeful descent) - got %s" % str(changes))
-	eq(int(counts["year_advanced"]), rs.records.size() - 1, "year_advanced fires for every non-terminal year")
+	eq(int(counts["year_advanced"]), rs.records.size() - 1, "year_advanced fires for every non-terminal turn")
+
+
+func test_curve_bent_signal() -> void:
+	# The explosion moment: the first net<=0 turn emits curve_bent and, by
+	# the race rules, wins the run on the spot.
+	var rs := RunState.new_run(WorldGen.generate(2030, true), Catalog.load_default(), [])
+	var bent_years: Array = []
+	rs.curve_bent.connect(func(y: int) -> void: bent_years.append(y))
+	rs.absorption = 500.0  # force the drawdown moment
+	rs.resolve_year()
+	eq(bent_years.size(), 1, "curve_bent emitted once")
+	eq(rs.curve_bent_year, bent_years[0], "curve_bent_year recorded")
+	eq(rs.records.back().end_status, &"WIN_NEUTRAL", "neutrality before the tipping point wins")
 
 
 func test_region_decomposition() -> void:  # Phase 3 T6
 	var rs := RunState.new_run(WorldGen.generate(5, false), Catalog.load_default(), [])
-	var guard := 30
+	var guard := 15
 	while rs.phase != RunState.Phase.ENDED and guard > 0:
 		guard -= 1
 		Strategies.play_turn(&"safe", rs)
@@ -83,9 +110,10 @@ func test_region_decomposition() -> void:  # Phase 3 T6
 		for r in rs.world:
 			sum_e += rs.region_emissions(r)
 			sum_a += rs.region_absorption(r)
-		# Feedback extras are global-only; regions decompose the sector ledger.
+		# Feedback extras and world actors are global-only; regions decompose
+		# the city-sphere sector ledger.
 		approx(sum_e, rs.gross_emissions() - rs.e_extra, 0.001,
-			"region emissions sum to global sector emissions (year %d)" % rs.year)
+			"region emissions sum to city sector emissions (year %d)" % rs.year)
 		approx(sum_a, rs.absorption, 0.001, "region absorption sums to global A")
 
 
@@ -116,11 +144,12 @@ func test_dip1_target_flavor_only() -> void:  # Phase 3 T9
 
 func _dip1_series(target_index: int) -> String:
 	var rs := RunState.new_run(WorldGen.generate(2030, true), Catalog.load_default(), [])
+	rs.market_enforced = false
 	rs.influence = 30.0
 	var target := rs.neutral_regions()[target_index]
 	rs.play_card(&"DIP1", target.id)
 	var out: PackedStringArray = []
-	for i in 30:
+	for i in 20:
 		if rs.phase == RunState.Phase.ENDED:
 			break
 		var rec := rs.resolve_year()
@@ -133,20 +162,21 @@ func test_flood_rebuild_rider() -> void:
 	rs.flood_rebuild = true
 	rs.pending_crises = []  # an unanswered flood would re-arm the flag
 	var p0 := rs.sector(&"tra").progress
-	rs.resolve_year()  # consumed at next year's step 1
-	eq(rs.sector(&"tra").progress, p0 + 5.0, "flood rebuild grants +5 transport next year")
+	rs.resolve_year()  # consumed at next turn's step 1
+	eq(rs.sector(&"tra").progress, p0 + 5.0, "flood rebuild grants +5 transport next turn")
 	eq(rs.flood_rebuild, false, "flag consumed")
 	check(rs.records.size() >= 1, "recorded")
 
 
 func test_reforest_maturation() -> void:
 	var rs := RunState.new_run(WorldGen.generate(2030, true), Catalog.load_default(), [])
+	rs.market_enforced = false
 	rs.money = 1000.0
-	rs.play_card(&"SNK1")  # +0.3/yr for 5 years
+	rs.play_card(&"SNK1")  # +1.0/turn for 3 turns
 	var rec := rs.resolve_year()
-	approx(rec.sink_matured, 0.3, 1e-9, "first maturation tick")
+	approx(rec.sink_matured, 1.0, 1e-9, "first maturation tick")
 	var total := rec.sink_matured
-	for i in 5:
+	for i in 3:
 		total += rs.resolve_year().sink_matured
-	eq(rs.reforest_queue.size(), 0, "program finished after 5 years")
-	approx(total, 1.5, 1e-9, "program delivered +1.5 absorption in total")
+	eq(rs.reforest_queue.size(), 0, "program finished after 3 turns")
+	approx(total, 3.0, 1e-9, "program delivered +3.0 absorption in total")

@@ -12,13 +12,17 @@ func _docs() -> Dictionary:
 		"tutorial": JSON.parse_string(FileAccess.get_file_as_string("res://data/tutorial.json")),
 		"combos": JSON.parse_string(FileAccess.get_file_as_string("res://data/combos.json")),
 		"projects": JSON.parse_string(FileAccess.get_file_as_string("res://data/projects.json")),
+		"actors": JSON.parse_string(FileAccess.get_file_as_string("res://data/world_actors.json")),
+		"archetypes": JSON.parse_string(FileAccess.get_file_as_string("res://data/city_archetypes.json")),
+		"summits": JSON.parse_string(FileAccess.get_file_as_string("res://data/summits.json")),
 	}
 
 
 func _validate(d: Dictionary) -> DataValidator:
 	var v := DataValidator.new()
 	v.validate_all(d["cards"], d["events"], d["knowledge"], d["templates"],
-		d["tutorial"], d["combos"], d["projects"])
+		d["tutorial"], d["combos"], d["projects"], d["actors"], d["archetypes"],
+		d["summits"])
 	return v
 
 
@@ -224,11 +228,92 @@ func test_mutation_combo_single_card_coverage() -> void:
 	_expect_warning(_validate(d), "CB5", "single-card combo coverage warned (CB5)")
 
 
-func test_mutation_project_years_range() -> void:
+func test_mutation_project_turns_range() -> void:
 	var d := _docs()
 	d["projects"] = d["projects"].duplicate(true)
-	d["projects"]["projects"][0]["years"] = 1
-	_expect_rule(_validate(d), "PR1", "1-year project rejected (PR1)")
+	d["projects"]["projects"][0]["turns"] = 1
+	_expect_rule(_validate(d), "PR1", "1-turn project rejected (PR1)")
+
+
+func test_mutation_bad_risk_chance() -> void:
+	var d := _docs()
+	d["cards"] = d["cards"].duplicate(true)
+	for c in d["cards"]["cards"]:
+		if c["id"] == "RND1":
+			c["risk"]["chance"] = 1.0
+	_expect_rule(_validate(d), "C13", "certain 'risk' rejected - odds must be honest (C13)")
+
+
+func test_mutation_risk_forbidden_op() -> void:
+	var d := _docs()
+	d["cards"] = d["cards"].duplicate(true)
+	for c in d["cards"]["cards"]:
+		if c["id"] == "RND2":
+			c["risk"]["on_success"]["effects"] = [{"op": "media"}]
+	_expect_rule(_validate(d), "C13", "media op in a risk branch rejected (C13)")
+
+
+func test_mutation_codex_too_short() -> void:
+	var d := _docs()
+	d["cards"] = d["cards"].duplicate(true)
+	d["cards"]["cards"][0]["codex"] = {"title": "x", "body": "too short"}
+	_expect_rule(_validate(d), "C14", "stub codex body rejected (C14)")
+
+
+func test_mutation_meta_unlock_bad_ending() -> void:
+	var d := _docs()
+	d["cards"] = d["cards"].duplicate(true)
+	for c in d["cards"]["cards"]:
+		if c["id"] == "SOC4":
+			c["meta_unlock"] = {"on": "LOSS_BOREDOM"}
+	_expect_rule(_validate(d), "C15", "meta_unlock on unknown ending rejected (C15)")
+
+
+func test_mutation_on_draw_on_opportunity() -> void:
+	var d := _docs()
+	d["events"] = d["events"].duplicate(true)
+	for e in d["events"]["events"]:
+		if e["id"] == "climate_summit":
+			e["on_draw"] = {"e_extra": 1.0}
+	_expect_rule(_validate(d), "E7", "on_draw on an opportunity rejected (E7)")
+
+
+func test_mutation_bonus_card_unknown() -> void:
+	var d := _docs()
+	d["events"] = d["events"].duplicate(true)
+	for e in d["events"]["events"]:
+		if e["id"] == "heat_wave":
+			e["bonus_card"]["card"] = "ZZZ9"
+	_expect_rule(_validate(d), "E8", "bonus_card to unknown card rejected (E8)")
+
+
+func test_mutation_actor_floor() -> void:
+	var d := _docs()
+	d["actors"] = d["actors"].duplicate(true)
+	d["actors"]["actors"][0]["floor"] = 0.0
+	_expect_rule(_validate(d), "A2", "zero actor floor rejected (A2)")
+
+
+func test_mutation_no_locked_archetype() -> void:
+	var d := _docs()
+	d["archetypes"] = d["archetypes"].duplicate(true)
+	for a in d["archetypes"]["archetypes"]:
+		a.erase("unlock")
+	_expect_rule(_validate(d), "Y3", "all-unlocked archetypes rejected (Y3: meta-progression)")
+
+
+func test_mutation_summit_bad_metric() -> void:
+	var d := _docs()
+	d["summits"] = d["summits"].duplicate(true)
+	d["summits"]["summits"][0]["goal"] = {"metric": "vibes", "lte": 10}
+	_expect_rule(_validate(d), "S2", "unknown summit metric rejected (S2)")
+
+
+func test_mutation_summit_without_penalty() -> void:
+	var d := _docs()
+	d["summits"] = d["summits"].duplicate(true)
+	d["summits"]["summits"][0].erase("penalty")
+	_expect_rule(_validate(d), "S3", "penalty-free summit rejected (S3: failure must matter)")
 
 
 func test_mutation_project_free_upkeep() -> void:
@@ -314,14 +399,18 @@ func test_mutation_missing_template() -> void:
 	_expect_rule(_validate(d), "T1", "missing combo template rejected (T1)")
 
 
-func test_additive_card_is_regression_free() -> void:  # T10-P5
-	# Append a dummy card via the authoring template: fixtures must not move.
+func test_additive_bonus_card_is_regression_free() -> void:  # T10-P5 (rework)
+	# The market deals from the whole pool, so a NORMAL additive card now
+	# legitimately shifts timelines (it changes the deal). The additive
+	# guarantee holds for bonus-only cards: outside the pool until an event
+	# injects them, so appending one must leave fixtures byte-identical.
 	var baseline := _fixture_lines()
 	var cards_doc: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/cards.json"))
 	cards_doc = cards_doc.duplicate(true)
 	cards_doc["cards"].append({
 		"id": "SOC9", "name": "Dummy Test Card", "category": "society",
 		"cost_money": 10, "cost_influence": 0, "requires": {}, "tags": [],
+		"bonus_only": true,
 		"effects": [{"op": "wellbeing", "amount": 1}],
 	})
 	var cat := Catalog.new()
@@ -330,8 +419,12 @@ func test_additive_card_is_regression_free() -> void:  # T10-P5
 		JSON.parse_string(FileAccess.get_file_as_string("res://data/knowledge.json")),
 		JSON.parse_string(FileAccess.get_file_as_string("res://data/combos.json")),
 		JSON.parse_string(FileAccess.get_file_as_string("res://data/projects.json")))
+	cat._load_world(
+		JSON.parse_string(FileAccess.get_file_as_string("res://data/world_actors.json")),
+		JSON.parse_string(FileAccess.get_file_as_string("res://data/city_archetypes.json")),
+		JSON.parse_string(FileAccess.get_file_as_string("res://data/summits.json")))
 	var with_dummy := _fixture_lines_with_catalog(cat)
-	eq(baseline, with_dummy, "adding an unused card leaves the seed-2030 fixtures byte-identical")
+	eq(baseline, with_dummy, "adding a bonus-only card leaves the seed-2030 fixtures byte-identical")
 
 
 func _fixture_lines() -> String:
@@ -343,7 +436,7 @@ func _fixture_lines_with_catalog(cat: Catalog) -> String:
 	for strat: StringName in [&"safe", &"risky"]:
 		var gen := WorldGen.generate(2030, true)
 		var rs := RunState.new_run(gen, cat, [])
-		var guard := 100
+		var guard := 60
 		while rs.phase != RunState.Phase.ENDED and guard > 0:
 			guard -= 1
 			Strategies.play_turn(strat, rs)

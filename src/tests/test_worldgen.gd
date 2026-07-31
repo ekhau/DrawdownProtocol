@@ -90,5 +90,5 @@ func test_canonical_starts() -> void:
 	eq(float(gen.sector_bases[&"tra"]), 15.0, "canonical tra base")
 	eq(float(gen.sector_bases[&"agr"]), 15.0, "canonical agr base")
 	eq(gen.absorption_start, 20.0, "canonical absorption")
-	eq(gen.money_start, 100.0, "canonical money")
+	eq(gen.money_start, 150.0, "canonical money")
 	eq(gen.happiness_start, 60.0, "canonical happiness")

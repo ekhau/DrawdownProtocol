@@ -1,29 +1,38 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "system": {
     "income": "Income: +{money} funds, +{influence} influence{penalty_note}",
     "penalty_h_below_40": " (unrest: income x0.75)",
     "penalty_h_below_25": " (crisis: income x0.5)",
-    "pass": "No cards played - funds banked.",
+    "pass": "No cards funded - funds banked.",
     "rebuild_better_tra": "Rebuilt better: transport +{amount}% from flood recovery.",
-    "ledger": "Ledger: E {e} - A {a} = net {n} Gt",
+    "ledger": "Ledger: city {ec} + world {ew} - A {a} = net {n} Gt",
+    "world_drift": "The world's blocs emit {we} Gt and drift +{trend}/turn.",
     "sink_matured": "Restoration matures: absorption +{amount} Gt/yr.",
-    "warming": "Warming: {t} C ({dt} this year)",
+    "warming": "Climate clock: {clock}% ({t} C, {dt} this turn)",
     "drift": "Happiness {h} (co-benefit +{co}, overshoot stress -{stress})",
     "band_up_1": "OVERSHOOT - the world passes +1.5 C. Events intensify; sinks strain.",
     "band_up_2": "OVERSHOOT II - the world passes +1.75 C. The pressure escalates.",
     "band_down_1": "Relief - warming falls back below +1.75 C.",
     "band_down_0": "The world dips back below +1.5 C. The air clears.",
     "ally_lost": "{region} leaves the coalition.",
-    "crises_faced": "Crises this year: {list}",
+    "crises_faced": "Events this turn: {list}",
+    "on_draw_hit": "{name} bakes in: +{e_extra} Gt/yr unless answered this turn.",
+    "on_draw_cleared": "{name} answered: the emissions spike dissipates.",
+    "bonus_card": "Crisis window: {name} joins this turn's market.",
     "combo": "COMBO x{n} - {name}! {gains}",
     "rewards": "Returns: {gains}",
+    "risk_success": "BREAKTHROUGH - {name} pays off ({chance}% odds). {gains}",
+    "risk_failure": "{name} fails ({chance}% odds). The bet is lost.",
+    "summit_met": "SUMMIT {name}: target met (net {value} vs {target}). {gains}",
+    "summit_missed": "SUMMIT {name}: target missed (net {value} vs {target}). The world loses faith: {penalty_note}",
     "card_unlocked": "New policy available: {name}",
-    "project_launched": "Project launched: {name} ({upkeep_note}/yr, {years} years)",
-    "project_charged": "Project upkeep: {name} {cost_note} ({years_left} years left)",
+    "project_launched": "Project launched: {name} ({upkeep_note}/turn, {turns} turns)",
+    "project_charged": "Project upkeep: {name} {cost_note} ({turns_left} turns left)",
     "project_completed": "PROJECT COMPLETE: {name}. {payoff_note}",
     "project_failed": "Project collapses unpaid: {name}. {penalty_note}",
     "project_abandoned": "Project abandoned: {name}. {penalty_note}",
+    "curve_bent": "THE CURVE BENDS - the world absorbs more than it emits.",
     "run_end_kp": "Knowledge gained: {kp} points."
   },
   "ops": {
@@ -31,26 +40,28 @@
     "joint_progress": "Joint project: industry +{ind}%, transport +{tra}%, agro +{agr}%",
     "happiness": "Happiness {amount}{waive_note}",
     "sink_now": "Absorption +{amount} Gt/yr",
-    "reforest": "Restoration begun: +{per_year} Gt/yr for {years} years",
+    "reforest": "Restoration begun: +{per_turn} Gt/yr for {turns} turns",
     "adapt": "Adaptation +{amount}",
     "media": "Independent media active for the rest of the run",
     "wellbeing": "Wellbeing +{amount} happiness",
-    "ally": "{region} joins the coalition (+20 funds and +1 influence yearly)"
+    "ally": "{region} joins the coalition (+40 funds and +2 influence per turn)",
+    "actor_fund": "{actor} retires capacity: -{applied} Gt/yr, drift -{trend_cut}",
+    "actor_treaty": "{actor} signs: emissions drift -{trend_cut}/turn"
   },
   "cards": {
-    "enact": "Played {name} ({cost_note})"
+    "enact": "Funded {name} ({cost_note})"
   },
   "events": {
     "drought_hit": "Drought grips {region}: funds -{money}, happiness -{happiness}, absorption -{absorption}{resilience_note}",
     "drought_answered": "Drought in {region} answered: reserves hold. {reward_note}",
-    "heat_wave_hit": "Heat wave strikes {region}: happiness -{happiness}, funds -{money}{resilience_note}",
+    "heat_wave_hit": "Record heat scorches {region}: happiness -{happiness}, funds -{money}{resilience_note}",
     "heat_wave_answered": "Heat wave in {region} answered: shelters open, lives held. {reward_note}",
     "mega_fire_hit": "Mega fire in {region}: absorption -{absorption}, funds -{money}, happiness -{happiness} (fire #{fires}){resilience_note}",
     "mega_fire_answered": "Fire lines hold in {region}: the forest stands. {reward_note}",
     "mega_fire_opp": "Rebuild better: restoration is half price while the ashes are warm.",
     "flood_tsunami_hit": "Flood devastates {region}: funds -{money}, happiness -{happiness}{resilience_note}",
     "flood_tsunami_answered": "Flood contained in {region}: defenses held. {reward_note}",
-    "flood_tsunami_opp": "Rebuild better: transport will be rebuilt transformed next year.",
+    "flood_tsunami_opp": "Rebuild better: transport will be rebuilt transformed next turn.",
     "crop_failure_hit": "Crops fail in {region}: funds -{money}, happiness -{happiness}{resilience_note}",
     "crop_failure_answered": "Harvest saved in {region}: granaries shared. {reward_note}",
     "energy_crunch_hit": "Energy crunch in {region}: funds -{money}, happiness -{happiness}",
@@ -58,8 +69,8 @@
     "social_crisis_hit": "Social crisis in {region}: influence -{influence}, funds -{money}{ally_note}",
     "social_crisis_answered": "Unrest in {region} heard and answered. {reward_note}",
     "social_crisis_opp": "A window for change is open: the next sufficiency policy costs no happiness.",
-    "climate_summit_seized": "Climate Summit seized: the coalition sets the agenda. {reward_note}",
-    "climate_summit_missed": "The Climate Summit convenes without you.",
+    "climate_summit_seized": "Treaty Conference seized: the coalition sets the agenda. {reward_note}",
+    "climate_summit_missed": "The Treaty Conference convenes without you.",
     "green_investment_wave_seized": "Green investment wave captured. {reward_note}",
     "green_investment_wave_missed": "The green investment wave breaks elsewhere.",
     "youth_movement_seized": "The youth movement marches with you. {reward_note}",
@@ -70,8 +81,9 @@
     "resilience_note": " (resilience softened this)"
   },
   "endings": {
-    "WIN_NEUTRAL": "The balance holds. The world is carbon-neutral.",
-    "LOSS_LIMIT_BREACHED": "The limit for a safe human world is breached.",
-    "LOSS_NOT_NEUTRAL": "We survived the century. The job is not done."
+    "WIN_NEUTRAL": "The curve bends before the clock strikes. The world is carbon-neutral.",
+    "LOSS_LIMIT_BREACHED": "The tipping point is crossed. The limit for a safe human world is breached.",
+    "LOSS_NOT_NEUTRAL": "We survived the century. The job is not done.",
+    "LOSS_REVOLT": "Happiness reached zero. The city rises against its own transition - the run is lost."
   }
 }

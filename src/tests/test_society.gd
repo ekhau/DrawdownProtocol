@@ -1,22 +1,22 @@
 extends TestBase
 ## T9-P4 (resilience multipliers), T10-P4 (social crisis formula and income
-## penalties), T7-P5 (social crisis flatness).
+## penalties), T7-P5 (social crisis flatness). Per-turn values (1 turn = 5 yr).
 
 
 func test_income_penalties() -> void:
-	eq(float(SocietyCalc.income(60.0, 0)["amount"]), 100.0, "baseline income")
-	eq(float(SocietyCalc.income(60.0, 4)["amount"]), 180.0, "+20 per ally")
-	eq(float(SocietyCalc.income(39.9, 0)["amount"]), 75.0, "x0.75 below 40")
+	eq(float(SocietyCalc.income(60.0, 0)["amount"]), 250.0, "baseline income per turn")
+	eq(float(SocietyCalc.income(60.0, 4)["amount"]), 410.0, "+40 per ally")
+	eq(float(SocietyCalc.income(39.9, 0)["amount"]), 187.5, "x0.75 below 40")
 	eq(SocietyCalc.income(39.9, 0)["penalty"], &"h_below_40", "penalty id 40")
-	eq(float(SocietyCalc.income(40.0, 0)["amount"]), 100.0, "no penalty at exactly 40")
-	eq(float(SocietyCalc.income(24.9, 0)["amount"]), 50.0, "x0.5 below 25 (strongest only)")
+	eq(float(SocietyCalc.income(40.0, 0)["amount"]), 250.0, "no penalty at exactly 40")
+	eq(float(SocietyCalc.income(24.9, 0)["amount"]), 125.0, "x0.5 below 25 (strongest only)")
 	eq(SocietyCalc.income(24.9, 0)["penalty"], &"h_below_25", "penalty id 25")
 
 
 func test_influence_income() -> void:
-	eq(SocietyCalc.influence_income(0, false), 2.0, "base influence")
-	eq(SocietyCalc.influence_income(3, false), 5.0, "+1 per ally")
-	eq(SocietyCalc.influence_income(3, true), 6.0, "+1 media")
+	eq(SocietyCalc.influence_income(0, false), 6.0, "base influence per turn")
+	eq(SocietyCalc.influence_income(3, false), 12.0, "+2 per ally")
+	eq(SocietyCalc.influence_income(3, true), 14.0, "+2 media")
 
 
 func test_resilience_and_mult() -> void:  # T9-P4
@@ -30,11 +30,11 @@ func test_resilience_and_mult() -> void:  # T9-P4
 
 func test_happiness_drift() -> void:
 	var d := SocietyCalc.happiness_drift(100.0, 0)
-	eq(float(d["co_benefit"]), 1.5, "max co-benefit at full transition")
+	eq(float(d["co_benefit"]), 4.0, "max co-benefit at full transition (per turn)")
 	eq(float(d["stress"]), 0.0, "no stress in band 0")
 	d = SocietyCalc.happiness_drift(0.0, 2)
 	eq(float(d["co_benefit"]), 0.0, "no co-benefit at 0%")
-	eq(float(d["stress"]), 1.0, "Overshoot II stress")
+	eq(float(d["stress"]), 4.0, "Overshoot II stress per turn")
 
 
 func _event_def(id: String) -> Dictionary:
@@ -84,8 +84,8 @@ func test_social_crisis_flat_damage() -> void:  # T7-P5
 		var crisis := _forced_crisis(rs, "social_crisis", rs.world[3])
 		rs._apply_crisis_hit(crisis, SocietyCalc.damage_mult(rs.happiness, rs.adapt))
 		var damages: Dictionary = crisis["damages"]
-		eq(float(damages["influence"]), 8.0, "flat influence damage at R=%s" % rs.resilience())
-		eq(float(damages["money"]), 15.0, "flat money damage at R=%s" % rs.resilience())
+		eq(float(damages["influence"]), 12.0, "flat influence damage at R=%s" % rs.resilience())
+		eq(float(damages["money"]), 30.0, "flat money damage at R=%s" % rs.resilience())
 
 
 func test_scaled_crisis_damage() -> void:  # T9-P4 applied
@@ -96,5 +96,5 @@ func test_scaled_crisis_damage() -> void:  # T9-P4 applied
 	var crisis := _forced_crisis(rs, "heat_wave", rs.world[3])
 	rs._apply_crisis_hit(crisis, SocietyCalc.damage_mult(rs.happiness, rs.adapt))
 	var damages: Dictionary = crisis["damages"]
-	eq(float(damages["money"]), 10.0, "heat money damage halved at R=100")
-	eq(float(damages["happiness"]), 1.5, "heat happiness damage halved at R=100")
+	eq(float(damages["money"]), 20.0, "heat money damage halved at R=100")
+	eq(float(damages["happiness"]), 3.0, "heat happiness damage halved at R=100")

@@ -1,21 +1,25 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "cards": [
     {
       "id": "IND1",
       "name": "Industrial Efficiency",
       "category": "ind",
-      "cost_money": 80,
+      "cost_money": 90,
       "cost_influence": 0,
       "tags": [
         "energy"
       ],
       "flavor": "Every wasted joule was a choice.",
+      "codex": {
+        "title": "Industrial energy efficiency",
+        "body": "Waste-heat recovery, electric motors and smarter process control are among the cheapest large-scale mitigation available. IPCC AR6 ranks industrial efficiency as a gigaton-scale lever this decade."
+      },
       "effects": [
         {
           "op": "sector_progress",
           "sector": "ind",
-          "amount": 6,
+          "amount": 12,
           "lifts_cap": false
         }
       ]
@@ -30,11 +34,15 @@
         "energy"
       ],
       "flavor": "Sun and wind, wired to the furnaces.",
+      "codex": {
+        "title": "Clean electrification",
+        "body": "Wind and solar are now the cheapest new electricity in most of the world. Electrifying industry on a clean grid removes the largest single block of global emissions (IEA net-zero roadmap)."
+      },
       "effects": [
         {
           "op": "sector_progress",
           "sector": "ind",
-          "amount": 10,
+          "amount": 16,
           "lifts_cap": false
         }
       ]
@@ -49,11 +57,15 @@
         "sufficiency"
       ],
       "flavor": "Nothing is waste; everything is feedstock.",
+      "codex": {
+        "title": "Circular material flows",
+        "body": "Roughly a quarter of industrial emissions come from making virgin materials. Reuse, remanufacture and recycling cut both emissions and extraction (Project Drawdown)."
+      },
       "effects": [
         {
           "op": "sector_progress",
           "sector": "ind",
-          "amount": 8,
+          "amount": 13,
           "lifts_cap": true
         },
         {
@@ -67,7 +79,7 @@
       "id": "IND4",
       "name": "Industrial Symbiosis",
       "category": "ind",
-      "cost_money": 90,
+      "cost_money": 95,
       "cost_influence": 0,
       "tags": [
         "energy"
@@ -78,14 +90,45 @@
         "gte": 40
       },
       "rewards": {
-        "money": 20
+        "money": 25
       },
       "flavor": "One factory's exhaust is another's furnace.",
+      "codex": {
+        "title": "Industrial symbiosis",
+        "body": "In Kalundborg, Denmark, factories have traded exhaust steam, cooling water and by-products since 1972. One plant's waste stream becomes another's input - profitably."
+      },
       "effects": [
         {
           "op": "sector_progress",
           "sector": "ind",
-          "amount": 8,
+          "amount": 13,
+          "lifts_cap": false
+        }
+      ]
+    },
+    {
+      "id": "IND5",
+      "name": "Industrial Carbon Levy",
+      "category": "ind",
+      "cost_money": 0,
+      "cost_influence": 0,
+      "cost_happiness": 6,
+      "tags": [
+        "energy"
+      ],
+      "rewards": {
+        "money": 35
+      },
+      "flavor": "The polluters pay. The voters notice.",
+      "codex": {
+        "title": "Carbon pricing",
+        "body": "Carbon pricing makes polluters pay per ton and funds the transition; over 70 schemes now cover about a quarter of global emissions. It works - and it is politically explosive when the revenue is not visibly returned to people."
+      },
+      "effects": [
+        {
+          "op": "sector_progress",
+          "sector": "ind",
+          "amount": 14,
           "lifts_cap": false
         }
       ]
@@ -102,11 +145,15 @@
         "health"
       ],
       "flavor": "The fastest way through a city was never a car.",
+      "codex": {
+        "title": "Modal shift",
+        "body": "Shifting trips to rail and cycling is an IPCC AR6 avoid-shift lever: it cuts emissions, air pollution and health costs at once. Copenhagen's bike lanes pay for themselves in public health alone."
+      },
       "effects": [
         {
           "op": "sector_progress",
           "sector": "tra",
-          "amount": 8,
+          "amount": 13,
           "lifts_cap": true
         },
         {
@@ -126,11 +173,15 @@
         "mobility"
       ],
       "flavor": "Electric, efficient, and priced for everyone.",
+      "codex": {
+        "title": "Electric vehicles for all",
+        "body": "EVs cut lifecycle emissions even on today's grids, and battery costs fell about 90% in a decade. The lever is affordability: EVs only decarbonize transport when ordinary households can buy them."
+      },
       "effects": [
         {
           "op": "sector_progress",
           "sector": "tra",
-          "amount": 10,
+          "amount": 16,
           "lifts_cap": false
         }
       ]
@@ -146,11 +197,15 @@
         "mobility"
       ],
       "flavor": "Streets returned to the people who live on them.",
+      "codex": {
+        "title": "Compact urbanism",
+        "body": "The 15-minute-city idea puts daily needs within a walk. Compact, mixed-use neighborhoods cut car-kilometers structurally - an avoided ton is cheaper than any abated one (IPCC AR6 Ch.5)."
+      },
       "effects": [
         {
           "op": "sector_progress",
           "sector": "tra",
-          "amount": 6,
+          "amount": 10,
           "lifts_cap": true
         },
         {
@@ -172,11 +227,15 @@
         "health"
       ],
       "flavor": "Good for the land, good for the heart.",
+      "codex": {
+        "title": "Plant-rich diets",
+        "body": "The EAT-Lancet Commission found a mostly plant-based diet could feed 10 billion people within planetary boundaries. Project Drawdown ranks plant-rich diets among the top climate solutions of all."
+      },
       "effects": [
         {
           "op": "sector_progress",
           "sector": "agr",
-          "amount": 8,
+          "amount": 13,
           "lifts_cap": true
         },
         {
@@ -197,11 +256,15 @@
         "water"
       ],
       "flavor": "Farms that feed the soil as well as the people.",
+      "codex": {
+        "title": "Agroecology",
+        "body": "Agroecology builds soil carbon with cover crops, agroforestry and rotation instead of synthetic inputs. Healthy soils are the second-largest carbon store on land after forests."
+      },
       "effects": [
         {
           "op": "sector_progress",
           "sector": "agr",
-          "amount": 8,
+          "amount": 13,
           "lifts_cap": false
         },
         {
@@ -214,7 +277,7 @@
       "id": "AGR3",
       "name": "Food Commons",
       "category": "agr",
-      "cost_money": 70,
+      "cost_money": 75,
       "cost_influence": 0,
       "tags": [
         "food",
@@ -225,11 +288,15 @@
         "count": 4
       },
       "flavor": "A meal shared is a system changed.",
+      "codex": {
+        "title": "Food waste and food commons",
+        "body": "Community food programs cut waste - a third of all food is lost - and shift diets by making the sustainable option the default. Food waste reduction is Project Drawdown's top-ranked solution."
+      },
       "effects": [
         {
           "op": "sector_progress",
           "sector": "agr",
-          "amount": 6,
+          "amount": 10,
           "lifts_cap": false
         },
         {
@@ -250,11 +317,15 @@
         "forest"
       ],
       "flavor": "Plant today what must breathe for a century.",
+      "codex": {
+        "title": "Reforestation",
+        "body": "Restoring forests is the largest proven negative-emissions option available today. It is slow carbon: a planted forest absorbs for decades, which is why starting early matters so much."
+      },
       "effects": [
         {
           "op": "reforest",
-          "per_year": 0.3,
-          "years": 5
+          "per_turn": 1.0,
+          "turns": 3
         }
       ]
     },
@@ -269,11 +340,15 @@
         "water"
       ],
       "flavor": "The oldest carbon capture technology on Earth.",
+      "codex": {
+        "title": "Peatland and ocean sinks",
+        "body": "Peatlands hold twice the carbon of all forests on 3% of the land; drained peat burns for years. Rewetting them, and protecting seagrass and kelp, locks the oldest carbon stores shut."
+      },
       "effects": [
         {
           "op": "reforest",
-          "per_year": 0.2,
-          "years": 5
+          "per_turn": 0.8,
+          "turns": 3
         },
         {
           "op": "adapt",
@@ -296,11 +371,15 @@
         "count": 1
       },
       "flavor": "Mangroves hold the coast and the carbon.",
+      "codex": {
+        "title": "Blue carbon",
+        "body": "Mangroves, salt marshes and seagrass bury carbon up to 40 times faster per hectare than tropical forest - and they blunt storm surges for free while doing it."
+      },
       "effects": [
         {
           "op": "reforest",
-          "per_year": 0.25,
-          "years": 4
+          "per_turn": 1.2,
+          "turns": 2
         }
       ]
     },
@@ -315,6 +394,10 @@
         "relief"
       ],
       "flavor": "Build for the storms we already ordered.",
+      "codex": {
+        "title": "Climate-proof infrastructure",
+        "body": "Adaptation is now unavoidable spending: elevated grids, cool roofs, hardened water systems. Every dollar of resilient infrastructure saves several in avoided disaster losses (World Bank)."
+      },
       "effects": [
         {
           "op": "adapt",
@@ -332,6 +415,10 @@
         "civic"
       ],
       "flavor": "A public that understands will demand the change.",
+      "codex": {
+        "title": "Independent climate journalism",
+        "body": "Public understanding of climate tracks the quality of the information environment. Independent journalism measurably raises support for transition policy - and inoculates against denial campaigns."
+      },
       "effects": [
         {
           "op": "media"
@@ -348,10 +435,14 @@
         "health"
       ],
       "flavor": "A transition nobody enjoys is a transition nobody keeps.",
+      "codex": {
+        "title": "Wellbeing economics",
+        "body": "IPCC AR6 Chapter 5's key finding: demand-side change works only when wellbeing rises with it. Universal services - health, transit, energy access - decouple a good life from a high-carbon one."
+      },
       "effects": [
         {
           "op": "wellbeing",
-          "amount": 3
+          "amount": 4
         }
       ]
     },
@@ -372,10 +463,38 @@
         "influence": 3
       },
       "flavor": "Celebrate what works and it spreads.",
+      "codex": {
+        "title": "Social contagion of change",
+        "body": "Visible collective wins normalize change: car-free days, harvest festivals, retrofit street parties. Behaviors spread through social networks - contagion is a real mitigation channel."
+      },
       "effects": [
         {
           "op": "wellbeing",
           "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "SOC4",
+      "name": "Public Support Fund",
+      "category": "society",
+      "cost_money": 60,
+      "cost_influence": 0,
+      "tags": [
+        "civic"
+      ],
+      "meta_unlock": {
+        "on": "LOSS_REVOLT"
+      },
+      "flavor": "Never again govern past the people.",
+      "codex": {
+        "title": "Just-transition funds",
+        "body": "France's 2018 fuel-tax revolt taught the textbook lesson: climate policy that ignores distribution fails politically. Rebates and just-transition funds keep the public inside the coalition."
+      },
+      "effects": [
+        {
+          "op": "wellbeing",
+          "amount": 6
         }
       ]
     },
@@ -389,6 +508,10 @@
         "treaty"
       ],
       "flavor": "We cannot command the world. We can convince it.",
+      "codex": {
+        "title": "Climate clubs",
+        "body": "Coalitions with shared standards and preferential terms let ambitious countries move without waiting for unanimity - the climate-club economics of William Nordhaus."
+      },
       "effects": [
         {
           "op": "ally"
@@ -408,10 +531,14 @@
         "treaty"
       ],
       "flavor": "Too big for any one of us. Exactly right for all of us.",
+      "codex": {
+        "title": "Cross-border projects",
+        "body": "Cross-border grids, rail corridors and shared industry hubs achieve scale no single actor can. The EU's connected market decarbonizes faster than any member could alone."
+      },
       "effects": [
         {
           "op": "joint_progress",
-          "amount": 5
+          "amount": 8
         }
       ]
     },
@@ -435,12 +562,131 @@
         "money": 25
       },
       "flavor": "Members trade in the currency of the future.",
+      "codex": {
+        "title": "Carbon-standard trade",
+        "body": "Members trade on a common carbon standard and pool green finance. The club grows because staying outside costs more than joining - the enforcement mechanism the Paris Agreement lacks."
+      },
       "effects": [
         {
           "op": "joint_progress",
-          "amount": 4
+          "amount": 7
         }
       ]
+    },
+    {
+      "id": "DIP4",
+      "name": "Fund a Transition",
+      "category": "diplomacy",
+      "cost_money": 120,
+      "cost_influence": 8,
+      "tags": [
+        "treaty"
+      ],
+      "market_weight": 3.0,
+      "flavor": "Their coal plant, our money, everyone's sky.",
+      "codex": {
+        "title": "International climate finance",
+        "body": "Just Energy Transition Partnerships (South Africa, Indonesia, Vietnam) buy the world's cheapest emission cuts: retiring a coal plant abroad beats a marginal cut at home on every ledger but the political one."
+      },
+      "effects": [
+        {
+          "op": "actor_fund",
+          "cut": 6.0,
+          "trend_cut": 0.3
+        }
+      ]
+    },
+    {
+      "id": "DIP5",
+      "name": "Emissions Treaty",
+      "category": "diplomacy",
+      "cost_money": 30,
+      "cost_influence": 20,
+      "tags": [
+        "treaty"
+      ],
+      "market_weight": 2.6,
+      "flavor": "A signature that bends a curve.",
+      "codex": {
+        "title": "Binding sectoral treaties",
+        "body": "Treaties bend national emission curves: the Montreal Protocol remains the most successful environmental agreement ever, eliminating nearly 99% of ozone-depleting substances."
+      },
+      "effects": [
+        {
+          "op": "actor_treaty",
+          "trend_cut": 0.8
+        }
+      ]
+    },
+    {
+      "id": "RND1",
+      "name": "Fusion Moonshot",
+      "category": "research",
+      "cost_money": 150,
+      "cost_influence": 0,
+      "tags": [
+        "energy"
+      ],
+      "flavor": "A star in a bottle, or an invoice in a drawer.",
+      "codex": {
+        "title": "Fusion energy",
+        "body": "Fusion crossed net energy gain at NIF in 2022, but a commercial plant remains decades of engineering away. High ceiling, real odds of arriving too late - the textbook push-your-luck bet."
+      },
+      "effects": [],
+      "risk": {
+        "chance": 0.35,
+        "on_success": {
+          "effects": [
+            {
+              "op": "joint_progress",
+              "amount": 8
+            }
+          ],
+          "rewards": {
+            "money": 60,
+            "knowledge": 1
+          }
+        },
+        "on_failure": {
+          "effects": [
+            {
+              "op": "happiness",
+              "amount": -4,
+              "waivable": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "RND2",
+      "name": "Direct Air Capture",
+      "category": "research",
+      "cost_money": 100,
+      "cost_influence": 0,
+      "tags": [
+        "energy"
+      ],
+      "flavor": "Vacuum the sky. Terms and conditions apply.",
+      "codex": {
+        "title": "Direct air capture",
+        "body": "Machines that scrub CO2 from ambient air work today at small scale (Climeworks' Orca). Whether costs fall fast enough to matter is an open bet - IPCC pathways lean on it; critics call it a promise to delay."
+      },
+      "effects": [],
+      "risk": {
+        "chance": 0.5,
+        "on_success": {
+          "effects": [
+            {
+              "op": "sink_now",
+              "amount": 2.0
+            }
+          ]
+        },
+        "on_failure": {
+          "effects": []
+        }
+      }
     },
     {
       "id": "RSP1",
@@ -456,6 +702,10 @@
         "influence": 3
       },
       "flavor": "First on the ground, last to leave.",
+      "codex": {
+        "title": "Civil protection corps",
+        "body": "Trained civil-protection corps cut disaster mortality dramatically; Bangladesh reduced cyclone deaths a hundred-fold since 1970 with shelters, warning systems and drilled volunteers."
+      },
       "effects": [
         {
           "op": "adapt",
@@ -476,6 +726,10 @@
         "money": 10
       },
       "flavor": "Every drop budgeted like the treasure it is.",
+      "codex": {
+        "title": "Water efficiency",
+        "body": "Watershed restoration, drip irrigation and leak repair stretch every drop. Water efficiency is adaptation and mitigation at once, since moving and treating water burns energy."
+      },
       "effects": [
         {
           "op": "sink_now",
@@ -493,6 +747,10 @@
         "coast"
       ],
       "flavor": "The sea negotiates with no one; the shore must.",
+      "codex": {
+        "title": "Living shorelines",
+        "body": "Restored wetlands and reefs in front of levees outperform concrete alone - and get stronger, not weaker, as they grow."
+      },
       "effects": [
         {
           "op": "adapt",
@@ -514,6 +772,10 @@
         "influence": 2
       },
       "flavor": "Nobody organizes like people fed together.",
+      "codex": {
+        "title": "Community food security",
+        "body": "Shared kitchens appear wherever disasters strike - and keep working afterward as civic anchors. Food security is the fastest way to hold social trust through a shock."
+      },
       "effects": [
         {
           "op": "happiness",
@@ -536,6 +798,10 @@
         "money": 15
       },
       "flavor": "Keep the lights on; keep the trust on.",
+      "codex": {
+        "title": "Grid resilience",
+        "body": "Distributed repair capacity and microgrids keep power on through extreme weather. Every blackout avoided is public trust retained for the transition."
+      },
       "effects": [
         {
           "op": "adapt",
@@ -561,11 +827,45 @@
         "influence": 4
       },
       "flavor": "The disaster plan is knowing your neighbors.",
+      "codex": {
+        "title": "Mutual aid",
+        "body": "After every major disaster, most first rescues are made by neighbors, not agencies. Organized mutual aid is measurable resilience - social capital is infrastructure."
+      },
       "effects": [
         {
           "op": "happiness",
           "amount": 2,
           "waivable": false
+        }
+      ]
+    },
+    {
+      "id": "HWP1",
+      "name": "Heatwave Response Plan",
+      "category": "response",
+      "cost_money": 25,
+      "cost_influence": 0,
+      "tags": [
+        "health",
+        "relief"
+      ],
+      "bonus_only": true,
+      "rewards": {
+        "influence": 3
+      },
+      "flavor": "Cool rooms, checked doors, shifted hours.",
+      "codex": {
+        "title": "Heat action plans",
+        "body": "Cooling centers, buddy checks on the elderly and adjusted work hours cut heatwave mortality at almost no cost. Ahmedabad's 2013 plan became the template for hundreds of cities."
+      },
+      "effects": [
+        {
+          "op": "adapt",
+          "amount": 6
+        },
+        {
+          "op": "wellbeing",
+          "amount": 2
         }
       ]
     }

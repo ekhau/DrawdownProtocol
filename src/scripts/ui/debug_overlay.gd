@@ -39,7 +39,7 @@ func _ready() -> void:
 	_button(row, "Autoplay Safe", func() -> void: autoplay_requested.emit(&"safe"))
 	_button(row, "Risky", func() -> void: autoplay_requested.emit(&"risky"))
 	_button(row, "Mixed", func() -> void: autoplay_requested.emit(&"mixed"))
-	_button(row, "+10 yrs (pass)", func() -> void: advance10_requested.emit())
+	_button(row, "+3 turns (pass)", func() -> void: advance10_requested.emit())
 	var row2 := HBoxContainer.new()
 	row2.add_theme_constant_override("separation", 6)
 	vbox.add_child(row2)
@@ -67,13 +67,25 @@ func refresh() -> void:
 	var rs := _sim.run_state
 	var lines: PackedStringArray = []
 	var band_names := ["stable", "OVERSHOOT-I", "OVERSHOOT-II"]
-	lines.append("seed %d   year %d   band %s   phase %s" % [rs.run_seed, rs.year,
+	lines.append("seed %d   turn %d/%d (%d)   clock %.0f%%   band %s   phase %s" % [
+		rs.run_seed, rs.turn_index(), RunState.total_turns(), rs.year, rs.clock_pct(),
 		band_names[rs.warming_band()], RunState.Phase.keys()[rs.phase]])
-	lines.append("T %.3f  E %.2f  A %.2f  N %+.2f   M %.0f  H %.1f  I %.1f  allies %d  R %.0f (adapt %.0f)" % [
-		rs.temp, rs.gross_emissions(), rs.absorption, rs.net_emissions(),
-		rs.money, rs.happiness, rs.influence, rs.allies, rs.resilience(), rs.adapt])
-	lines.append("flags: media=%s window=%s fire_discount=%s flood_rebuild=%s  fires=%d  e_extra=%.1f" % [
-		rs.media, rs.window, rs.fire_discount, rs.flood_rebuild, rs.fires, rs.e_extra])
+	lines.append("T %.3f  Ec %.2f Ew %.2f  A %.2f  N %+.2f (fcast %+.1f%%)  M %.0f  H %.1f  I %.1f  allies %d  R %.0f (adapt %.0f)" % [
+		rs.temp, rs.gross_emissions(), rs.world_emissions(), rs.absorption, rs.net_emissions(),
+		rs.clock_forecast_pct(), rs.money, rs.happiness, rs.influence, rs.allies,
+		rs.resilience(), rs.adapt])
+	lines.append("flags: media=%s window=%s fire_discount=%s flood_rebuild=%s  fires=%d  e_extra=%.1f  archetype=%s" % [
+		rs.media, rs.window, rs.fire_discount, rs.flood_rebuild, rs.fires, rs.e_extra,
+		rs.archetype.get("id", "baseline")])
+	var actor_strs: PackedStringArray = []
+	for a in rs.world_actors:
+		actor_strs.append("%s %.1f(+%.2f)" % [a["id"], a["emissions"], a["trend"]])
+	lines.append("actors: " + " | ".join(actor_strs))
+	var market_strs: PackedStringArray = []
+	for id in rs.market:
+		market_strs.append(String(id) + ("*" if rs.market_bonus.has(id) else ""))
+	lines.append("market: [%s]  (* = event bonus)  summits: %s" % [
+		", ".join(market_strs), str(rs.summit_results)])
 	var crisis_strs: PackedStringArray = []
 	for crisis in rs.pending_crises:
 		crisis_strs.append("%s%s" % [crisis["id"], "(ok)" if crisis["answered"] else ""])
@@ -82,7 +94,7 @@ func refresh() -> void:
 		SocietyCalc.combo_mult(rs.combo_chain), rs.combos_total, rs.kp_earned])
 	var proj_strs: PackedStringArray = []
 	for ps in rs.active_projects:
-		proj_strs.append("%s(%dy)" % [ps.id, ps.years_left])
+		proj_strs.append("%s(%dt)" % [ps.id, ps.turns_left])
 	for pid in rs.project_history:
 		proj_strs.append("%s:%s" % [pid, rs.project_history[pid]])
 	lines.append("projects: [%s]  unlocked: %s" % [", ".join(proj_strs),
@@ -101,7 +113,7 @@ func refresh() -> void:
 	lines.append("feedbacks: " + " | ".join(fb_strs))
 	var q_strs: PackedStringArray = []
 	for entry in rs.reforest_queue:
-		q_strs.append("+%.1fx%dyr" % [entry.per_year, entry.years_left])
+		q_strs.append("+%.1fx%dt" % [entry.per_turn, entry.turns_left])
 	lines.append("reforest queue: [%s]" % ", ".join(q_strs))
 	var sect_strs: PackedStringArray = []
 	for sid in WorldEnums.SECTOR_ORDER:

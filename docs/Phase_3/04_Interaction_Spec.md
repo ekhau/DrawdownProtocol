@@ -8,13 +8,15 @@ board never mutates simulation state, with one flavor exception (DIP1 targeting,
 
 | Action name | Binding | Effect |
 |---|---|---|
-| `advance_year` | Space | Resolve the year (blocked while a modal prompt or run-end screen is open) |
+| `advance_year` | Space | Resolve the turn — five years pass (blocked while a modal prompt or run-end screen is open; the action name is historical and stays `advance_year`) |
 | `toggle_hub` | H | Open/close the Knowledge Hub (Plan.md's "Paradigm Hub" — renamed per Concept.md; the input action name stays `toggle_hub`) |
+| `toggle_codex` | C | Open/close the codex (entries unlock permanently on a card's first play) |
+| `toggle_tutorial` | F1 | Show/hide the tutorial panel |
 | `select` | Mouse left | Select region / pick card / confirm prompt |
 | `clear_selection` | Esc or Mouse right | Clear selection / cancel prompt |
 | `toggle_debug` | F3 | Debug overlay (Plan.md Phase 2 lists the overlay; F3 is the assigned key) |
 
-No other bindings in MVP. All five are `InputMap` actions, never hardcoded keycodes.
+No other bindings in MVP. All seven are `InputMap` actions, never hardcoded keycodes.
 
 ## Region hover (Tier A)
 
@@ -37,7 +39,7 @@ No other bindings in MVP. All five are `InputMap` actions, never hardcoded keyco
   only, cards stay global.
 - Selection states: `none → hovered → selected`; `Esc`/RMB returns to `none`.
   Selecting another region moves selection (no multi-select).
-- Space always advances the year regardless of selection — selection is never a
+- Space always resolves the turn regardless of selection — selection is never a
   turn-blocking mode (golden rule 8: feedback immediate, flow uninterrupted).
 
 ## The one targeting flow: Form Alliance (DIP1)
@@ -72,7 +74,9 @@ which country becomes the ally; Esc cancels the card (no cost paid).
 | Hover highlight | same frame |
 | Tooltip | 0.3 s delay, then same frame |
 | Selection / inspector | same frame open, content complete |
-| Year resolution → board settled | ≤ 0.8 s total animation, skippable by pressing Space again |
+| Turn resolution → board settled | ≤ 0.8 s total animation, skippable by pressing Space again |
 
-The double-Space skip matters: 71 turns × forced 0.8 s is 57 s of waiting per run —
-respect the player's tempo (session shape: 10–20 min).
+The double-Space skip still matters at 15 turns: a resolved turn carries five years of
+change (ledger, clock tick, strikes, maybe a summit), so the animation earns its 0.8 s —
+but a player replaying seeds must be able to blitz a run in seconds
+(session shape: 10–20 min).

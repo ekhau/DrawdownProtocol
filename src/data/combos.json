@@ -1,52 +1,52 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "combos": [
     { "id": "green_corridor", "name": "Green Corridor",
       "tags_required": ["mobility", "energy"],
-      "rewards": { "money": 25 },
+      "rewards": { "money": 40 },
       "effects": [],
       "flavor": "Clean vehicles need clean grids - build both, pay less." },
 
     { "id": "water_cycle", "name": "Water Cycle",
       "tags_required": ["water", "forest"],
-      "rewards": { "influence": 3 },
-      "effects": [ { "op": "sink_now", "amount": 0.15 } ],
+      "rewards": { "influence": 5 },
+      "effects": [ { "op": "sink_now", "amount": 0.3 } ],
       "flavor": "Forests make rain; rain makes forests." },
 
     { "id": "land_and_table", "name": "Land & Table",
       "tags_required": ["food", "forest"],
-      "rewards": { "money": 15, "happiness": 1 },
+      "rewards": { "money": 25, "happiness": 2 },
       "effects": [],
       "flavor": "Feed the people, free the land, grow the sink." },
 
     { "id": "streets_alive", "name": "Streets Alive",
       "tags_required": ["mobility", "civic"],
-      "rewards": { "happiness": 2, "influence": 2 },
+      "rewards": { "happiness": 3, "influence": 3 },
       "effects": [],
       "flavor": "A street people love is a policy that keeps itself." },
 
     { "id": "public_trust", "name": "Public Trust",
       "tags_required": ["civic", "health"],
-      "rewards": { "influence": 5 },
+      "rewards": { "influence": 8 },
       "effects": [],
       "flavor": "Care people can see buys change people accept." },
 
     { "id": "blue_shield", "name": "Blue Shield",
       "tags_required": ["coast", "water"],
-      "rewards": { "money": 10 },
-      "effects": [ { "op": "adapt", "amount": 3 } ],
+      "rewards": { "money": 20 },
+      "effects": [ { "op": "adapt", "amount": 4 } ],
       "flavor": "Wetlands are the wall that grows back." },
 
     { "id": "grand_bargain", "name": "Grand Bargain",
       "tags_required": ["treaty", "energy", "civic"],
-      "rewards": { "money": 40, "influence": 8, "knowledge": 1 },
+      "rewards": { "money": 60, "influence": 10, "knowledge": 1 },
       "effects": [],
       "flavor": "Diplomats, engineers and citizens at one table." },
 
     { "id": "drawdown_surge", "name": "Drawdown Surge",
       "tags_required": ["forest", "water", "food", "energy"],
-      "rewards": { "money": 25, "knowledge": 1 },
-      "effects": [ { "op": "sink_now", "amount": 0.3 } ],
-      "flavor": "Every system pulling carbon the same year." }
+      "rewards": { "money": 40, "knowledge": 1 },
+      "effects": [ { "op": "sink_now", "amount": 0.5 } ],
+      "flavor": "Every system pulling carbon the same turn." }
   ]
 }

@@ -22,12 +22,12 @@ func test_restoration_playbook_preserves_totals() -> void:
 	var patched := Catalog.load_default().duplicate_patched(["restoration_playbook"])
 	for eff: Dictionary in patched.card(&"SNK1")["effects"]:
 		if String(eff["op"]) == "reforest":
-			eq(int(eff["years"]), 3, "SNK1 matures in 3 years")
-			approx(float(eff["per_year"]) * int(eff["years"]), 1.5, 1e-9, "SNK1 total preserved (1.5)")
+			eq(int(eff["turns"]), 2, "SNK1 matures in 2 turns")
+			approx(float(eff["per_turn"]) * int(eff["turns"]), 3.0, 1e-9, "SNK1 total preserved (3.0)")
 	for eff: Dictionary in patched.card(&"SNK2")["effects"]:
 		if String(eff["op"]) == "reforest":
-			eq(int(eff["years"]), 3, "SNK2 matures in 3 years")
-			approx(float(eff["per_year"]) * int(eff["years"]), 1.0, 1e-9, "SNK2 total preserved (1.0)")
+			eq(int(eff["turns"]), 2, "SNK2 matures in 2 turns")
+			approx(float(eff["per_turn"]) * int(eff["turns"]), 2.4, 1e-9, "SNK2 total preserved (2.4)")
 
 
 func test_coalition_diplomacy() -> void:
@@ -38,11 +38,20 @@ func test_coalition_diplomacy() -> void:
 func test_grants_at_init() -> void:
 	var gen := WorldGen.generate(2030, true)
 	var rs := RunState.new_run(gen, Catalog.load_default(), ["informed_public", "crisis_ready"])
-	eq(rs.media, true, "informed_public grants media from year 1")
+	eq(rs.media, true, "informed_public grants media from turn 1")
 	eq(rs.adapt, 10.0, "crisis_ready grants +10 adaptation")
 	var rs_plain := RunState.new_run(WorldGen.generate(2030, true), Catalog.load_default(), [])
 	eq(rs_plain.media, false, "no grants without nodes")
 	eq(rs_plain.adapt, 0.0, "no adapt without nodes")
+
+
+func test_archetype_grant_node_exists() -> void:
+	# The Capital Charter node is the meta gate for the locked archetype.
+	var cat := Catalog.load_default()
+	check(cat.knowledge_by_id.has("capital_charter"), "capital_charter node shipped")
+	var arch := cat.archetype(&"political_capital")
+	eq(String(arch.get("unlock", {}).get("knowledge", "")), "capital_charter",
+		"locked archetype references the node")
 
 
 func test_disk_catalog_unchanged() -> void:
@@ -58,8 +67,10 @@ func test_disk_catalog_unchanged() -> void:
 func test_knowledge_changes_gameplay() -> void:
 	# A run with affordable_evs can buy TRA2 with 90 money; a plain run cannot.
 	var rs := RunState.new_run(WorldGen.generate(2030, true), Catalog.load_default(), ["affordable_evs"])
+	rs.market_enforced = false
 	rs.money = 90.0
 	eq(rs.can_play_reason(&"TRA2"), &"ok", "patched run affords TRA2 at 84")
 	var rs_plain := RunState.new_run(WorldGen.generate(2030, true), Catalog.load_default(), [])
+	rs_plain.market_enforced = false
 	rs_plain.money = 90.0
 	eq(rs_plain.can_play_reason(&"TRA2"), &"no_money", "plain run cannot")

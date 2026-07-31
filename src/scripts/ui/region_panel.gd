@@ -204,7 +204,7 @@ func _build_tooltip(rs: RunState) -> String:
 		WorldEnums.AllyState.PLAYER_HOME:
 			lines.append("The coalition's home.")
 		WorldEnums.AllyState.ALLY:
-			lines.append("Ally: +20 money and +1 influence yearly.")
+			lines.append("Ally: +40 money and +2 influence per turn.")
 		_:
 			lines.append("Neutral. Form Alliance: 50 money + 25 influence.")
 	for s in region.scars:

@@ -1,7 +1,7 @@
 class_name ClimateCalc
-## Steps 3, 4 and 7 of the yearly pipeline as pure functions.
-## Spec: docs/Phase_4/03_Climate_Calc_Spec.md. Constants come from
-## data/climate.json via Tuning; no balance values live in this file.
+## Steps 3, 4 and 7 of the per-turn pipeline as pure functions (one turn =
+## YEARS_PER_TURN years). Spec: docs/Phase_4/03_Climate_Calc_Spec.md.
+## Constants come from data/climate.json via Tuning; no balance values here.
 
 
 ## Warming band: 0 stable (< T_WARN), 1 Overshoot I, 2 Overshoot II (>= T_BAND2).
@@ -13,10 +13,25 @@ static func band(t: float) -> int:
 	return 0
 
 
-## Yearly absorption decay from warming stress; reads LAST year's temperature.
+## Per-turn absorption decay from warming stress; reads LAST turn's temperature.
 static func sink_stress(t_prev: float) -> float:
 	var stresses: Array = Tuning.c("SINK_STRESS")
 	return float(stresses[band(t_prev)])
+
+
+## The Climate Clock: warming expressed as percent of the run's race track.
+## 0% = CLOCK_T_ZERO (+1.0 C), 100% = T_LOSS (+2.0 C) - the tipping point.
+static func clock_pct(t: float) -> float:
+	var zero := float(Tuning.c("CLOCK_T_ZERO"))
+	var loss := float(Tuning.c("T_LOSS"))
+	return clampf((t - zero) / (loss - zero) * 100.0, 0.0, 100.0)
+
+
+## A warming delta expressed in clock points (for forecasts and the HUD).
+static func clock_delta_pct(dt: float) -> float:
+	var zero := float(Tuning.c("CLOCK_T_ZERO"))
+	var loss := float(Tuning.c("T_LOSS"))
+	return dt / (loss - zero) * 100.0
 
 
 ## Emissions of one sector given its base and transition progress (0..100).

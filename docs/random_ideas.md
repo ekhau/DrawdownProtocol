@@ -21,3 +21,22 @@
 - Bug: Carte projet à  5 ans out of range
 - Exemple crise: help another city (gain influence), Fight mega fire that impact 3 diferent cities, encourage solidarity
 -  C'est quoi les pourcentages, plus de clarté dans ce qui se passe (impact des actions etc)
+
+- Carte evenement detruit la moitite de la population, moins d'argent mais moins d'emission 
+- Clarté, ajouter un index
+- Slay the spire
+- Diminué le nombre de regions sur la carte (3)
+- choisir parmi 3 société spécialisé asymétrique
+- 1 crise par tout (qui te coute des ressources)
+
+- Mécanique de Rogue-lite: gagné Re-roll, de meilleurs carte, 
+- Rogue-lite: Il doit avoir de nouvelles choses à découvrir, ou des mécaniques avec le deck building
+- Objectif intermediare Neutralité carbon:  Ville, Pays, Monde
+- Push your luck carte aléatoire
+- Couleur par nouveau de cartes
+-  achète des cartes mieux
+-  Piocher une crise (comme BSG) à résoudre en depensant des ressources puis joue ton tour comme un jeu à moteur
+- Carte: explication clair de ce que tu consomme et ce que tu gagnes, revenue, gain direct, 
+
+- Main de 4 cartes avec un magasin OU des boon à la Hades ou les deux (genre boon qui augment ton magasin/ta main)
+- Deckbuilding, je paye la carte au moment ou je la prends, ou je la paye quand je la joue 

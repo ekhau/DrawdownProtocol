@@ -1,11 +1,15 @@
 class_name RunEndScreen
 extends PanelContainer
-## End screen: a rendering of the terminal TurnRecord, never a second
-## computation (docs/Phase_4/05 player-facing mapping).
+## End screen: a rendering of the terminal TurnRecord plus the POST-MORTEM -
+## the pivotal turn that sealed the run's fate (PostMortem heuristic over the
+## records, never a second simulation). Ends every run with a reason to
+## retry: the mistake named, the knowledge banked, the next city one click
+## away (docs/Phase_4/05, 06).
 
 signal new_timeline
 signal retry_same_seed
 signal open_hub
+signal change_city
 
 var _headline: Label
 var _subtext: RichTextLabel
@@ -22,10 +26,10 @@ func _ready() -> void:
 	style.content_margin_top = 22.0
 	style.content_margin_bottom = 22.0
 	add_theme_stylebox_override("panel", style)
-	anchor_left = 0.28
-	anchor_right = 0.72
-	anchor_top = 0.22
-	anchor_bottom = 0.78
+	anchor_left = 0.26
+	anchor_right = 0.74
+	anchor_top = 0.16
+	anchor_bottom = 0.84
 	visible = false
 
 	var vbox := VBoxContainer.new()
@@ -59,9 +63,14 @@ func _ready() -> void:
 	b3.focus_mode = Control.FOCUS_NONE
 	b3.pressed.connect(func() -> void: open_hub.emit())
 	buttons.add_child(b3)
+	var b4 := Button.new()
+	b4.text = "Change city"
+	b4.focus_mode = Control.FOCUS_NONE
+	b4.pressed.connect(func() -> void: change_city.emit())
+	buttons.add_child(b4)
 
 
-func show_outcome(rs: RunState) -> void:
+func show_outcome(rs: RunState, fresh_meta_cards: Array = []) -> void:
 	var rec: TurnRecord = rs.records.back()
 	_headline.text = LogFormatter.render("endings", String(rec.end_status))
 	match rec.end_status:
@@ -73,15 +82,32 @@ func show_outcome(rs: RunState) -> void:
 	for r in rs.records:
 		peak_t = maxf(peak_t, r.temp)
 	var lines: PackedStringArray = []
-	lines.append("Year %d - net emissions %+.1f Gt/yr - peak warming +%.2f C" % [rec.year, rec.net, peak_t])
+	lines.append("Turn %d (%d) - net %+.1f Gt (city %.0f + world %.0f vs A %.0f) - clock peaked at %.0f%%" % [
+		rec.turn, rec.year, rec.net, rec.emissions_city, rec.emissions_world,
+		rec.absorption, ClimateCalc.clock_pct(peak_t)])
 	lines.append("Allies: %d - Sectors: industry %d%%, transport %d%%, agro %d%%" % [
 		rec.allies, roundi(rs.sector(&"ind").progress),
 		roundi(rs.sector(&"tra").progress), roundi(rs.sector(&"agr").progress)])
+	var summit_notes: PackedStringArray = []
+	for sid in rs.summit_results:
+		summit_notes.append("%s %s" % [String(sid).replace("_", " "), rs.summit_results[sid]])
+	if summit_notes.size() > 0:
+		lines.append("Summits: " + ", ".join(summit_notes))
 	if rs.feedback_years.size() > 0:
 		var fb_strs: PackedStringArray = []
 		for id in rs.feedback_years:
 			fb_strs.append("%s (%d)" % [String(id).replace("_", " "), rs.feedback_years[id]])
 		lines.append("Feedback loops triggered: " + ", ".join(fb_strs))
+	# --- The post-mortem: name the turn, name the mistake. ---
+	var pm := PostMortem.analyze(rs.records, rs.catalog)
+	if not pm.is_empty():
+		lines.append("")
+		lines.append("[color=#f2c894][b]POST-MORTEM - %s[/b][/color]" % String(pm["headline"]))
+		for line in pm["lines"]:
+			lines.append("[color=#d8d8d0]- %s[/color]" % String(line))
+	for card_id in fresh_meta_cards:
+		lines.append("")
+		lines.append("[color=#b8e8b0]LESSON LEARNED: %s is now in every future deck.[/color]" % String(card_id))
 	lines.append("")
 	lines.append("[color=#e8d48a]Knowledge gained: %d points[/color] (total: %d)" % [rec.kp_awarded, Meta.kp_total])
 	lines.append("[color=#9aa694]Even a failed timeline teaches us something permanent. Spend it in the Knowledge tree - the next run starts smarter.[/color]")

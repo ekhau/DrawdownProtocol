@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "nodes": [
     { "id": "affordable_evs", "name": "Affordable EVs", "kp_cost": 6,
       "insight": "We know how to make electric cars people can buy.",
@@ -15,7 +15,7 @@
 
     { "id": "restoration_playbook", "name": "Restoration Playbook", "kp_cost": 5,
       "insight": "We have learned to regrow ecosystems fast.",
-      "patch": { "cards": ["SNK1", "SNK2"], "reforest_years": 3 } },
+      "patch": { "cards": ["SNK1", "SNK2"], "reforest_turns": 2 } },
 
     { "id": "coalition_diplomacy", "name": "Coalition Diplomacy", "kp_cost": 10,
       "insight": "Trust, once earned, is easier the next time.",
@@ -23,6 +23,10 @@
 
     { "id": "crisis_ready", "name": "Crisis-Ready Design", "kp_cost": 12,
       "insight": "We build for the disasters we know are coming.",
-      "grant": { "adapt": 10 } }
+      "grant": { "adapt": 10 } },
+
+    { "id": "capital_charter", "name": "Capital Charter", "kp_cost": 6,
+      "insight": "Leverage can substitute for wealth - a capital of pure politics becomes playable.",
+      "grant": { "archetype": "political_capital" } }
   ]
 }

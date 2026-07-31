@@ -3,18 +3,19 @@ extends RefCounted
 ## Collected (not first-failure) schema validation of the content catalogs.
 ## Spec: docs/Phase_5/05_Data_Validation_And_Content_Pipeline.md.
 ## Run three ways: at boot, headless via tools/validate_data.gd, and by tests.
-##
-## Rule E8 (order renumbering vs the previous committed file version) is not
-## implemented: it needs version history, out of scope for the prototype.
 
-const CATEGORIES := ["ind", "tra", "agr", "sink", "society", "diplomacy", "response"]
+const CATEGORIES := ["ind", "tra", "agr", "sink", "society", "diplomacy", "response", "research"]
 const SECTORS := ["ind", "tra", "agr"]
 const TARGET_TAGS := ["coastal", "arid", "forested"]
 const CONSUMABLE_FLAGS := ["window", "fire_discount", "flood_rebuild"]
 const DAMAGE_KEYS := ["money", "happiness", "absorption", "influence", "ally_lost"]
 const REWARD_KEYS := ["money", "influence", "happiness", "knowledge"]
 const FEEDBACK_EFFECT_KEYS := ["e_extra", "absorption"]
-const KNOWN_SCHEMA_VERSIONS := [1, 2]
+const ON_DRAW_KEYS := ["e_extra"]
+const BONUS_REQUIRES_KEYS := ["happiness_gte", "money_gte", "influence_gte"]
+const ENDINGS := ["WIN_NEUTRAL", "LOSS_LIMIT_BREACHED", "LOSS_NOT_NEUTRAL", "LOSS_REVOLT"]
+const SUMMIT_METRICS := ["net", "clock_pct"]
+const KNOWN_SCHEMA_VERSIONS := [1, 2, 3]
 
 ## Combo/response tag vocabulary (cards carry them; crises and combos match on
 ## them). "sufficiency" and "restoration" are rule tags with hard-coded
@@ -25,8 +26,8 @@ const RULE_TAGS := ["sufficiency", "restoration"]
 
 const UNLOCK_KINDS := ["crises_answered", "combos", "allies", "projects_completed",
 	"sector_progress"]
-const PASSIVE_KEYS := ["income_money", "income_influence", "happiness_per_year",
-	"absorption_per_year"]
+const PASSIVE_KEYS := ["income_money", "income_influence", "happiness_per_turn",
+	"absorption_per_turn"]
 
 ## op -> { param: required(bool) }; "op" key itself is implicit.
 const OPS := {
@@ -34,19 +35,22 @@ const OPS := {
 	"joint_progress": {"amount": true},
 	"happiness": {"amount": true, "waivable": false},
 	"sink_now": {"amount": true},
-	"reforest": {"per_year": true, "years": true},
+	"reforest": {"per_turn": true, "turns": true},
 	"adapt": {"amount": true},
 	"media": {},
 	"wellbeing": {"amount": true},
 	"ally": {},
+	"actor_fund": {"cut": true, "trend_cut": false},
+	"actor_treaty": {"trend_cut": true},
 }
-## Ops legal outside a card play (combo bonuses, project completions).
+## Ops legal outside a card play (combo bonuses, project completions,
+## risk branches).
 const SIMPLE_OPS := ["sector_progress", "joint_progress", "happiness", "wellbeing",
-	"sink_now", "reforest", "adapt"]
+	"sink_now", "reforest", "adapt", "actor_fund", "actor_treaty"]
 
 const KNOWLEDGE_PATCH_KEYS := ["card", "cards", "cost_money", "cost_influence",
-	"effect_happiness", "reforest_years"]
-const KNOWLEDGE_GRANT_KEYS := ["media", "adapt"]
+	"effect_happiness", "reforest_turns"]
+const KNOWLEDGE_GRANT_KEYS := ["media", "adapt", "archetype"]
 
 ## Tutorial step vocabulary (docs: GoldenRules #7 - teach through play).
 const TUTORIAL_TARGETS := ["none", "top_bar", "warming_gauge", "carbon_label",
@@ -69,9 +73,13 @@ static func load_and_validate(data_dir: String = "res://data") -> DataValidator:
 	var tutorial_doc := _read(data_dir + "/tutorial.json", v)
 	var combos_doc := _read(data_dir + "/combos.json", v)
 	var projects_doc := _read(data_dir + "/projects.json", v)
+	var actors_doc := _read(data_dir + "/world_actors.json", v)
+	var archetypes_doc := _read(data_dir + "/city_archetypes.json", v)
+	var summits_doc := _read(data_dir + "/summits.json", v)
 	if v.errors.is_empty():
 		v.validate_all(cards_doc, events_doc, knowledge_doc, templates_doc,
-			tutorial_doc, combos_doc, projects_doc)
+			tutorial_doc, combos_doc, projects_doc, actors_doc, archetypes_doc,
+			summits_doc)
 	return v
 
 
@@ -93,7 +101,8 @@ func ok() -> bool:
 func validate_all(cards_doc: Dictionary, events_doc: Dictionary,
 		knowledge_doc: Dictionary, templates_doc: Dictionary,
 		tutorial_doc: Dictionary = {}, combos_doc: Dictionary = {},
-		projects_doc: Dictionary = {}) -> bool:
+		projects_doc: Dictionary = {}, actors_doc: Dictionary = {},
+		archetypes_doc: Dictionary = {}, summits_doc: Dictionary = {}) -> bool:
 	var card_info := validate_cards(cards_doc)
 	var event_info := validate_events(events_doc, card_info)
 	validate_knowledge(knowledge_doc, card_info["ids"])
@@ -101,6 +110,12 @@ func validate_all(cards_doc: Dictionary, events_doc: Dictionary,
 		validate_combos(combos_doc, card_info)
 	if not projects_doc.is_empty():
 		validate_projects(projects_doc)
+	if not actors_doc.is_empty():
+		validate_actors(actors_doc)
+	if not archetypes_doc.is_empty():
+		validate_archetypes(archetypes_doc, knowledge_doc)
+	if not summits_doc.is_empty():
+		validate_summits(summits_doc)
 	validate_templates(templates_doc, event_info)
 	if not tutorial_doc.is_empty():
 		validate_tutorial(tutorial_doc)
@@ -173,8 +188,8 @@ func validate_cards(doc: Dictionary) -> Dictionary:
 						errors.append("C7 [%s] joint_progress.amount must be > 0" % where)
 				"reforest":
 					has_reforest = true
-					if int(eff.get("years", 0)) < 1:
-						errors.append("C7 [%s] reforest.years must be >= 1" % where)
+					if int(eff.get("turns", 0)) < 1:
+						errors.append("C7 [%s] reforest.turns must be >= 1" % where)
 		# C6 (both directions)
 		var tagged: bool = c.get("tags", []).has("sufficiency")
 		if tagged != lifts:
@@ -195,7 +210,10 @@ func validate_cards(doc: Dictionary) -> Dictionary:
 			elif float(rewards[key]) < 0:
 				errors.append("C10 [%s] reward '%s' must be >= 0" % [where, key])
 		if float(rewards.get("money", 0)) >= float(c.get("cost_money", 0)) \
-				and float(rewards.get("money", 0)) > 0:
+				and float(rewards.get("money", 0)) > 0 \
+				and float(c.get("cost_happiness", 0)) <= 0:
+			# Cards paid in happiness (resource-vs-resource dilemmas like the
+			# carbon levy) are MEANT to return money; no warning for those.
 			warnings.append("C10 [%s] money reward >= money cost (self-financing card)" % where)
 		# C11: unlock condition (deck growth)
 		if c.has("unlock"):
@@ -214,6 +232,43 @@ func validate_cards(doc: Dictionary) -> Dictionary:
 		for tag in c.get("tags", []):
 			if not COMBO_TAGS.has(String(tag)) and not RULE_TAGS.has(String(tag)):
 				errors.append("C12 [%s] unknown tag '%s'" % [where, tag])
+		# C13: push-your-luck block (odds must be honest and displayable)
+		if c.has("risk"):
+			var risk: Dictionary = c["risk"]
+			var chance := float(risk.get("chance", -1))
+			if chance <= 0.0 or chance >= 1.0:
+				errors.append("C13 [%s] risk.chance must be in (0,1) exclusive" % where)
+			if not risk.has("on_success"):
+				errors.append("C13 [%s] risk needs an on_success branch" % where)
+			for branch_key in risk:
+				if not ["chance", "on_success", "on_failure"].has(String(branch_key)):
+					errors.append("C13 [%s] unknown risk key '%s'" % [where, branch_key])
+			for branch_key in ["on_success", "on_failure"]:
+				var branch: Dictionary = risk.get(branch_key, {})
+				for eff: Dictionary in branch.get("effects", []):
+					var bop := String(eff.get("op", ""))
+					if not SIMPLE_OPS.has(bop):
+						errors.append("C13 [%s] risk %s op '%s' not allowed" % [where, branch_key, bop])
+				for key in branch.get("rewards", {}):
+					if not REWARD_KEYS.has(String(key)):
+						errors.append("C13 [%s] risk %s unknown reward '%s'" % [where, branch_key, key])
+		# C14: codex entry (every card teaches its real-world solution)
+		var codex: Dictionary = c.get("codex", {})
+		if codex.is_empty():
+			warnings.append("C14 [%s] missing codex entry (real-world solution blurb)" % where)
+		elif String(codex.get("title", "")).is_empty() or String(codex.get("body", "")).length() < 40:
+			errors.append("C14 [%s] codex needs a title and a body of 40+ chars" % where)
+		# C15: meta-lesson unlock (cards earned by specific defeats)
+		if c.has("meta_unlock"):
+			if not ENDINGS.has(String((c["meta_unlock"] as Dictionary).get("on", ""))):
+				errors.append("C15 [%s] meta_unlock.on must be a run ending code" % where)
+			if c.has("unlock"):
+				errors.append("C15 [%s] a card cannot be both meta- and run-unlocked" % where)
+		# C16: market fields
+		if c.has("market_weight") and float(c["market_weight"]) <= 0.0:
+			errors.append("C16 [%s] market_weight must be > 0" % where)
+		if bool(c.get("bonus_only", false)) and (c.has("unlock") or c.has("meta_unlock")):
+			errors.append("C16 [%s] bonus_only cards cannot carry unlock conditions" % where)
 	return {"ids": ids, "cards": all_cards}
 
 
@@ -233,7 +288,8 @@ func validate_events(doc: Dictionary, card_info: Dictionary = {}) -> Dictionary:
 	var snake := RegEx.create_from_string("^[a-z][a-z0-9_]*$")
 	var starting_cards: Array = []
 	for c: Dictionary in card_info.get("cards", []):
-		if not c.has("unlock"):
+		if not c.has("unlock") and not c.has("meta_unlock") \
+				and not bool(c.get("bonus_only", false)):
 			starting_cards.append(c)
 	for e: Dictionary in events:
 		var id := String(e.get("id", ""))
@@ -313,6 +369,25 @@ func validate_events(doc: Dictionary, card_info: Dictionary = {}) -> Dictionary:
 			for key in e.get("effect", {}):
 				if not FEEDBACK_EFFECT_KEYS.has(String(key)):
 					errors.append("E6 [%s] unknown feedback effect key '%s'" % [where, key])
+		# E7: on-draw spikes (crises only; answering must be able to clear them)
+		if e.has("on_draw"):
+			if kind != "crisis":
+				errors.append("E7 [%s] only crises may carry on_draw effects" % where)
+			for key in e.get("on_draw", {}):
+				if not ON_DRAW_KEYS.has(String(key)):
+					errors.append("E7 [%s] unknown on_draw key '%s'" % [where, key])
+		# E8: event -> bonus-card links (conditional market injections)
+		if e.has("bonus_card"):
+			var spec: Dictionary = e["bonus_card"]
+			var card_id := String(spec.get("card", ""))
+			var known_ids: Array = card_info.get("ids", [])
+			if not card_info.is_empty() and not known_ids.has(card_id):
+				errors.append("E8 [%s] bonus_card references unknown card '%s'" % [where, card_id])
+			for key in spec.get("requires", {}):
+				if not BONUS_REQUIRES_KEYS.has(String(key)):
+					errors.append("E8 [%s] unknown bonus_card requires key '%s'" % [where, key])
+			if (spec.get("requires", {}) as Dictionary).is_empty():
+				warnings.append("E8 [%s] bonus_card without a resource gate (always injects)" % where)
 		# E9: response (the card-tag answer contract)
 		if kind == "crisis" or kind == "opportunity":
 			var response: Dictionary = e.get("response", {})
@@ -422,9 +497,9 @@ func validate_projects(doc: Dictionary) -> void:
 			errors.append("PR1 [%s] negative upkeep" % where)
 		if float(p.get("upkeep_money", 0)) + float(p.get("upkeep_influence", 0)) <= 0:
 			errors.append("PR1 [%s] project needs a non-zero upkeep" % where)
-		var years := int(p.get("years", 0))
-		if years < 2 or years > 10:
-			errors.append("PR1 [%s] years must be in 2-10" % where)
+		var turns := int(p.get("turns", 0))
+		if turns < 2 or turns > 6:
+			errors.append("PR1 [%s] turns must be in 2-6" % where)
 		# PR2: completion payload
 		var completion: Dictionary = p.get("completion", {})
 		if completion.get("effects", []).is_empty() and completion.get("passive", {}).is_empty():
@@ -445,6 +520,125 @@ func validate_projects(doc: Dictionary) -> void:
 				errors.append("PR3 [%s] unknown penalty key '%s'" % [where, key])
 			elif float(penalty[key]) < 0:
 				errors.append("PR3 [%s] penalty '%s' must be >= 0" % [where, key])
+
+
+# ------------------------------------------------------ world_actors.json ---
+
+func validate_actors(doc: Dictionary) -> void:
+	if not KNOWN_SCHEMA_VERSIONS.has(int(doc.get("schema_version", -1))):
+		errors.append("A1 [actors] unknown schema_version")
+	var actors: Array = doc.get("actors", [])
+	if actors.size() < 2:
+		errors.append("A1 [actors] at least 2 world actors required (the world must out-emit the city)")
+	var ids: Array[String] = []
+	var snake := RegEx.create_from_string("^[a-z][a-z0-9_]*$")
+	for a: Dictionary in actors:
+		var id := String(a.get("id", ""))
+		var where := "actors:%s" % (id if not id.is_empty() else "?")
+		if snake.search(id) == null:
+			errors.append("A1 [%s] id must be snake_case" % where)
+		if ids.has(id):
+			errors.append("A1 [%s] duplicate id" % where)
+		ids.append(id)
+		if String(a.get("name", "")).is_empty():
+			errors.append("A1 [%s] name must be non-empty" % where)
+		if float(a.get("emissions", 0)) <= 0:
+			errors.append("A2 [%s] emissions must be > 0" % where)
+		if float(a.get("trend", -1)) < 0:
+			errors.append("A2 [%s] trend must be >= 0 (treaties cut it, data never starts negative)" % where)
+		var floor_e := float(a.get("floor", 0))
+		if floor_e <= 0 or floor_e > float(a.get("emissions", 0)):
+			errors.append("A2 [%s] floor must be in (0, emissions]" % where)
+
+
+# --------------------------------------------------- city_archetypes.json ---
+
+func validate_archetypes(doc: Dictionary, knowledge_doc: Dictionary = {}) -> void:
+	if not KNOWN_SCHEMA_VERSIONS.has(int(doc.get("schema_version", -1))):
+		errors.append("Y1 [archetypes] unknown schema_version")
+	var archetypes: Array = doc.get("archetypes", [])
+	if archetypes.size() < 3:
+		errors.append("Y1 [archetypes] at least 3 selectable city archetypes required")
+	var node_ids: Array[String] = []
+	for n: Dictionary in knowledge_doc.get("nodes", []):
+		node_ids.append(String(n.get("id", "")))
+	var ids: Array[String] = []
+	var locked := 0
+	var snake := RegEx.create_from_string("^[a-z][a-z0-9_]*$")
+	for a: Dictionary in archetypes:
+		var id := String(a.get("id", ""))
+		var where := "archetypes:%s" % (id if not id.is_empty() else "?")
+		if snake.search(id) == null:
+			errors.append("Y1 [%s] id must be snake_case" % where)
+		if ids.has(id):
+			errors.append("Y1 [%s] duplicate id" % where)
+		ids.append(id)
+		if String(a.get("name", "")).is_empty() or String(a.get("tagline", "")).is_empty():
+			errors.append("Y1 [%s] name and tagline must be non-empty" % where)
+		if float(a.get("money_mult", 1.0)) <= 0 or float(a.get("income_mult", 1.0)) <= 0:
+			errors.append("Y2 [%s] multipliers must be > 0" % where)
+		var smult: Dictionary = a.get("sector_mult", {})
+		for key in smult:
+			if not SECTORS.has(String(key)):
+				errors.append("Y2 [%s] unknown sector_mult key '%s'" % [where, key])
+			elif float(smult[key]) <= 0:
+				errors.append("Y2 [%s] sector_mult '%s' must be > 0" % [where, key])
+		for key in a.get("market_weights", {}):
+			if not COMBO_TAGS.has(String(key)) and not RULE_TAGS.has(String(key)):
+				errors.append("Y2 [%s] unknown market_weights tag '%s'" % [where, key])
+		if int(a.get("start_allies", 0)) < 0:
+			errors.append("Y2 [%s] start_allies must be >= 0" % where)
+		if a.has("unlock"):
+			locked += 1
+			var node := String((a["unlock"] as Dictionary).get("knowledge", ""))
+			if not knowledge_doc.is_empty() and not node_ids.has(node):
+				errors.append("Y3 [%s] unlock references unknown knowledge node '%s'" % [where, node])
+	if archetypes.size() >= 3 and locked == 0:
+		errors.append("Y3 [archetypes] at least one archetype must start locked (meta-progression)")
+
+
+# ------------------------------------------------------------ summits.json ---
+
+func validate_summits(doc: Dictionary) -> void:
+	if not KNOWN_SCHEMA_VERSIONS.has(int(doc.get("schema_version", -1))):
+		errors.append("S1 [summits] unknown schema_version")
+	var summits: Array = doc.get("summits", [])
+	if summits.is_empty():
+		errors.append("S1 [summits] empty or missing summits array")
+	var ids: Array[String] = []
+	var turns: Array[int] = []
+	var snake := RegEx.create_from_string("^[a-z][a-z0-9_]*$")
+	for s: Dictionary in summits:
+		var id := String(s.get("id", ""))
+		var where := "summits:%s" % (id if not id.is_empty() else "?")
+		if snake.search(id) == null:
+			errors.append("S1 [%s] id must be snake_case" % where)
+		if ids.has(id):
+			errors.append("S1 [%s] duplicate id" % where)
+		ids.append(id)
+		if String(s.get("name", "")).is_empty():
+			errors.append("S1 [%s] name must be non-empty" % where)
+		var turn := int(s.get("turn", 0))
+		if turn < 2 or turn > 15:
+			errors.append("S2 [%s] turn must be in 2-15 (announced in advance, resolvable in-run)" % where)
+		if turns.has(turn):
+			errors.append("S2 [%s] duplicate summit turn %d" % [where, turn])
+		turns.append(turn)
+		var goal: Dictionary = s.get("goal", {})
+		if not SUMMIT_METRICS.has(String(goal.get("metric", ""))):
+			errors.append("S2 [%s] goal.metric must be one of %s" % [where, str(SUMMIT_METRICS)])
+		if not goal.has("lte"):
+			errors.append("S2 [%s] goal needs an 'lte' target" % where)
+		for key in s.get("reward", {}):
+			if not REWARD_KEYS.has(String(key)):
+				errors.append("S3 [%s] unknown reward key '%s'" % [where, key])
+		if (s.get("reward", {}) as Dictionary).is_empty():
+			errors.append("S3 [%s] a summit needs a reward (success must matter)" % where)
+		for key in s.get("penalty", {}):
+			if not ["influence", "happiness", "money"].has(String(key)):
+				errors.append("S3 [%s] unknown penalty key '%s'" % [where, key])
+		if (s.get("penalty", {}) as Dictionary).is_empty():
+			errors.append("S3 [%s] a summit needs a penalty (failure must matter)" % where)
 
 
 # --------------------------------------------------------- knowledge.json ---
@@ -547,8 +741,8 @@ func validate_templates(doc: Dictionary, event_info: Dictionary) -> void:
 		if not ops_sect.has(String(op)):
 			errors.append("T1 [templates] missing op template '%s'" % op)
 	var endings: Dictionary = doc.get("endings", {})
-	for status in ["WIN_NEUTRAL", "LOSS_LIMIT_BREACHED", "LOSS_NOT_NEUTRAL"]:
-		if not endings.has(status):
+	for status in ENDINGS:
+		if not endings.has(String(status)):
 			errors.append("T1 [templates] missing ending template '%s'" % status)
 	var system: Dictionary = doc.get("system", {})
 	for key in ["income", "pass", "ledger", "warming", "drift", "sink_matured",
@@ -556,7 +750,10 @@ func validate_templates(doc: Dictionary, event_info: Dictionary) -> void:
 			"band_up_1", "band_up_2", "band_down_0", "band_down_1",
 			"ally_lost", "run_end_kp", "crises_faced", "combo", "rewards",
 			"card_unlocked", "project_launched", "project_charged",
-			"project_completed", "project_failed", "project_abandoned"]:
+			"project_completed", "project_failed", "project_abandoned",
+			"world_drift", "on_draw_hit", "on_draw_cleared", "bonus_card",
+			"risk_success", "risk_failure", "summit_met", "summit_missed",
+			"curve_bent"]:
 		if not system.has(key):
 			errors.append("T1 [templates] missing system template '%s'" % key)
 	if not doc.get("cards", {}).has("enact"):

@@ -1,7 +1,8 @@
 extends Node
 ## Main: boots the sim and views, routes input, owns the turn-flow modes.
 ## Views subscribe to sim signals and render state; all gameplay mutation goes
-## through RunState (docs/Phase_3/03 architecture).
+## through RunState (docs/Phase_3/03 architecture). First boot opens the city
+## picker; afterwards the selected archetype persists in Meta.
 
 enum Mode { PLAY, TARGETING, ENDED }
 
@@ -16,6 +17,8 @@ var hub: KnowledgeHub
 var end_screen: RunEndScreen
 var debug_overlay: DebugOverlay
 var tutorial: TutorialLayer
+var archetype_select: ArchetypeSelect
+var codex: CodexScreen
 
 var _mode := Mode.PLAY
 var _selected_region: StringName = &""
@@ -34,7 +37,11 @@ func _ready() -> void:
 	for w in v.warnings:
 		print("data warning: " + w)
 	_build_scene()
-	_start_run(_random_seed())
+	if Meta.selected_archetype.is_empty():
+		# First contact: choose your city before the first timeline.
+		archetype_select.open(sim.base_catalog)
+	else:
+		_start_run(_random_seed())
 
 
 func _show_validation_failure(v: DataValidator) -> void:
@@ -88,6 +95,9 @@ func _build_scene() -> void:
 	hub = KnowledgeHub.new()
 	modal_layer.add_child(hub)
 	hub.closed.connect(_toggle_hub)
+	codex = CodexScreen.new()
+	modal_layer.add_child(codex)
+	codex.closed.connect(_toggle_codex)
 	end_screen = RunEndScreen.new()
 	modal_layer.add_child(end_screen)
 	end_screen.new_timeline.connect(func() -> void: _start_run(_random_seed()))
@@ -95,6 +105,11 @@ func _build_scene() -> void:
 	end_screen.open_hub.connect(func() -> void:
 		if not hub.visible:
 			_toggle_hub())
+	end_screen.change_city.connect(func() -> void:
+		archetype_select.open(sim.base_catalog))
+	archetype_select = ArchetypeSelect.new()
+	modal_layer.add_child(archetype_select)
+	archetype_select.chosen.connect(_on_archetype_chosen)
 
 	var debug_layer := CanvasLayer.new()
 	debug_layer.name = "DebugLayer"
@@ -104,7 +119,7 @@ func _build_scene() -> void:
 	debug_layer.add_child(debug_overlay)
 	debug_overlay.restart_requested.connect(_start_run)
 	debug_overlay.autoplay_requested.connect(_on_autoplay)
-	debug_overlay.advance10_requested.connect(_on_advance10)
+	debug_overlay.advance10_requested.connect(_on_advance3)
 
 	var tutorial_layer := CanvasLayer.new()
 	tutorial_layer.name = "TutorialLayer"
@@ -123,11 +138,20 @@ func _random_seed() -> int:
 	return rng.randi_range(100000, 999999)
 
 
+func _on_archetype_chosen(archetype_id: StringName) -> void:
+	Meta.selected_archetype = String(archetype_id)
+	Meta.save_state()
+	archetype_select.visible = false
+	_start_run(_random_seed())
+
+
 func _start_run(seed_value: int) -> void:
-	sim.start_run(seed_value, Meta.unlocked.duplicate())
+	sim.start_run(seed_value, Meta.unlocked.duplicate(), false,
+		StringName(Meta.selected_archetype), Meta.unlocked_cards.duplicate())
 	Meta.last_seed = seed_value
 	Meta.save_state()
 	var rs := sim.run_state
+	rs.year_started.connect(_on_year_started)
 	rs.card_played.connect(_on_card_played)
 	rs.year_advanced.connect(_on_year_advanced)
 	rs.event_struck.connect(_on_event_struck)
@@ -137,6 +161,9 @@ func _start_run(seed_value: int) -> void:
 	rs.project_changed.connect(_on_project_changed)
 	rs.warming_band_changed.connect(_on_band_changed)
 	rs.ally_changed.connect(_on_ally_changed)
+	rs.summit_resolved.connect(_on_summit_resolved)
+	rs.risk_resolved.connect(_on_risk_resolved)
+	rs.curve_bent.connect(_on_curve_bent)
 	rs.run_ended.connect(_on_run_ended)
 
 	board.bind_world(rs)
@@ -146,10 +173,13 @@ func _start_run(seed_value: int) -> void:
 	dock.clear_log()
 	dock.clear_region()
 	dock.show_crises(rs)
+	dock.show_world(rs)
 	banners.skip_all()
 	vignette.set_band(rs.warming_band())
 	end_screen.visible = false
 	hub.visible = false
+	codex.visible = false
+	archetype_select.visible = false
 	debug_overlay.bind(sim)
 	debug_overlay.refresh()
 	_mode = Mode.PLAY
@@ -158,6 +188,9 @@ func _start_run(seed_value: int) -> void:
 	_targeting_card = &""
 	board.set_selection(&"")
 	board.set_target_highlights([])
+	if not rs.archetype.is_empty():
+		banners.push("hope", "You lead the %s - %s" % [
+			String(rs.archetype.get("name", "")), String(rs.archetype.get("tagline", ""))])
 	if Meta.unlocked.size() > 0:
 		var names: PackedStringArray = []
 		for id in Meta.unlocked:
@@ -177,8 +210,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		_on_advance_pressed()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("toggle_hub"):
-		if _mode != Mode.TARGETING:
+		if _mode != Mode.TARGETING and not archetype_select.visible:
 			_toggle_hub()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("toggle_codex"):
+		if _mode != Mode.TARGETING and not archetype_select.visible:
+			_toggle_codex()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("toggle_debug"):
 		debug_overlay.visible = not debug_overlay.visible
@@ -199,7 +236,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_advance_pressed() -> void:
-	if sim.run_state == null or hub.visible:
+	if sim.run_state == null or hub.visible or codex.visible or archetype_select.visible:
 		return
 	match _mode:
 		Mode.ENDED, Mode.TARGETING:
@@ -217,12 +254,12 @@ func _on_advance_pressed() -> void:
 
 
 func _on_card_chosen(card_id: StringName) -> void:
-	if _mode != Mode.PLAY or hub.visible or sim.run_state == null:
+	if _mode != Mode.PLAY or hub.visible or codex.visible or sim.run_state == null:
 		return
 	var rs := sim.run_state
 	var reason := rs.can_play_reason(card_id)
 	if reason != &"ok":
-		top_bar.set_prompt("Cannot enact: " + _reason_text(reason))
+		top_bar.set_prompt("Cannot fund: " + _reason_text(reason))
 		return
 	# DIP1 targeting flow: the one modal in the interaction layer.
 	var wants_ally := false
@@ -242,7 +279,7 @@ func _on_card_chosen(card_id: StringName) -> void:
 
 
 func _on_pass_chosen() -> void:
-	if _mode != Mode.PLAY or hub.visible or sim.run_state == null:
+	if _mode != Mode.PLAY or hub.visible or codex.visible or sim.run_state == null:
 		return
 	banners.skip_all()
 	sim.run_state.resolve_year()
@@ -251,7 +288,7 @@ func _on_pass_chosen() -> void:
 
 
 func _on_project_chosen(project_id: StringName) -> void:
-	if _mode != Mode.PLAY or hub.visible or sim.run_state == null:
+	if _mode != Mode.PLAY or hub.visible or codex.visible or sim.run_state == null:
 		return
 	var rs := sim.run_state
 	var is_active := false
@@ -307,8 +344,18 @@ func _toggle_hub() -> void:
 	if hub.visible:
 		hub.visible = false
 	else:
+		codex.visible = false
 		hub.open(sim.base_catalog)
 		tutorial.notify(&"hub_opened")
+	_update_prompt()
+
+
+func _toggle_codex() -> void:
+	if codex.visible:
+		codex.visible = false
+	else:
+		hub.visible = false
+		codex.open(sim.base_catalog)
 	_update_prompt()
 
 
@@ -358,20 +405,46 @@ func _tutorial_anchor(target: StringName) -> Rect2:
 
 # -------------------------------------------------------------- sim events ---
 
+func _on_year_started(_year: int) -> void:
+	# A new turn: fresh market, fresh events, the world has drifted.
+	var rs := sim.run_state
+	tray.build(rs)
+	tray.refresh(rs)
+	top_bar.refresh(rs)
+	dock.show_crises(rs)
+	dock.show_world(rs)
+	if not _suppress_banners:
+		for cid in rs.market_bonus:
+			banners.push("opportunity", LogFormatter.render("system", "bonus_card", {
+				"name": rs.catalog.card(cid).get("name", String(cid)),
+			}))
+		var summit := rs.catalog.summit_for_turn(rs.turn_index())
+		if not summit.is_empty():
+			var goal: Dictionary = summit.get("goal", {})
+			banners.push("interstitial", "SUMMIT THIS TURN - %s: end the turn with net <= %.0f or the world loses faith." % [
+				String(summit["name"]), float(goal.get("lte", 0))])
+
+
 func _on_card_played(card_id: StringName, accepted: bool) -> void:
 	var rs := sim.run_state
 	if accepted:
 		_pass_armed = false
+		if Meta.mark_codex_seen(String(card_id)) and not _suppress_banners:
+			var codex_entry: Dictionary = rs.catalog.card(card_id).get("codex", {})
+			if not codex_entry.is_empty():
+				banners.push("hope", "CODEX - %s (press C to read the real-world solution)"
+					% String(codex_entry.get("title", "")))
 		top_bar.refresh(rs)
 		tray.refresh(rs)
 		board.refresh(rs)
 		dock.show_crises(rs)
+		dock.show_world(rs)
 		if _selected_region != &"":
 			dock.show_region(rs, _selected_region)
 		debug_overlay.refresh()
 		tutorial.notify(&"card_played")
 	else:
-		top_bar.set_prompt("Cannot play: " + _reason_text(rs.can_play_reason(card_id)))
+		top_bar.set_prompt("Cannot fund: " + _reason_text(rs.can_play_reason(card_id)))
 		return
 	_update_prompt()
 
@@ -383,6 +456,7 @@ func _on_year_advanced(rec: TurnRecord) -> void:
 	board.refresh(rs)
 	dock.append_log(rec.year, rec.log_lines)
 	dock.show_crises(rs)
+	dock.show_world(rs)
 	if _selected_region != &"":
 		dock.show_region(rs, _selected_region)
 	if not _suppress_banners:
@@ -392,6 +466,14 @@ func _on_year_advanced(rec: TurnRecord) -> void:
 			banners.push("damage", rs._crisis_hit_line(crisis))
 			if crisis.get("opportunity", &"") != &"":
 				banners.push("opportunity", LogFormatter.render("events", String(crisis["id"]) + "_opp"))
+		if not rec.summit.is_empty():
+			var key := "summit_met" if bool(rec.summit["met"]) else "summit_missed"
+			banners.push("hope" if bool(rec.summit["met"]) else "damage",
+				LogFormatter.render("system", key, {
+					"name": rec.summit["name"], "value": "%+.0f" % float(rec.summit["value"]),
+					"target": float(rec.summit["target"]),
+					"gains": "", "penalty_note": "",
+				}))
 		for fb in rec.feedbacks:
 			banners.push("interstitial", LogFormatter.render("events", String(fb) + "_hit"))
 	debug_overlay.refresh()
@@ -408,13 +490,45 @@ func _on_crisis_answered(crisis_id: StringName, _card_id: StringName) -> void:
 
 func _on_combo_triggered(_combo_id: StringName, _chain: int, _mult: float) -> void:
 	var rs := sim.run_state
-	if not _suppress_banners and not rs.turn_combos().is_empty():
-		banners.push("combo", rs.combo_line(rs.turn_combos().back()))
+	if _suppress_banners or rs.turn_combos().is_empty():
+		return
+	banners.push("combo", rs.combo_line(rs.turn_combos().back()))
+	# The engine turn: multiple combos cascading the same turn get their beat.
+	if rs.turn_combos().size() >= 2:
+		banners.push("combo", "CASCADE x%d - the engine is running! Chain x%d multiplies every payout." % [
+			rs.turn_combos().size(), rs.combo_chain])
+		top_bar.gauge.flash_plunge()
+
+
+func _on_summit_resolved(_summit_id: StringName, met: bool) -> void:
+	if met:
+		top_bar.gauge.flash_plunge()
+
+
+func _on_risk_resolved(card_id: StringName, success: bool) -> void:
+	if _suppress_banners:
+		return
+	var rs := sim.run_state
+	var card := rs.catalog.card(card_id)
+	var chance := roundi(float(card.get("risk", {}).get("chance", 0)) * 100.0)
+	if success:
+		banners.push("hope", LogFormatter.render("system", "risk_success", {
+			"name": card.get("name", String(card_id)), "chance": chance, "gains": "",
+		}))
+	else:
+		banners.push("damage", LogFormatter.render("system", "risk_failure", {
+			"name": card.get("name", String(card_id)), "chance": chance,
+		}))
+
+
+func _on_curve_bent(_year: int) -> void:
+	top_bar.gauge.flash_plunge()
+	if not _suppress_banners:
+		banners.push("hope", LogFormatter.render("system", "curve_bent"))
 
 
 func _on_card_unlocked(card_id: StringName) -> void:
 	var rs := sim.run_state
-	tray.build(rs)
 	tray.refresh(rs)
 	if not _suppress_banners:
 		banners.push("hope", LogFormatter.render("system", "card_unlocked", {
@@ -461,19 +575,27 @@ func _on_band_changed(band: int) -> void:
 func _on_ally_changed(_region_id: StringName, _is_ally: bool) -> void:
 	board.refresh(sim.run_state)
 	tray.refresh(sim.run_state)
+	dock.show_world(sim.run_state)
 
 
-func _on_run_ended(_outcome: StringName, kp: int) -> void:
+func _on_run_ended(outcome: StringName, kp: int) -> void:
 	var rs := sim.run_state
 	Meta.award_kp(kp)
+	# Defeat lessons: some cards exist only because a run was lost this way.
+	var fresh := Meta.record_run_outcome(outcome, sim.base_catalog)
+	var fresh_names: Array[String] = []
+	for id in fresh:
+		fresh_names.append(String(sim.base_catalog.card(StringName(id)).get("name", id)))
 	var rec: TurnRecord = rs.records.back()
 	top_bar.refresh(rs)
 	tray.refresh(rs)
 	board.refresh(rs)
 	dock.append_log(rec.year, rec.log_lines)
 	banners.skip_all()
+	if outcome == &"WIN_NEUTRAL":
+		top_bar.gauge.flash_plunge()
 	tutorial.close_silent()  # not a dismissal: an unfinished tour may reopen
-	end_screen.show_outcome(rs)
+	end_screen.show_outcome(rs, fresh_names)
 	debug_overlay.refresh()
 	_mode = Mode.ENDED
 	_update_prompt()
@@ -489,11 +611,11 @@ func _on_autoplay(strategy: StringName) -> void:
 	_suppress_banners = false
 
 
-func _on_advance10() -> void:
+func _on_advance3() -> void:
 	if _mode == Mode.ENDED:
 		return
 	_suppress_banners = true
-	sim.advance_years_passing(10)
+	sim.advance_turns_passing(3)
 	_suppress_banners = false
 
 
@@ -503,16 +625,17 @@ func _reason_text(reason: StringName) -> String:
 	match reason:
 		&"no_money": return "not enough money"
 		&"no_influence": return "not enough influence"
-		&"no_happiness": return "not enough happiness"
+		&"no_happiness": return "the public cannot bear another sacrifice"
 		&"locked_allies": return "needs more allies"
 		&"capped": return "sector at its cap - play a sufficiency policy"
 		&"media_active": return "already active"
-		&"no_target": return "no neutral nation left"
-		&"turn_limit": return "five cards a year is the limit - Space to resolve"
+		&"no_target": return "no target left to move"
+		&"not_in_market": return "not offered this turn"
+		&"turn_limit": return "five cards a turn is the limit - Space to resolve"
 		&"max_active": return "two projects at once is the limit"
 		&"already_active": return "already under way"
 		&"already_done": return "concluded this run"
-		&"resolving": return "the year is resolving"
+		&"resolving": return "the turn is resolving"
 		&"ended": return "the run is over"
 	return String(reason)
 
@@ -531,5 +654,6 @@ func _update_prompt() -> void:
 				top_bar.set_prompt("Resolve without acting? Space again to confirm")
 			else:
 				var open_count := rs.unanswered_crises().size()
-				top_bar.set_prompt("%d - %d/%d cards played, %d crises open  |  Space resolves  H knowledge  F3 debug" % [
-					rs.year, rs.cards_played_this_turn(), int(Tuning.s("MAX_CARDS_PER_TURN")), open_count])
+				top_bar.set_prompt("Turn %d/%d (%d) - %d/%d cards, %d crises open  |  Space resolves  H knowledge  C codex  F3 debug" % [
+					rs.turn_index(), RunState.total_turns(), rs.year,
+					rs.cards_played_this_turn(), int(Tuning.s("MAX_CARDS_PER_TURN")), open_count])

@@ -10,6 +10,9 @@ const EVENTS_PATH := "res://data/events.json"
 const KNOWLEDGE_PATH := "res://data/knowledge.json"
 const COMBOS_PATH := "res://data/combos.json"
 const PROJECTS_PATH := "res://data/projects.json"
+const ACTORS_PATH := "res://data/world_actors.json"
+const ARCHETYPES_PATH := "res://data/city_archetypes.json"
+const SUMMITS_PATH := "res://data/summits.json"
 
 var cards: Array[Dictionary] = []
 var cards_by_id: Dictionary = {}        # String -> Dictionary (same refs as cards)
@@ -19,12 +22,16 @@ var knowledge_by_id: Dictionary = {}
 var combos: Array[Dictionary] = []      # catalog order = check order
 var projects: Array[Dictionary] = []
 var projects_by_id: Dictionary = {}
+var actors: Array[Dictionary] = []      # world actor DEFINITIONS (state lives in RunState)
+var archetypes: Array[Dictionary] = []  # selectable city archetypes
+var summits: Array[Dictionary] = []     # scheduled COP sub-objectives, by turn
 
 
 static func load_default() -> Catalog:
 	var cat := Catalog.new()
 	cat._load_from(_read_json(CARDS_PATH), _read_json(EVENTS_PATH), _read_json(KNOWLEDGE_PATH),
 		_read_json(COMBOS_PATH), _read_json(PROJECTS_PATH))
+	cat._load_world(_read_json(ACTORS_PATH), _read_json(ARCHETYPES_PATH), _read_json(SUMMITS_PATH))
 	return cat
 
 
@@ -61,12 +68,49 @@ func _load_from(cards_doc: Dictionary, events_doc: Dictionary, knowledge_doc: Di
 		projects_by_id[String(p["id"])] = p
 
 
+func _load_world(actors_doc: Dictionary, archetypes_doc: Dictionary, summits_doc: Dictionary) -> void:
+	actors.clear()
+	for a: Dictionary in actors_doc.get("actors", []):
+		actors.append(a)
+	archetypes.clear()
+	for a: Dictionary in archetypes_doc.get("archetypes", []):
+		archetypes.append(a)
+	summits.clear()
+	for s: Dictionary in summits_doc.get("summits", []):
+		summits.append(s)
+	summits.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a["turn"]) < int(b["turn"]))
+
+
 func card(id: StringName) -> Dictionary:
 	return cards_by_id.get(String(id), {})
 
 
 func project(id: StringName) -> Dictionary:
 	return projects_by_id.get(String(id), {})
+
+
+func archetype(id: StringName) -> Dictionary:
+	for a in archetypes:
+		if String(a["id"]) == String(id):
+			return a
+	return {}
+
+
+## The summit scheduled for a given turn index, or {} when none.
+func summit_for_turn(turn: int) -> Dictionary:
+	for s in summits:
+		if int(s["turn"]) == turn:
+			return s
+	return {}
+
+
+## The next summit at or after a turn index, or {} when the calendar is done.
+func next_summit(turn: int) -> Dictionary:
+	for s in summits:
+		if int(s["turn"]) >= turn:
+			return s
+	return {}
 
 
 ## Crisis-deck entries: everything drawable at year start (crises + opportunities).
@@ -104,6 +148,9 @@ func duplicate_patched(unlocked_ids: Array) -> Catalog:
 	cat.projects = projects.duplicate(true)
 	for p in cat.projects:
 		cat.projects_by_id[String(p["id"])] = p
+	cat.actors = actors.duplicate(true)
+	cat.archetypes = archetypes.duplicate(true)
+	cat.summits = summits.duplicate(true)
 
 	for node_id in unlocked_ids:
 		var node: Dictionary = knowledge_by_id.get(String(node_id), {})
@@ -127,12 +174,12 @@ func duplicate_patched(unlocked_ids: Array) -> Catalog:
 				for eff: Dictionary in c["effects"]:
 					if eff.get("op", "") == "happiness":
 						eff["amount"] = patch["effect_happiness"]
-			if patch.has("reforest_years"):
+			if patch.has("reforest_turns"):
 				for eff: Dictionary in c["effects"]:
 					if eff.get("op", "") == "reforest":
-						var total: float = float(eff["per_year"]) * float(eff["years"])
-						eff["years"] = int(patch["reforest_years"])
-						eff["per_year"] = total / float(eff["years"])
+						var total: float = float(eff["per_turn"]) * float(eff["turns"])
+						eff["turns"] = int(patch["reforest_turns"])
+						eff["per_turn"] = total / float(eff["turns"])
 	return cat
 
 

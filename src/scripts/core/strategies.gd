@@ -4,33 +4,20 @@ class_name Strategies
 ## headless batch harness and the regression fixtures.
 ##
 ## decide() returns ONE action; the autoplay loop calls it repeatedly inside a
-## turn until it returns pass (multi-card turns), then resolves the year.
+## turn until it returns pass (multi-card turns), then resolves the turn.
+## All card choices come from the current MARKET (rs.market) - strategies see
+## exactly what a player sees.
 ## Actions: {"card": id|&"pass", "target": region|&"", "project": id|&""}.
 ##
-## Archetypes: Safe answers crises, builds sinks/adaptation and an even
-## transition; Mixed goes diplomacy-and-combo-first; Risky is a pure tech rush
-## that ignores crises, sufficiency, sinks and allies - and stalls at the 70%
-## cap by design.
+## Archetypes: Safe answers crises, buys down world actors, builds sinks and
+## an even transition; Mixed goes diplomacy-first (allies, treaties, funded
+## transitions abroad); Risky is a pure home tech rush plus moonshot bets that
+## ignores crises, sufficiency, sinks and the whole outside world - it can
+## never reach global neutrality by design.
 
 const NAMES: Array[StringName] = [&"safe", &"risky", &"mixed"]
 
 const PASS := {"card": &"pass", "target": &"", "project": &""}
-
-## Cheap response card per crisis tag, in preference order.
-const RESPONSE_CARDS := {
-	"water": [&"RSP2", &"AGR2"],
-	"food": [&"RSP4", &"AGR1"],
-	"health": [&"RSP1", &"SOC2"],
-	"relief": [&"RSP1", &"RSP6", &"RSP5"],
-	"forest": [&"SNK1"],
-	"coast": [&"RSP3", &"ADP1"],
-	"energy": [&"RSP5", &"IND1"],
-	"civic": [&"RSP4", &"RSP6", &"SOC3", &"SOC1"],
-	"treaty": [&"DIP1", &"DIP2", &"DIP3"],
-}
-
-const TECH_CARD := {&"ind": &"IND2", &"tra": &"TRA2", &"agr": &"AGR2"}
-const SUFF_CARD := {&"ind": &"IND3", &"tra": &"TRA1", &"agr": &"AGR1"}
 
 
 static func decide(strategy: StringName, rs: RunState) -> Dictionary:
@@ -53,127 +40,220 @@ static func _project(id: StringName) -> Dictionary:
 	return {"card": &"pass", "target": &"", "project": id}
 
 
-static func _sectors_by_progress(rs: RunState) -> Array[StringName]:
-	var order: Array[StringName] = WorldEnums.SECTOR_ORDER.duplicate()
-	order.sort_custom(func(a: StringName, b: StringName) -> bool:
-		var pa := rs.sector(a).progress
-		var pb := rs.sector(b).progress
-		if is_equal_approx(pa, pb):
-			return WorldEnums.SECTOR_ORDER.find(a) < WorldEnums.SECTOR_ORDER.find(b)
-		return pa < pb)
-	return order
+## Market offers as defs, in offer order, playable-and-affordable only.
+static func _offers(rs: RunState, reserve: float) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for id in rs.market:
+		if not _ok(rs, id):
+			continue
+		if rs.money - rs.effective_cost_money(id) < reserve:
+			continue
+		out.append(rs.catalog.card(id))
+	return out
 
 
-## Find a playable response card for the first unanswered pending crisis.
+static func _has_op(card: Dictionary, op: String) -> bool:
+	for eff: Dictionary in card.get("effects", []):
+		if String(eff.get("op", "")) == op:
+			return true
+	return false
+
+
+static func _is_progress(card: Dictionary) -> bool:
+	return _has_op(card, "sector_progress") or _has_op(card, "joint_progress")
+
+
+static func _is_restoration(card: Dictionary) -> bool:
+	return _has_op(card, "reforest") or _has_op(card, "sink_now")
+
+
+## The cheapest offer answering the first unanswered crisis (offer order).
 static func _answer_crisis(rs: RunState, reserve: float) -> Dictionary:
 	for crisis in rs.unanswered_crises():
 		var response: Dictionary = rs.crisis_def(crisis["id"]).get("response", {})
-		for tag in response.get("tags_any", []):
-			for cid: StringName in RESPONSE_CARDS.get(String(tag), []):
-				if _ok(rs, cid) and rs.money - rs.effective_cost_money(cid) >= reserve:
-					return _card(cid)
+		var best: Dictionary = {}
+		for card in _offers(rs, reserve):
+			var hits := false
+			for tag in response.get("tags_any", []):
+				if (card.get("tags", []) as Array).has(String(tag)):
+					hits = true
+			if hits and (best.is_empty()
+					or rs.effective_cost_money(StringName(String(card["id"])))
+						< rs.effective_cost_money(StringName(String(best["id"])))):
+				best = card
+		if not best.is_empty():
+			return _card(StringName(String(best["id"])))
 	return PASS
 
 
-## Safe (Steady Transition): answer the crises, then media, adaptation, sinks
-## and an even three-sector transition with a handful of alliances; banks a
-## money reserve and sustains the Global Sink Trust.
+## Safe (Steady Shield): answer everything, keep happiness healthy, buy down
+## the world's blocs when offered, grow sinks, transition evenly. Banks a
+## reserve and sustains the Global Sink Trust.
 static func _decide_safe(rs: RunState) -> Dictionary:
+	var answer := _answer_crisis(rs, 80.0)
+	if answer["card"] != &"pass":
+		return answer
+	if rs.turn_index() >= 2 and rs.money >= 320.0 \
+			and rs.can_start_project_reason(&"global_sink_trust") == &"ok":
+		return _project(&"global_sink_trust")
+	if rs.turn_index() >= 4 and rs.money >= 420.0 and rs.happiness < 65.0 \
+			and rs.can_start_project_reason(&"universal_services") == &"ok":
+		return _project(&"universal_services")
+	if rs.happiness < 45.0:
+		for card in _offers(rs, 60.0):
+			if _has_op(card, "wellbeing"):
+				return _card(StringName(String(card["id"])))
+	for card in _offers(rs, 100.0):
+		if _has_op(card, "actor_fund") or _has_op(card, "actor_treaty"):
+			return _card(StringName(String(card["id"])))
+	for card in _offers(rs, 60.0):
+		if _has_op(card, "ally") and rs.influence >= float(card.get("cost_influence", 0)) + 4.0:
+			return _card(StringName(String(card["id"])))
+	for card in _offers(rs, 80.0):
+		if _has_op(card, "media") and not rs.media:
+			return _card(StringName(String(card["id"])))
+	if rs.absorption < 30.0:
+		for card in _offers(rs, 80.0):
+			if _is_restoration(card) and not card.has("risk"):
+				return _card(StringName(String(card["id"])))
+	if rs.adapt < 20.0:
+		for card in _offers(rs, 120.0):
+			if _has_op(card, "adapt") and not _is_restoration(card):
+				return _card(StringName(String(card["id"])))
+	var progress_pick := _progress_pick(rs, 80.0, true)
+	if progress_pick["card"] != &"pass":
+		return progress_pick
+	if rs.happiness < 60.0:
+		for card in _offers(rs, 120.0):
+			if _has_op(card, "wellbeing"):
+				return _card(StringName(String(card["id"])))
+	# Cheap response cards earn influence even without a crisis to answer.
+	for card in _offers(rs, 250.0):
+		if String(card.get("category", "")) == "response":
+			return _card(StringName(String(card["id"])))
+	return _greedy_spend(rs, 250.0)
+
+
+## Banked money is a wasted turn against a clock: when rich, fund the
+## cheapest remaining sure offer rather than pass (no risk cards).
+static func _greedy_spend(rs: RunState, threshold: float) -> Dictionary:
+	if rs.money < threshold:
+		return PASS
+	var best: Dictionary = {}
+	for card in _offers(rs, threshold * 0.5):
+		if card.has("risk"):
+			continue
+		if best.is_empty() or rs.effective_cost_money(StringName(String(card["id"]))) \
+				< rs.effective_cost_money(StringName(String(best["id"]))):
+			best = card
+	if best.is_empty():
+		return PASS
+	return _card(StringName(String(best["id"])))
+
+
+## Progress choice shared by safe/mixed: sufficiency lift when a sector needs
+## it, else the offer that moves the laggard sector; never risk cards.
+static func _progress_pick(rs: RunState, reserve: float, allow_suff: bool) -> Dictionary:
+	var best: Dictionary = {}
+	var best_score := -INF
+	for card in _offers(rs, reserve):
+		if not _is_progress(card) or card.has("risk"):
+			continue
+		var score := 0.0
+		for eff: Dictionary in card.get("effects", []):
+			match String(eff.get("op", "")):
+				"sector_progress":
+					var ss := rs.sector(StringName(String(eff["sector"])))
+					score += float(eff["amount"]) * (1.5 - ss.progress / 100.0)
+					if bool(eff.get("lifts_cap", false)):
+						if not allow_suff:
+							score = -INF
+						elif not ss.suff_played:
+							score += 12.0  # lifts are how the endgame opens
+				"joint_progress":
+					score += float(eff["amount"]) * 2.2
+		if score > best_score:
+			best_score = score
+			best = card
+	if best.is_empty() or best_score <= 0.0:
+		return PASS
+	return _card(StringName(String(best["id"])))
+
+
+## Risky (Moonshot Rush): home tech and research bets only, several per turn;
+## never answers a crisis on purpose, never touches diplomacy, sufficiency,
+## sinks or wellbeing. The outside world keeps drifting - and wins.
+static func _decide_risky(rs: RunState) -> Dictionary:
+	for card in _offers(rs, 0.0):
+		if card.has("risk"):
+			return _card(StringName(String(card["id"])))
+	var best: Dictionary = {}
+	var best_amount := 0.0
+	for card in _offers(rs, 0.0):
+		if not _is_progress(card):
+			continue
+		if (card.get("tags", []) as Array).has("sufficiency"):
+			continue
+		if _has_op(card, "actor_fund") or _has_op(card, "actor_treaty"):
+			continue
+		var amount := 0.0
+		for eff: Dictionary in card.get("effects", []):
+			if String(eff.get("op", "")) == "sector_progress":
+				var ss := rs.sector(StringName(String(eff["sector"])))
+				if ss.progress < ss.cap():
+					amount += float(eff["amount"])
+			elif String(eff.get("op", "")) == "joint_progress":
+				amount += float(eff["amount"]) * 2.0
+		if amount > best_amount:
+			best_amount = amount
+			best = card
+	if not best.is_empty():
+		return _card(StringName(String(best["id"])))
+	return PASS
+
+
+## Mixed (Grand Alliance): diplomacy-first - allies, treaties and funded
+## transitions abroad - then crises, combos and the home transition.
+## Sustains the Continental Rail Compact.
+static func _decide_mixed(rs: RunState) -> Dictionary:
+	for card in _offers(rs, 60.0):
+		if _has_op(card, "actor_fund") or _has_op(card, "actor_treaty"):
+			return _card(StringName(String(card["id"])))
 	var answer := _answer_crisis(rs, 60.0)
 	if answer["card"] != &"pass":
 		return answer
-	if rs.year >= 2040 and rs.money >= 320.0 \
-			and rs.can_start_project_reason(&"global_sink_trust") == &"ok":
-		return _project(&"global_sink_trust")
-	if not rs.media and _ok(rs, &"SOC1"):
-		return _card(&"SOC1")
-	if rs.adapt < 15.0 and _ok(rs, &"ADP1") and rs.money >= 150.0:
-		return _card(&"ADP1")
-	if rs.reforest_queue.size() < 2 and rs.absorption < 27.0 and _ok(rs, &"SNK1") \
-			and rs.money >= 130.0:
-		return _card(&"SNK1")
-	if rs.allies < 4 and rs.influence >= 25.0 and _ok(rs, &"DIP1") and rs.money >= 110.0:
-		return _card(&"DIP1")
-	for sid in _sectors_by_progress(rs):
-		var ss := rs.sector(sid)
-		if not ss.suff_played and ss.progress >= 55.0 and _ok(rs, SUFF_CARD[sid]) \
-				and rs.money >= rs.effective_cost_money(SUFF_CARD[sid]) + 60.0:
-			return _card(SUFF_CARD[sid])
-		if ss.progress < ss.cap() and _ok(rs, TECH_CARD[sid]) \
-				and rs.money >= rs.effective_cost_money(TECH_CARD[sid]) + 60.0:
-			return _card(TECH_CARD[sid])
-		if not ss.suff_played and _ok(rs, SUFF_CARD[sid]) \
-				and rs.money >= rs.effective_cost_money(SUFF_CARD[sid]) + 60.0:
-			return _card(SUFF_CARD[sid])
-	if rs.happiness < 55.0 and _ok(rs, &"SOC2") and rs.money >= 200.0:
-		return _card(&"SOC2")
-	return PASS
-
-
-## Risky (Tech Rush): only the big tech cards, several per year; never answers
-## a crisis, never media, sufficiency, sinks, adaptation or diplomacy.
-## Stalls at the 70% cap by design.
-static func _decide_risky(rs: RunState) -> Dictionary:
-	for sid in _sectors_by_progress(rs):
-		if _ok(rs, TECH_CARD[sid]):
-			return _card(TECH_CARD[sid])
-	return PASS
-
-
-## Mixed (Alliance Web): diplomacy-first; answers crises, chases combo pairs,
-## sustains the Continental Rail Compact, alliances up to six with Joint
-## Transition Projects as the main engine, sufficiency lifts.
-static func _decide_mixed(rs: RunState) -> Dictionary:
-	var answer := _answer_crisis(rs, 50.0)
-	if answer["card"] != &"pass":
-		return answer
-	if rs.year >= 2038 and rs.money >= 300.0 \
+	for card in _offers(rs, 60.0):
+		if _has_op(card, "ally") and rs.influence >= float(card.get("cost_influence", 0)) + 6.0:
+			return _card(StringName(String(card["id"])))
+	if rs.turn_index() >= 2 and rs.money >= 350.0 \
 			and rs.can_start_project_reason(&"continental_rail") == &"ok":
 		return _project(&"continental_rail")
-	if not rs.media and _ok(rs, &"SOC1"):
-		return _card(&"SOC1")
-	if rs.reforest_queue.size() < 2 and rs.absorption < 25.0 and _ok(rs, &"SNK1") \
-			and rs.money >= 130.0:
-		return _card(&"SNK1")
-	if rs.influence >= 25.0 and _ok(rs, &"DIP1") and rs.money >= 110.0:
-		return _card(&"DIP1")
-	# Emergency decarbonization: if at the current pace the world breaches the
-	# +2.0 C limit within two decades, push the big tech cards before the bikes.
-	var projected: float = rs.temp + float(Tuning.c("K_WARM")) * maxf(0.0, rs.net_emissions()) * 20.0
-	if projected >= float(Tuning.c("T_LOSS")):
-		for sid in _sectors_by_progress(rs):
-			var ss := rs.sector(sid)
-			if ss.progress < ss.cap() and _ok(rs, TECH_CARD[sid]) \
-					and rs.money >= rs.effective_cost_money(TECH_CARD[sid]) + 50.0:
-				return _card(TECH_CARD[sid])
-	var tra := rs.sector(&"tra")
-	if not tra.suff_played and _ok(rs, &"TRA1") and rs.money >= 140.0:
-		return _card(&"TRA1")
-	# Protect the 25-influence alliance budget until the coalition is complete.
-	if (rs.allies >= int(Tuning.s("MAX_ALLIES")) or rs.influence >= 40.0) and _ok(rs, &"DIP2") \
-			and rs.money >= 180.0:
-		return _card(&"DIP2")
-	for sid: StringName in [&"agr", &"ind"]:
-		var ss := rs.sector(sid)
-		if not ss.suff_played and ss.progress >= 50.0 and _ok(rs, SUFF_CARD[sid]) \
-				and rs.money >= rs.effective_cost_money(SUFF_CARD[sid]) + 50.0:
-			return _card(SUFF_CARD[sid])
-	if tra.progress < tra.cap() and _ok(rs, &"TRA1") and rs.money >= 140.0:
-		return _card(&"TRA1")
-	for sid in _sectors_by_progress(rs):
-		var ss := rs.sector(sid)
-		if ss.progress < ss.cap() and _ok(rs, TECH_CARD[sid]) \
-				and rs.money >= rs.effective_cost_money(TECH_CARD[sid]) + 50.0:
-			return _card(TECH_CARD[sid])
-		if not ss.suff_played and _ok(rs, SUFF_CARD[sid]) \
-				and rs.money >= rs.effective_cost_money(SUFF_CARD[sid]) + 50.0:
-			return _card(SUFF_CARD[sid])
-	# Ledger watch: late-game money goes into sinks while net is not safely negative.
-	if rs.net_emissions() > -8.0 and _ok(rs, &"SNK1") and rs.money >= 130.0:
-		return _card(&"SNK1")
-	if rs.happiness < 55.0 and _ok(rs, &"SOC2") and rs.money >= 180.0:
-		return _card(&"SOC2")
-	return PASS
+	if rs.turn_index() >= 5 and rs.money >= 420.0 \
+			and rs.can_start_project_reason(&"global_sink_trust") == &"ok":
+		return _project(&"global_sink_trust")
+	for card in _offers(rs, 70.0):
+		if _has_op(card, "media") and not rs.media:
+			return _card(StringName(String(card["id"])))
+	if rs.happiness < 45.0:
+		for card in _offers(rs, 50.0):
+			if _has_op(card, "wellbeing"):
+				return _card(StringName(String(card["id"])))
+	if rs.absorption < 28.0:
+		for card in _offers(rs, 70.0):
+			if _is_restoration(card) and not card.has("risk"):
+				return _card(StringName(String(card["id"])))
+	var progress_pick := _progress_pick(rs, 70.0, true)
+	if progress_pick["card"] != &"pass":
+		return progress_pick
+	# Late-game ledger watch: spend spare funds on whatever still helps.
+	if rs.net_emissions() > -3.0:
+		for card in _offers(rs, 200.0):
+			if _is_restoration(card) and not card.has("risk"):
+				return _card(StringName(String(card["id"])))
+	for card in _offers(rs, 300.0):
+		if String(card.get("category", "")) == "response":
+			return _card(StringName(String(card["id"])))
+	return _greedy_spend(rs, 250.0)
 
 
 ## Drive one full turn: play cards/projects until the strategy passes, then
@@ -196,10 +276,10 @@ static func play_turn(strategy: StringName, rs: RunState) -> void:
 
 ## Run one full autoplay run headlessly. Returns the terminal RunState.
 static func autoplay(strategy: StringName, seed_value: int, canonical: bool = false,
-		unlocked_knowledge: Array = []) -> RunState:
+		unlocked_knowledge: Array = [], archetype_id: StringName = &"") -> RunState:
 	var gen := WorldGen.generate(seed_value, canonical)
-	var rs := RunState.new_run(gen, Catalog.load_default(), unlocked_knowledge)
-	var safety := 200
+	var rs := RunState.new_run(gen, Catalog.load_default(), unlocked_knowledge, archetype_id)
+	var safety := 60
 	while rs.phase != RunState.Phase.ENDED and safety > 0:
 		safety -= 1
 		play_turn(strategy, rs)

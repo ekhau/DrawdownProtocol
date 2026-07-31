@@ -1,15 +1,18 @@
 # Roadmap: Design and Build a Simple 2D Isometric Rogue-lite Prototype
 
 ## 1. Prototype Goal
-Build a playable Godot prototype where each run represents a full timeline (2030 to 2100), every year confronts the player with three random crises they answer by playing policy cards (with combos, long-term projects, and a growing deck), and the simulation can be won or lost in a clear and understandable way.
+Build a playable Godot prototype where each run is a tight 15-turn race (one turn = five years, 2030 to 2100) against an automatically escalating Climate Clock: every turn deals three random events and a market of project cards, the player funds cards to answer crises, bend the world actors' emission curves, and chain combos, and the simulation can be won or lost in a clear and understandable way.
 
 ### Success Criteria
-- A full run is playable in 10 to 20 minutes.
-- The core loop is understandable within the first 2 turns.
-- Win condition: year reaches 2100 carbon-neutral.
-- Loss condition: warming contribution >= 2.0 C (single hard loss; social collapse acts through systems).
-- Combos fire visibly most turns for a competent player; at least one project completes in a typical winning run.
-- At least one meaningful meta-progression choice exists between runs.
+- A full run is 15 decision turns, playable in 10 to 20 minutes.
+- The core loop is understandable within the first 2 turns; the Climate Clock is readable as THE adversary at a glance (current %, next-turn forecast, curve history).
+- Win condition: global net emissions <= 0 (city + world actors - absorption) at ANY turn before the tipping point.
+- Loss conditions: clock reaches 100% (+2.0 C), OR happiness reaches 0 (the city revolts), OR 2100 arrives still net-positive.
+- Each turn follows: event draw (3, with on-draw spikes and conditional bonus-card injections) -> project market (4 offers, consumed when funded) -> resolution (ledger, clock, summits, world-actor advance).
+- Summits every ~4 turns set targets announced in advance, with real rewards and penalties.
+- Combos fire visibly most turns for a competent player; a strong engine turn cascades; at least one project completes in a typical winning run.
+- At least three selectable city archetypes force different strategies; at least one is meta-locked.
+- Both victory and defeat pay meta rewards; defeat ends with a post-mortem naming the pivotal turn.
 
 ## 2. Scope Definition (Keep It Simple)
 
@@ -37,17 +40,17 @@ Build a playable Godot prototype where each run represents a full timeline (2030
 - Complex pathfinding agents on the board.
 
 ## 3. Core Gameplay Loop Specification
-Each turn equals one year.
+Each turn equals five years; a run is exactly 15 turns (2030, 2035, ... 2100).
 
-1. Show current year and world metrics; apply income and project upkeep.
-2. Draw 3 random events (crises and opportunities) from the weighted crisis deck.
-3. Player plays any number of policy cards (up to the per-year cap), bound by Money / Influence / Happiness costs; card tags answer matching crises immediately; completed tag sets fire combos; projects may be launched or abandoned.
-4. Apply immediate and persistent card effects, rewards, combo payoffs.
-5. Simulate yearly changes (emissions, sinks, resilience, warming).
-6. Resolve unanswered crises (damage plus opportunity riders) and climate feedbacks.
-7. Update HUD, crisis panel, and event log with results.
-8. Check win or loss condition.
-9. Advance year.
+1. Show turn/year and world metrics; apply income and project upkeep (projects run 3 turns).
+2. Draw 3 random events (crises and opportunities) from the weighted deck. On-draw effects strike immediately (a record heat wave bakes in +1 Gt/yr unless answered this turn); qualifying events inject bonus cards into the market, gated by resources (heat wave -> Heatwave Response Plan if happiness >= 40).
+3. Deal the project market: 4 weighted offers from the player's pool (archetype leans included), guaranteed to contain at least one card that answers an open event.
+4. Player funds offers (up to 5 plays; each offer is consumed), bound by Money / Influence / Happiness costs; risk cards roll their printed odds; card tags answer matching crises immediately; completed tag sets fire combos with the chain multiplier; projects may be launched or abandoned.
+5. Resolve the turn: sinks mature and strain, the global ledger closes (city sectors + world actors - absorption), the Climate Clock ticks, happiness drifts.
+6. Resolve unanswered crises (damage plus opportunity riders), the turn's summit target if scheduled (reward or penalty), and climate feedbacks.
+7. World actors advance their emission curves (trend, damped 0.2 per ally, cut by treaties and funded transitions).
+8. Update HUD (clock, ledger, world blocs, next summit), crisis panel, and turn log.
+9. Check end states: tipping point / revolt / neutrality-win / 2100 timeout. Advance 5 years.
 
 ## 4. Technical Architecture (Godot 4)
 
@@ -60,10 +63,13 @@ Each turn equals one year.
 
 ### Data-Driven Files
 - biomes.json: tile distributions and biome modifiers.
-- cards.json: policy effects, costs, rewards, tags, unlock requirements.
-- events.json: crisis deck (draw weights, damages, response tags, riders) and feedback triggers.
+- cards.json: policy effects, costs (money/influence/happiness), rewards, tags, market weights, risk odds, codex entries, unlock/meta-unlock requirements.
+- events.json: crisis deck (draw weights, damages, response tags, riders, on-draw spikes, bonus-card links) and feedback triggers.
 - combos.json: combo tag sets and payoffs.
-- projects.json: long-term project upkeep, completion payoffs, penalties.
+- projects.json: long-term project upkeep (per turn, 3 turns), completion payoffs, penalties.
+- world_actors.json: the world's blocs - emissions, trend, floor.
+- city_archetypes.json: selectable starting cities - stat modifiers, market leans, unlock gates.
+- summits.json: the COP calendar - turn, target, reward, penalty.
 
 ### Engineering Rules for Prototype
 - Keep simulation deterministic with RandomNumberGenerator seed.
@@ -186,8 +192,8 @@ Each turn equals one year.
 - Crisis, combo, project, and card messages integrated into the run log and HUD.
 
 ### Done Criteria
-- Exactly 3 events drawn per year; every card play resolves against crises and combos deterministically.
-- Crisis outcomes, combos, and project events are understandable and visible in logs.
+- Exactly 3 events drawn per turn and 4 market offers dealt; every funded card resolves against crises and combos deterministically.
+- Crisis outcomes, combos, summit verdicts, and project events are understandable and visible in logs.
 
 ## Phase 6: Meta-Progression Loop (2 to 3 days)
 ### Tasks
@@ -276,17 +282,19 @@ Each turn equals one year.
 ## 7. Quality Gates and Validation Checklist
 Run this checklist before calling the prototype complete:
 
-- Exactly 3 crises are drawn every year; the card cap (5 per year) is never exceeded.
-- Answered crises never damage; unanswered crises always leave a readable trace.
-- Combos fire at most once per combo per year and the chain multiplier matches the HUD.
-- Projects charge every year, complete after their full term, and penalize abandonment.
-- Year always advances correctly with Space input (double-Space confirm on an empty year).
-- Hub toggle works consistently with H input.
-- Loss triggers when warming contribution >= 2.0 C.
-- Win triggers at year >= 2100 with net emissions <= 0.
-- HUD values match simulation state after every turn.
-- Event log explains what changed and why.
-- Meta unlock effects are applied to new runs.
+- Exactly 3 events are drawn every turn; the market deals 4 offers (plus event bonus injections); the play cap (5 per turn) is never exceeded; funded offers leave the market.
+- Answered crises never damage (and clear their on-draw spikes); unanswered crises always leave a readable trace.
+- Combos fire at most once per combo per turn and the chain multiplier matches the HUD.
+- Projects charge every turn, complete after 3 paid turns, and penalize abandonment.
+- The turn always advances 5 years with Space input (double-Space confirm on an empty turn).
+- Hub (H) and Codex (C) toggles work consistently.
+- Loss triggers when the clock reaches 100% (+2.0 C) or happiness reaches 0 (revolt).
+- Win triggers the moment global net emissions <= 0, any turn; 2100 net-positive is the timeout loss.
+- Summits at turns 4/8/12 announce in advance, evaluate that turn's net, and pay or penalize.
+- World actors advance every turn; treaties, funded transitions, and allies verifiably bend their curves.
+- HUD values (clock %, forecast, city+world ledger) match simulation state after every turn.
+- The turn log explains what changed and why; the run-end post-mortem names a pivotal turn.
+- Meta unlocks (knowledge, defeat-lesson cards, codex entries, archetype selection) persist and apply to new runs.
 - No crash, freeze, or soft-lock during a full run.
 
 ## 8. Risks and Mitigations
@@ -299,8 +307,8 @@ Run this checklist before calling the prototype complete:
 
 ## 9. Definition of Done (Prototype)
 The prototype is done when:
-- A complete run can be played from 2030 to 2100.
-- The player has meaningful yearly choices.
-- Runs can be won and lost through transparent systems.
-- Meta-progression gives a clear reason to play again.
+- A complete 15-turn run can be played from 2030 to 2100 (or won early by bending the curve).
+- The player has meaningful choices every turn: which crises to answer, which offers to fund, home vs world.
+- Runs can be won and lost through transparent systems, and every defeat names its pivotal turn.
+- Meta-progression (Knowledge, defeat lessons, the Codex, the locked archetype) gives a clear reason to play again.
 - Team can gather useful feedback on fun, clarity, and balance.

@@ -6,136 +6,101 @@ A Godot 4 prototype for a 2D isometric rogue-lite climate strategy and diplomacy
 
 ### Elevator Pitch
 
-You lead a group of people — a climate NGO, an association, or a small pioneering country — determined to steer the world to carbon neutrality between 2030 and 2100. Every year the world deals you **three crises** — droughts, floods, fires, political turmoil, and sometimes a rare opportunity — and your policy cards are how you answer them. Cards cost money, influence, or happiness and pay resources back; played together they trigger **combos** whose chains grow across the run; **five-year projects** grant permanent powers if you sustain them. Answering crises well makes your deck grow. If the world crosses the global warming limit, the run is lost — yet the knowledge you gained persists, making every new attempt start smarter.
+You lead one city-state with an outsized ambition: make the **whole world** carbon-neutral before the climate crosses its tipping point. A run is a race of **15 turns — five years each, 2030 to 2100 —** against the **Climate Clock**, a single gauge that climbs on its own every turn because the rest of the world keeps emitting without you. Each turn the world deals **three events** — droughts, floods, political crises, the occasional opportunity — and a **market of project cards** to fund with Money, Influence, or even Happiness. Answer the crises, bend the great powers' emission curves with treaties and funded transitions, chain **combos** into a compounding engine, hold your promises through **five-yearly summits** — and if the world's ledger reaches net zero before the clock strikes 100%, the run is won on the spot. Cross +2.0 °C, or let Happiness hit zero and the city revolt, and the run is lost — yet every ending, victory or defeat, pays Knowledge that makes the next timeline start smarter.
+
+### The Adversary: the Climate Clock
+
+The antagonist of every run is not a monster — it is a curve. The **Climate Clock** shows warming as a percentage of the run's race track: **0% at +1.0 °C, 100% at +2.0 °C — the tipping point and instant defeat** [6][7]. A run starts at 30% (+1.30 °C, roughly where the 2030s begin).
+
+The clock escalates automatically, like the cold in Frostpunk or scaling elites in Slay the Spire: four **world blocs** emit on their own rising curves, sinks strain as warming passes +1.5 °C, and unanswered heat waves bake extra emissions permanently into the atmosphere. Do nothing and the run dies around turn 7–9. The HUD makes the race legible at all times: the clock's current percentage, a projection of next turn's rise if you do nothing, and the sparkline of the curve you are trying to bend.
+
+- **+1.5 °C (50%) — Overshoot:** crises intensify, sinks strain, wellbeing erodes.
+- **+1.75 °C (75%) — Overshoot II:** the pressure escalates sharply.
+- **+2.0 °C (100%) — Defeat:** the limit for a safe human world is breached.
+
+**Victory is carbon neutrality, whenever it comes.** The moment the world absorbs more than it emits — your city's emissions plus the world's blocs, minus all sinks — the curve bends and the run is won, whether that is 2080 or 2100 [2][5]. Reaching 2100 still net-positive is the third defeat: survival is not the goal, drawdown is.
+
+### One City in a Warming World
+
+The player governs one concrete city-state — but the 2 °C threshold is global. Four named **world blocs** (an industrial league, a wealthy union, a trade compact, the industrializing frontier states) emit the majority of the world's carbon on simple, visible curves that climb every turn. This creates the run's central dilemma:
+
+- **Fix things at home** — transform your own industry, transport, and agro-economy. Safe, visible, and yours to control — but your sphere is only part of the ledger.
+- **Convert the world** — spend Influence and Money on **Emissions Treaties** (bend a bloc's growth curve) and **Funded Transitions** (retire a big polluter's capacity outright: the cheapest tons on Earth are bought abroad). Costly, and it feels like paying for someone else's problem — but no run has ever been won without it.
+
+Every ally won on the diplomatic map also damps the world's emission drift: a coalition is not flavor, it is drag on the adversary's curve.
 
 ### Player Role and Fantasy
 
-The player is not an abstract force. They are a **group of people**: a small, credible actor on the world stage (NGO or small country) with limited money but potentially enormous influence. The fantasy is "we are the ones who showed the world it was possible":
-
-- Convince and cooperate with other countries rather than command them.
-- Spend a limited budget wisely where it moves the needle most.
-- Turn each disaster into a redesign opportunity instead of merely surviving it.
+The player is a small, credible actor on the world stage — a pioneering city-state with limited money but potentially enormous influence. The fantasy is "we are the ones who showed the world it was possible": convince and cooperate rather than command, spend a limited budget where it moves the global needle most, and turn every disaster into a redesign opportunity.
 
 ### The Three Pillars
 
-The whole game is a balancing act between three pillars, always visible on screen:
+1. **Money** — funds every market card and project. Income arrives each turn and grows with allies.
+2. **Carbon balance** — the global ledger: city emissions + world blocs vs absorption (forests, soils, oceans, engineered sinks). Neutrality means emissions ≤ absorption, not zero emissions.
+3. **Happiness** — wellbeing and social acceptance. Policies that ignore it trigger resistance and social crises; policies that support it make sufficiency desirable. **At zero Happiness the city revolts and the run is lost** — the transition can only go as fast as the people carry it.
 
-1. **Money** — the budget that funds every transformation and joint project.
-2. **Carbon balance** — global emissions versus global absorption (forests, soils, oceans, engineered sinks). Neutrality means emissions ≤ absorption, not zero emissions.
-3. **Happiness** — people's wellbeing and social acceptance. Policies that ignore it trigger resistance and social crises; policies that support it (active mobility, healthy food, honest media) make sufficiency acceptable and even desirable.
+Influence is the connective currency: earned by competent crisis response and alliances, spent on treaties, coalitions, and the world's curves.
 
-Pushing hard on one pillar strains the others; every meaningful decision trades between them.
+### Core Loop (One Turn = Five Years)
 
-### Core Loop (One Run = 2030–2100)
+1. **The turn opens under pressure.** Income arrives, running projects charge their upkeep, and **three random events land**: crises (drought, record heat wave, mega fire, flood, crop failure, energy crunch, social crisis) and sometimes opportunities. Each shows what it costs if ignored and which card tags answer it. Some events strike immediately — a record heat wave bakes **+1 Gt/yr into the atmosphere the moment it lands**, and only answering it that turn dissipates the spike. Some open doors: crises can **inject bonus cards into the market**, gated by your resources (the heat wave offers a Heatwave Response Plan — but only while Happiness ≥ 40 keeps the city organized enough to run one).
+2. **The project market is dealt.** Four offers drawn from your growing pool — transitions, sinks, diplomacy, response programs, research moonshots. **Funding an offer consumes it; what you skip is gone with the turn.** Cards cost Money, Influence, or **Happiness** — the Industrial Carbon Levy costs nothing but public patience: a deep emissions cut and revenue, paid in −6 Happiness. Research bets print their odds on the card: the Fusion Moonshot succeeds 35% of the time and transforms everything; Direct Air Capture is a coin flip. Push your luck or buy certainty.
+3. **Answer, chain, commit.** A funded card whose tag matches an open crisis contains it on the spot — no damage, plus a response reward. Tags funded together fire **combos** whose chain multiplies future payouts; a practiced engine turn cascades two or three combos at once and visibly bends the curve. Long-term **projects** (three turns, fifteen years) charge upkeep every turn and grant permanent powers when held to completion.
+4. **Resolve and adapt.** The ledger closes: sinks mature and strain, warming ticks the clock, wellbeing drifts, every unanswered crisis strikes — and then the world's blocs advance their curves. On summit turns, the world judges you (below). Read the log, rebalance the pillars, repeat — until the curve bends, or the clock strikes.
 
-1. **The year opens under pressure.** Income arrives, running projects charge their upkeep, and **three random events land**: crises (drought, heat wave, mega fire, flood, crop failure, energy crunch, social crisis) and, sometimes, opportunities (a climate summit, an investment wave, a youth movement). Each shows what it will cost if ignored — and which card tags answer it.
-2. **Answer with cards.** Play as many policy cards as your resources allow (up to five a year). Each card has a cost in Money / Influence / Happiness and gives back rewards in Money / Influence / Happiness / Knowledge. A card whose tag matches an open crisis **contains it on the spot** — no damage, plus a response reward. Cards are simultaneously your crisis toolkit and your transition engine: the same year's plays transform sectors, restore sinks, and win allies.
-3. **Chain combos.** Cards played together synergize: complete a combo's tag set (bikes + clean grids, forests + water, diplomats + engineers + citizens) and it fires instantly with bonus resources. Every combo grows a **chain** that multiplies future combo rewards — the engine that lets a practiced coalition outrun the harder crises of the late century.
-4. **Commit to projects.** Launch long-term projects that charge resources every year for five years; seeing one through grants a permanent power — passive income, growing sinks, lasting wellbeing, or new allies. Walking away, or failing to pay, burns trust.
-5. **Resolve and adapt.** The simulation advances: emissions, absorption, temperature, happiness. Every crisis you left unanswered strikes — and even then opens a window to rebuild better. Read the outcome, rebalance the three pillars, repeat until 2100 — or until the world overheats.
+### Summits: the Mid-Run Judgments
 
-### The Three Key Sectors
+Every four turns or so a **climate summit (COP)** convenes with a target announced from the very start of the run: *net emissions below 45 by the 2045 Stocktake; below 25 by the Accord of 2065; below 8 by Last Horizon 2085.* Meet the target that turn and the world pays you back in money, influence, and hope. Miss it and the world loses faith — influence and happiness bleed. Summits give the long race its intermediate finish lines: a run is never only "win by 2100", it is always "survive the next audit".
 
-Every country's emissions come from three transformable sectors. Transformation costs money; the right sequencing is the strategic heart of a run.
+### Starting Cities: Three Roads into the Same Storm
 
-| Sector | High-carbon start | Transition levers |
-|---|---|---|
-| **Industry** | Fossil-powered factories, linear production | Clean energy, efficiency, circular economy; residual emissions offset by sinks |
-| **Transport** | Car-centric cities, fossil freight | Electric vehicles made efficient and affordable, rail, bikes and walkable cities |
-| **Agro-economy** | Emission-heavy livestock, degraded land | Plant-rich diets, agroecology, rewilding freed land into carbon-absorbing forests |
+Runs begin by choosing a city archetype — a different strategic identity, not a stat reskin:
 
-### Diplomacy: The Influence Resource
+- **Port City** — *"Trade routes are treaty routes."* Starts allied and influence-rich; its market leans toward treaties and coastal works. The diplomatic road.
+- **Industrial City** — *"The furnace that must reinvent itself."* Half again the industrial emissions and the wealth that comes with them. Spend the surplus fast or the clock buries you; its market leans energy and sufficiency.
+- **Political Capital** — *"Poor in funds, rich in leverage."* Income runs a quarter short but influence flows; civic and treaty cards abound. **Locked** until the Capital Charter is bought in the Knowledge tree — a meta-progression goal in itself.
 
-**Influence** is the second currency, earned through successful projects, exemplary transitions, aid during disasters, and media presence. It is spent to:
+### Crises: Cards Are the Answer
 
-- **Form alliances** with other countries.
-- **Launch joint projects** too big for any single actor (continental rail networks, shared clean-energy grids, cross-border reforestation).
-- **Unlock funding**: each ally contributes money to the shared energy transition, easing the Money pillar.
+The three-a-turn event draw is the tactical pressure of every turn, escalating with the warming band: droughts and crop failures bleed money and sinks, record heat waves strain health and spike emissions, floods devastate coasts, mega fires flip forests from sink to source, social crises cost allies and legitimacy — and opportunities (treaty conferences, investment waves, youth movements) are pure upside for whoever shows up with the right card. What you cannot answer still teaches: unanswered disasters open rebuild-better windows, because reconstruction is often the cheapest transformation.
 
-A run with few allies is a poor, slow transition; a run with many is a rich, fast one. Diplomacy is not a side system — it is the main engine of scale.
+### Combos and the Run That Explodes
 
-### Defeat: The Global Warming Limit
+Cards carry tags — water, food, energy, mobility, forest, coast, health, civic, treaty, relief — and named combos fire the instant a turn's funded tags complete their set: **Green Corridor** (mobility + energy), **Water Cycle** (water + forest), **Grand Bargain** (treaty + energy + civic), **Drawdown Surge** (forest + water + food + energy). Every combo grows a **chain** that multiplies future combo rewards up to double; a comboless turn lets it slip. A well-built engine turn late in the run — cascade banners, the clock gauge flashing green, the curve visibly plunging — is the game's Balatro moment, and it is usually the turn the run is won.
 
-A run is lost when **global warming reaches +2.0 °C above pre-industrial levels** — the ceiling the Paris Agreement commits the world to stay "well below" while pursuing 1.5 °C [6]. Crossing **+1.5 °C** does not end the run but triggers the **Overshoot** state: extreme events become stronger and more frequent, reflecting the IPCC's finding that impacts escalate sharply between 1.5 °C and 2 °C of warming [7].
+### Defeat Teaches: the Post-Mortem
 
-- **+1.5 °C — Warning threshold:** Overshoot begins; the pressure ramps up.
-- **+2.0 °C — Defeat:** the limit for a safe human world is breached; the run ends.
+Every run ends with a **post-mortem** that names the pivotal turn: *"Turn 4 (2045): the Stocktake target slipped away — the world stopped believing there."* *"Happiness collapsed hardest on turn 6: the carbon levy landed during a heat wave."* Overheats point at the worst unanswered turn, revolts at the collapse that started them, timeouts at the ledger block left standing (usually the world's blocs, untouched by diplomacy). The mistake is named so the next attempt can answer it — and some defeats pay forward directly: losing a run to the revolt permanently unlocks the **Public Support Fund**, the card that softens exactly that trap.
 
-### Victory: Neutrality as Balance, Many Paths
+### Rogue-lite Meta-Progression: Knowledge and the Codex
 
-The goal is a **carbon-neutral world by 2100**. Neutrality is a balance, not a purity test: industry may still emit if enough forests and other sinks absorb the remainder. Because of this, several strategies can win, for example:
+Losing a run is not starting over. Every ending — win or loss — pays **Knowledge Points**, spent in a persistent tree of insights: Affordable EVs, Healthy Sobriety, an Informed Public, the Restoration Playbook, Coalition Diplomacy, Crisis-Ready Design, the Capital Charter. Nodes cheapen cards, change how populations react, or unlock the third city — they encode understanding, not raw power.
 
-- **The Green Engine:** clean, efficient industry with residual emissions fully offset by massive reforestation and restored sinks.
-- **The Sober World:** deep demand reduction — bikes, plant-rich food, sufficiency — where happiness comes from wellbeing rather than consumption, and emissions fall low enough that modest sinks suffice.
-- **The Grand Alliance:** diplomacy-first; a web of allies pools money into joint mega-projects that transform all three sectors worldwide.
-
-A winning end state must hold all three pillars: solvent finances, emissions ≤ absorption, and a population happy enough to sustain the model beyond 2100.
-
-### Crises: Three a Year, and Cards Are the Answer
-
-The crisis draw is the central pressure of every turn. Three events are drawn each year from a weighted deck:
-
-- **Droughts and crop failures** — bleed money, strain food systems, weaken sinks.
-- **Big heat waves** — strain health, happiness, and energy demand.
-- **Tsunamis and floods** — devastate coastal infrastructure.
-- **Mega fires** — destroy forests, flipping carbon sinks into carbon sources.
-- **Energy crunches and social crises** — budgets bleed, allies waver, legitimacy erodes.
-- **Opportunities** — summits, green investment waves, youth movements: pure upside for whoever shows up with the right card.
-
-The deck escalates with warming: past +1.5 °C crises are drawn more often and opportunities less; social crises surge when happiness collapses and calm when independent media informs the public. Every crisis lists its **response tags** — play any card carrying one of them that year and the crisis is contained: no damage, and the world pays you back for competent leadership (money, influence, happiness, sometimes knowledge).
-
-What you cannot answer still teaches. Unanswered events are deliberately **opportunities as much as threats**: a destroyed highway can be rebuilt as a rail line; a burned monoculture can regrow as resilient mixed forest; a social crisis can legitimize a fairer policy that was previously unacceptable. Rebuilding *better* after a disaster is often cheaper per ton of carbon than transforming intact infrastructure — the game rewards players who see openings in chaos.
-
-### Combos: the Heart of the Fun
-
-Cards are designed to be played in concert. Each carries tags — water, food, energy, mobility, forest, coast, health, civic, treaty, relief — and named combos fire the instant a year's plays complete their tag set:
-
-- **Green Corridor** (mobility + energy): clean vehicles need clean grids.
-- **Water Cycle** (water + forest): forests make rain; rain makes forests.
-- **Grand Bargain** (treaty + energy + civic): diplomats, engineers and citizens at one table.
-- **Drawdown Surge** (forest + water + food + energy): every system pulling carbon the same year.
-
-A combo is loud and immediate: a banner, bonus resources, sometimes a direct effect on the world. Every combo fired raises the **combo chain**, and each chain step multiplies future combo rewards (up to double); a year without a combo lets the chain slip. Early combos are small change; a deep chain late in the run is how a practiced coalition funds answers to three simultaneous Overshoot-strength crises. Discovering a combo for the first time also yields Knowledge — insight, once learned, is permanent.
-
-### Long-Term Projects: the Strategic Arc
-
-Alongside the tactical scramble of the crisis year, the player can commit to **projects** — the Global Sink Trust, a Continental Rail Compact, Universal Services, a World Climate Accord. A project charges its upkeep every year for five years. Sustained to completion, it grants a **permanent power**: passive income, ever-growing absorption, lasting wellbeing, or new allies and deeper relations. Abandoning a project — or missing a payment because the crises drained you — cancels it and costs happiness and influence: the world remembers broken promises. Projects give a run its spine: the question is never only "how do I survive this year?" but "can I afford to keep my promises while surviving it?"
-
-### A Deck That Grows With Your Deeds
-
-The starting deck covers the basics; the rest of the catalog is earned in play. Answering crises unlocks mutual-aid networks; chaining combos unlocks food commons and transition festivals; winning allies unlocks the Climate Club; transforming industry unlocks industrial symbiosis; completing a project unlocks blue carbon restoration. New cards appear mid-run with fanfare — the deck's growth *is* the scoreboard of how well you have played, and it widens the answers available against the harder late-run crises.
-
-### Rogue-lite Meta-Progression: Knowledge
-
-Losing a run is not starting over. The group keeps its **Knowledge**: a persistent tree of tech-and-policy insights unlocked across runs, so every new timeline starts smarter. Examples of Knowledge nodes:
-
-- **Affordable EVs:** how to make electric cars efficient and cheap enough for everyone — transport transitions cost less and go faster.
-- **Healthy Sobriety:** bikes and vegetarian food are good both for the climate and for people's health — sufficiency policies now *raise* happiness instead of lowering it.
-- **Informed Public:** funding independent media keeps people informed about global warming — populations accept sufficiency policies sooner and social crises are milder.
-
-Knowledge nodes unlock new actions, cheapen existing ones, or change how populations react — they encode *understanding*, not raw power, so mastery in the meta mirrors real learning about the transition.
+Alongside it grows the **Codex of real solutions**: funding any card for the first time — in any run — permanently unlocks a short entry on the real-world solution it represents, from Kalundborg's industrial symbiosis to Ahmedabad's heat action plan, from Project Drawdown's food-waste ranking to the Montreal Protocol. The collection is the game quietly teaching what the cards stand for.
 
 ### Replayability
 
-- **Procedurally generated initial world map:** the layout of countries, their starting sectors, wealth, and vulnerabilities differ every run — no fixed opening.
-- **Random events:** the sequence and severity of disasters reshuffle each timeline's pressure points.
-- **Multiple victory paths** interacting with both: the map and the events push each run toward a different winning strategy.
+- **Procedurally generated world map** — regions, vulnerabilities, and starting conditions differ every run.
+- **The market and the draw** — each turn's dealt offers and events reshuffle every timeline's pressure points; sometimes the shop does not save you, and the next run's plan changes because of it.
+- **Three archetypes, multiple victory paths** — green-engine, sober-world, and grand-alliance strategies all reach neutrality by different ledgers.
 
 ### Visuals and Aesthetics: The Beautiful Optimization
 
 - **Early run / high-emission world:** harsh visuals — grey concrete, gridlocked highways, industrial sprawl, muted smoggy tones.
 - **Transformed world:** green tram lines, bike paths, rooftop gardens, dense forests, brighter natural light.
-- The target look is not "primitive"; it is advanced, lush, and harmonious (solarpunk direction). The world's visual arc *is* the score screen: players should see the transition happening tile by tile.
+- The target look is not "primitive"; it is advanced, lush, and harmonious (solarpunk direction). The world's visual arc *is* the score screen — and the Climate Clock plunging into green is its climax.
 
 ### Scientific Foundation
 
 | In-Game Mechanic | Real-World Concept | Scientific Source |
 |---|---|---|
-| +1.5 °C warning / +2.0 °C defeat | Paris Agreement temperature goal; 1.5 °C vs 2 °C impacts | UNFCCC Paris Agreement [6]; IPCC SR1.5 [7] |
-| Neutrality as emissions/absorption balance | Net zero and carbon sinks | Project Drawdown [2]; IEA net-zero pathways [5] |
-| Sobriety raising happiness | Sufficiency and demand-side mitigation | IPCC AR6 WGIII, Chapter 5 [1] |
+| The Climate Clock: +1.5 °C warning / +2.0 °C defeat | Paris Agreement temperature goal; 1.5 °C vs 2 °C impacts | UNFCCC Paris Agreement [6]; IPCC SR1.5 [7] |
+| Victory = neutrality as emissions/absorption balance, any year | Net zero and carbon sinks | Project Drawdown [2]; IEA net-zero pathways [5] |
+| World blocs bent by treaties and funded transitions | International climate finance (JETPs), climate clubs, sectoral treaties | IEA [5]; Montreal Protocol precedent |
+| Sufficiency raising happiness; revolt at zero | Sufficiency and demand-side mitigation; just-transition backlash | IPCC AR6 WGIII, Chapter 5 [1] |
 | Agro-economy diet shift | Plant-rich diets within planetary boundaries | EAT-Lancet Commission [3] |
-| Event escalation past +1.5 °C | Tipping points and planetary boundaries | Stockholm Resilience Centre (Rockström et al.) [4] |
+| Event escalation past +1.5 °C; on-draw emission spikes | Tipping points and compound extremes | Stockholm Resilience Centre (Rockström et al.) [4] |
+| Codex entries on every card | Ranked, real mitigation solutions | Project Drawdown [2] and per-card sources |
 
 ## Sources
 
@@ -149,4 +114,4 @@ Knowledge nodes unlock new actions, cheapen existing ones, or change how populat
 
 ## Current Prototype Status
 
-The playable prototype in `../src/` implements this vision end-to-end: yearly turns 2030–2100 with the 3-crisis draw, multi-card play with costs and rewards, the combo chain, five-year projects, deck growth, the three-sector model with sufficiency caps, diplomacy as cards, the 12-region procgen world board, Overshoot bands and feedback loops, defeat at +2.0 °C, and Knowledge Points spent in the Knowledge tree. See `../src/README.md` for controls, architecture, verification, and deliberate deviations.
+The playable prototype in `../src/` implements this vision end-to-end: the 15-turn race 2030–2100 with the Climate Clock gauge, the 3-event draw with on-draw spikes and bonus-card injections, the per-turn project market with happiness-cost and push-your-luck cards, four world blocs bent by treaties/funded transitions/allies, three selectable city archetypes (one meta-locked), summits on turns 4/8/12, the combo chain with cascade feedback, three-turn projects, deck growth, the revolt and tipping-point defeats with early neutrality victory, the run-end post-mortem, and the Codex + Knowledge tree meta. See `../src/README.md` for controls, architecture, verification, and deliberate deviations.

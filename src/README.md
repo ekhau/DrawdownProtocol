@@ -1,10 +1,13 @@
 # The Drawdown Protocol — Playable Prototype
 
 A Godot 4 vertical slice of the rogue-lite climate strategy game specified in
-`../docs/`. One run = 2030–2100. Each year **three crises** land; you answer
-them with policy cards (up to five a year), chain **combos**, and sustain
-**five-year projects**; win by reaching 2100 carbon-neutral (net emissions
-≤ 0) below +2.0 °C of warming.
+`../docs/`. One run = **15 turns of five years each, 2030–2100** — a race
+against the **Climate Clock** (100% = +2.0 °C = defeat). Each turn: **three
+events** land, a **market of four project cards** is dealt, you fund what you
+can — answering crises, bending the **world blocs'** emission curves, chaining
+**combos**, sustaining **three-turn projects** — and the world resolves. Win
+the moment global net emissions reach ≤ 0; lose at the tipping point, at zero
+Happiness (revolt), or by reaching 2100 still net-positive.
 
 ## Run it
 
@@ -22,7 +25,7 @@ Headless verification (all green from a clean checkout):
 ```sh
 # import once after checkout
 godot/bin/godot.linuxbsd.editor.dev.x86_64 --headless --path src --import
-# full content pipeline: validator + 732-check test suite + 20-seed batch (~10 s)
+# full content pipeline: validator + test suite + 20-seed batch
 src/tools/content_check.sh
 # individual pieces
 godot/bin/godot.linuxbsd.editor.dev.x86_64 --headless --path src --script res://tools/validate_data.gd
@@ -32,215 +35,207 @@ godot/bin/godot.linuxbsd.editor.dev.x86_64 --headless --path src --script res://
     --seeds 20 --strategy all --enforce --csv /tmp/batch.csv
 ```
 
-## The loop (one year)
+## The loop (one turn = five years)
 
-1. **Year start** (automatic): income (+20 per ally, happiness penalties),
-   project upkeep charges (pay, complete, or collapse), then **3 crises are
-   drawn** from the crisis deck — droughts, heat waves, fires, floods, crop
-   failures, energy crunches, social crises, and sometimes opportunities
-   (summits, investment waves, movements). Draw weights rise with the warming
-   band; social crises surge below 40 happiness and calm under media.
-2. **Play cards** — up to 5 a year, bound by resources. A card costs Money /
-   Influence / Happiness, applies its effects, pays its printed returns, and
-   its **tags** answer the first open crisis that accepts them. Answered
-   crises are contained on the spot: no damage, plus a response reward.
-3. **Combos**: when the year's played tags complete a combo from
-   `data/combos.json` (e.g. mobility + energy = Green Corridor), it fires
-   instantly — banner, bonus resources, sometimes effects. Every combo grows
-   the **chain**; each chain step adds +10% to combo rewards (×2 cap); a
-   comboless year shrinks the chain by 1. Knowledge rewards on combos pay
-   only on first discovery per run.
-4. **Projects** (optional): launch a five-year project (max 2 active); it
-   charges upkeep every year. Completion grants instant effects plus a
-   permanent passive (income, influence, happiness/yr, absorption/yr).
-   Abandoning — or failing to pay — costs happiness and influence, once.
-5. **Space resolves**: sink maturation/stress → ledger → warming → happiness
-   drift → **unanswered crises strike** (scaled by resilience; only a crisis
-   that actually hits opens its opportunity rider) → feedback loops → end
-   check. Passing (zero cards) needs a double-Space confirm.
+1. **Turn start** (automatic): income (250 base, +40 per ally, happiness
+   penalties), project upkeep charges (pay, complete, or collapse), then
+   **3 events are drawn** — droughts, record heat waves, fires, floods, crop
+   failures, energy crunches, social crises, and sometimes opportunities.
+   Draw weights rise with the warming band. Some events strike on draw (the
+   heat wave bakes **+1 Gt/yr into e_extra**, cleared only if answered this
+   turn) and some **inject bonus cards into the market** behind a resource
+   gate (Heatwave Response Plan appears only while Happiness ≥ 40).
+2. **The market is dealt**: 4 weighted offers from your available pool
+   (archetype leans shift the odds; diplomacy levers carry raised weights;
+   a guarantee rule keeps at least one offer that answers an open event).
+   **Funding an offer consumes it** — what you skip is gone with the turn.
+3. **Fund cards** — up to 5 a turn, bound by resources. Cards cost Money /
+   Influence / **Happiness** (the Industrial Carbon Levy is the dilemma card:
+   free in money, −6 Happiness, +35M back). Research bets print their odds
+   (Fusion Moonshot 35%, Direct Air Capture 50%) and roll them on play. Tags
+   answer the first open crisis that accepts them; tag sets fire **combos**
+   whose chain multiplies rewards (+10%/step, ×2 cap); ≥2 combos in one turn
+   is a **cascade** with its own fanfare.
+4. **World levers**: Form Alliance (allies pay income and damp world drift by
+   0.2/turn each), **Emissions Treaty** (−0.8 trend on the steepest bloc),
+   **Fund a Transition** (−6 Gt off the biggest emitter — the cheapest tons
+   anywhere). No run reaches global net zero without them.
+5. **Space resolves**: sink maturation/stress → the global ledger (city
+   sectors + world blocs − absorption) → the clock ticks → happiness drift →
+   unanswered crises strike → **summit verdict** on turns 4/8/12 (targets
+   announced from turn 1; reward or faith-loss) → feedback loops → end check
+   → the world's blocs advance their curves. Passing needs a double-Space.
 
-Deck growth: 6 of the 26 cards start locked and join the pool mid-run when
-the run earns them — crises answered, combos fired, allies won, sectors
-transformed, projects completed. The unlock moment is the reward.
+Deck growth: 6 cards unlock mid-run by deeds; the **Public Support Fund**
+unlocks permanently by losing a run to the revolt; the Heatwave Response Plan
+exists only when a heat wave opens its window.
 
 ## Controls
 
 | Input | Effect |
 |---|---|
-| Mouse | Play cards, launch/abandon projects, select regions, choose the DIP1 alliance partner |
-| Space | Resolve the year (passing with zero cards needs a second Space to confirm) |
+| Mouse | Fund market offers, launch/abandon projects, select regions, choose the alliance partner |
+| Space | Resolve the turn (passing with zero cards needs a second Space to confirm) |
 | H | Knowledge tree (meta-progression) |
-| F1 or the "?" button (top-right) | Open/close the step-by-step tutorial |
-| F3 | Debug overlay: sim internals, world table, autoplay Safe/Risky/Mixed, restart same seed / seed+1 |
+| C | Codex of real climate solutions (entries unlock on first play of each card) |
+| F1 or the "?" button | Open/close the step-by-step tutorial |
+| F3 | Debug overlay: sim internals, actors, market, autoplay Safe/Risky/Mixed |
 | Esc / RMB | Clear selection / cancel the alliance target prompt |
 
-The tutorial opens automatically on a fresh profile and never re-shows once
-completed or dismissed (flag persisted in `user://knowledge_save.json`);
-re-open it any time with `?` or F1.
+First boot opens the **city picker**: Port City (diplomatic road, starts
+allied), Industrial City (rich and filthy, must reinvent), Political Capital
+(locked behind the 6-KP Capital Charter node). The choice persists; change it
+from any run-end screen ("Change city").
 
 ## Architecture
 
 ```
 scripts/core/     headless, deterministic sim (no node/scene dependencies)
-  seed_util.gd        SplitMix64 sub-seed streams (world/events/tiles/names)
+  seed_util.gd        SplitMix64 sub-seed streams (world/events/tiles/names/market/risk)
   world_gen.gd        Tier A procgen: 12 regions, archetypes, shares, start jitter
   region_data.gd      RegionData resource (regions render state, never own it)
-  catalog.gd          cards/events/combos/projects/knowledge JSON + per-run patching
-  run_state.gd        the yearly pipeline: crisis draw, multi-card plays, combos,
-                      projects, deck growth, resolution; signals
-  climate_calc.gd     ledger/warming/feedback steps as pure functions
+  catalog.gd          cards/events/combos/projects/knowledge/actors/archetypes/summits
+                      JSON + per-run patching
+  run_state.gd        the per-turn pipeline: crisis draw + on-draw spikes, market deal
+                      + bonus injection, funded plays with risk rolls, combos, projects,
+                      summits, world-actor advance, deck growth, resolution; signals
+  climate_calc.gd     ledger/warming/clock/feedback steps as pure functions
   society_calc.gd     income, drift, resilience, crisis weights, combo multiplier
-  end_state.gd        end evaluator with reason codes + KP award
-  turn_record.gd      one immutable record per year (log = analytics = HUD)
+  end_state.gd        end evaluator (tipping/revolt/early-win/timeout) + KP award
+  post_mortem.gd      run-end heuristic naming the pivotal turn (never a re-sim)
+  turn_record.gd      one immutable record per turn (log = analytics = HUD)
   log_formatter.gd    every player-visible line rendered from data/log_templates.json
   data_validator.gd   collected-report schema validation (boot + CI)
-  strategies.gd       scripted Safe / Risky / Mixed archetypes (autoplay, batches)
-scripts/sim.gd      scene-facing owner; scripts/meta_state.gd  Meta autoload (KP save)
+  strategies.gd       scripted Safe / Risky / Mixed archetypes (market-aware autoplay)
+scripts/sim.gd      scene-facing owner; scripts/meta_state.gd  Meta autoload
+                    (KP, knowledge, defeat-lesson cards, codex, archetype; user:// save)
 scripts/ui/         views subscribe to sim signals and render; zero gameplay math
+                    (climate clock gauge, market tray, world-blocs dock, codex screen,
+                     archetype picker, post-mortem end screen, banners, tutorial)
 tools/              validate_data, batch_runs, gen_fixtures, parse_check, content_check.sh
-tests/              homemade headless harness (no addon), 14 suites, 732 checks
+tests/              homemade headless harness (no addon), 17 suites
 data/               ALL balance values and content (golden rule 9) — see below
 ```
 
-The UI is built programmatically from `main.gd` (one `main.tscn` root); every
-view is its own class in `scripts/ui/`. Sim → UI flows only through signals
-(`year_started`, `card_played`, `crisis_answered`, `combo_triggered`,
-`card_unlocked`, `project_changed`, `year_advanced`, `event_struck`,
-`warming_band_changed`, `ally_changed`, `run_ended`).
+Sim → UI flows only through signals (`year_started`, `card_played`,
+`crisis_answered`, `combo_triggered`, `card_unlocked`, `project_changed`,
+`summit_resolved`, `risk_resolved`, `curve_bent`, `year_advanced`,
+`event_struck`, `warming_band_changed`, `ally_changed`, `run_ended`).
 
 ## Data files (single authority for all numbers)
 
 | File | Contents |
 |---|---|
-| `data/cards.json` | the 26-card catalog: costs, effects, tags, rewards, unlock conditions (Phase 5 doc 01) |
-| `data/events.json` | crisis deck: 7 crises + 3 opportunities (weights, damages, responses, riders) + 3 feedback loops (Phase 5 doc 02) |
+| `data/cards.json` | the 33-card catalog: costs (incl. happiness), effects, tags, rewards, market weights, risk odds, codex entries, unlock/meta-unlock/bonus-only flags |
+| `data/events.json` | event deck: 7 crises + 3 opportunities (weights, damages, responses, riders, on-draw spikes, bonus-card links) + 3 feedback loops |
 | `data/combos.json` | 8 tag-set combos: required tags, rewards, effects |
-| `data/projects.json` | 4 five-year projects: upkeep, completion payoff, abandon penalty |
-| `data/knowledge.json` | 6 Knowledge nodes (patches + grants) |
-| `data/climate.json` | Phase 1 climate constants (K_WARM, caps, floors, stress) |
-| `data/society.json` | income, drift, resilience, crisis/combo/project constants |
-| `data/archetypes.json` | region presets, min/max counts, jitter ranges |
+| `data/projects.json` | 4 three-turn projects: per-turn upkeep, completion payoff, abandon penalty |
+| `data/world_actors.json` | the 4 world blocs: emissions, trend, floor |
+| `data/city_archetypes.json` | 3 starting cities: stat modifiers, market leans, unlock gates |
+| `data/summits.json` | the COP calendar: turn, net target, reward, penalty |
+| `data/knowledge.json` | 7 Knowledge nodes (patches + grants, incl. the archetype charter) |
+| `data/climate.json` | climate constants (K_WARM, clock zero, caps, floors, stress; per-turn) |
+| `data/society.json` | income, drift, resilience, market size, revolt threshold, actor damping |
+| `data/archetypes.json` | region presets for worldgen (min/max counts, jitter ranges) |
 | `data/log_templates.json` | every log/banner line template |
-| `data/board_layout.json` | Tier A dashboard slots (copy of `../data/board_layout.json`) |
-| `data/tutorial.json` | tutorial steps: spotlight target, text, advance rule (validated: rules TU1-TU4) |
+| `data/tutorial.json` | tutorial steps: spotlight target, text, advance rule |
 
 ## Implemented
 
-- Full yearly loop 2030–2100 as above: income + upkeep → crisis draw →
-  multi-card plays with combo/answer resolution → ledger → warming → drift →
-  unanswered crisis strikes → feedbacks → end check.
-- Crisis system: weighted 3-of-10 draw without replacement, band escalation,
-  social-state weight modifiers, per-crisis response tags and rewards,
-  answered-equals-contained semantics, riders only on real hits.
-- Combo system: tag-multiset matching over the year's plays, once per combo
-  per year, instant application, chain counter with reward multiplier
-  (+10%/step, ×2 cap, −1 decay on comboless years), first-discovery-only
-  Knowledge rewards.
-- Long-term projects: launch pays year one, upkeep at every year start,
-  completion effects + stacking permanent passives, fail/abandon penalties,
-  two-active cap, one attempt per project per run.
-- Deck growth: unlock conditions (crises answered, combos, allies, sector
-  progress, projects completed) checked on play and completion; unlocked
-  cards appear in the tray with a banner; locked cards are hidden until then.
-- Three-sector model with the 70% tech cap lifted by sufficiency cards;
-  carbon ledger (E vs A, net drives warming, 4× slower cooling, floors).
-- Diplomacy as cards: Form Alliance with flavor-only partner targeting,
-  Joint Transition Project, Climate Club (unlockable), ally income.
-- Media/window waiver rules (C1 semantics) and the fire-discount rider on
-  restoration cards; three one-time feedback loops; Overshoot bands with
-  vignette + interstitials in both directions.
-- Tier A world: 12 procgen regions, dashboard board, region panels with E/A
-  mini-bars, ally rings, scars, tooltips + click inspector, era tint.
-- UI: crisis panel (right dock) with live open/answered states, Policy Board
-  grouped by category + Projects column + explicit end-year chip, combo
-  banners with chain multiplier, chain label in the HUD, unlock banners.
-- Turn log rendered from TurnRecords via templates: crisis draw line, per-play
-  effect/reward/answer lines, combo lines, project events, unanswered hits
-  (damage first, opportunity second), unlocks, feedbacks, endings.
-- Meta-progression: KP formula (decades + sectors ≥ 70 + allies/2 + 3 on win)
-  **plus in-run Knowledge** from combo discoveries and seized opportunities;
-  Knowledge tree UI; persistence in `user://knowledge_save.json`.
-- Determinism: SplitMix64 sub-seed streams; `rng_events` consumed only by the
-  year-start crisis draw (3 × pick + target, fixed order); same seed + same
-  decisions = byte-identical records.
-- Debug: F3 overlay, headless batch harness with CSV, data validator (boot
-  fail-loud + CI exit codes).
-- Step-by-step tutorial (GoldenRules #7): 13 data-driven steps teaching the
-  pillars, warming gauge, crisis bar, board/regions, the Policy Board with
-  costs/tags/returns, answering a crisis, combos and the chain, launching a
-  project, resolving, the log, Knowledge, and win/lose. Action steps advance
-  on real sim signals (region selected, card played, project started, year
-  resolved, hub opened); auto-opens once; persists completed/dismissed.
+- The 15-turn race as above: income + upkeep → event draw with on-draw spikes
+  and bonus injections → market deal → funded plays with combo/answer/risk
+  resolution → global ledger → clock → drift → crisis strikes → summits →
+  feedbacks → world-actor advance → end check.
+- **The Climate Clock** as the single adversary gauge: percent to tipping,
+  next-turn forecast tick, per-run sparkline, plunge flash on cascades,
+  summit wins, and the drawdown moment.
+- **World actors**: four named blocs on rising curves; treaties, funded
+  transitions, and allies (0.2 drift damping each) are the only ways to bend
+  them; the dock lists each bloc with its drift arrow.
+- **The market**: 4 weighted offers per turn (dedicated RNG stream), consumed
+  when funded, answer-guarantee rule, archetype tag leans, event bonus cards
+  marked "[CRISIS WINDOW]", risk odds printed on the card.
+- **Resource-vs-resource dilemmas**: happiness-cost cards (Industrial Carbon
+  Levy) with the revolt defeat (happiness 0) closing the loop — and the
+  Public Support Fund as that defeat's permanent lesson card.
+- **Summits (COPs)** at turns 4/8/12 with pre-announced net targets, HUD
+  countdown line, verdict banners, rewards and faith-loss penalties.
+- **Push-your-luck research**: Fusion Moonshot (35%) and Direct Air Capture
+  (50%), odds on the card, one seeded roll per play.
+- **Post-mortem** on every run end: the pivotal turn named per outcome family
+  (overheat / revolt / timeout / win), rendered on the end screen.
+- **Codex**: every card carries a real-world solution entry; first play
+  unlocks it permanently; C opens the collection screen.
+- **City archetypes**: Port City / Industrial City / Political Capital
+  (meta-locked), with stat modifiers, market leans, and a persistent picker.
+- Crisis system, combo chain (+cascade feedback), three-turn projects, deck
+  growth, media/window waivers, fire-discount rider, feedback loops,
+  Overshoot bands, Tier A procgen board, step-by-step tutorial — all carried
+  over and retuned to the per-turn scale.
+- Determinism: six SplitMix64 streams (world, events, tiles, names, market,
+  risk); same seed + same decisions = byte-identical JSONL records.
 
 ## Test results (at time of writing)
 
-- `tests/run_tests.gd`: 14 suites, **732 checks, 0 failures** — covers the
-  Phase 3 checklist, Phase 4 (golden climate values, evaluator truth table,
-  resolver validation matrix incl. multi-play limit and locked cards,
-  stacking/caps, waiver precedence, resilience multipliers, crisis weight
-  formula, feedback one-shots, determinism replay, signal audit, KP anchors),
-  the new crisis/combo/project suites (draw determinism, contained-vs-struck
-  semantics, rider gating, combo matching/chain/decay/cap, project lifecycle
-  incl. failure and abandonment, deck-growth unlocks), and Phase 5
-  (validator pass + ~30-case mutation suite, discount path, additive-content
-  invariance).
-- `tests/_ui_smoke.gd`: boots the real scene headless and drives multi-card
-  play, the turn limit, pass confirm, DIP1 targeting, project launch,
-  inspector, hub, autoplay to a WIN, KP award, restart, knowledge patch
-  application, and the tutorial (auto-open, real-action advancement including
-  the project step, mid-way close with persisted flag, no auto-reshow,
-  re-open, full 13-step completion) — passes.
-- Fixture regression: canonical seed-2030 Safe/Risky/Mixed reproduce the
-  stored golden CSV byte-for-byte, with the anchors:
-  **Safe WIN 18 KP (6 allies, ~59 combos, Global Sink Trust completed) ·
-  Risky LOSS_LIMIT_BREACHED in 2064 with 4 KP (bled by unanswered crises,
-  all three feedback loops fired) · Mixed WIN 18 KP (full coalition,
-  Continental Rail Compact completed).**
-- 20-seed × 3-strategy batch: Safe and Mixed win on all 20 jittered seeds,
-  Risky never wins (loss years 2055–2068; 0 structural violations).
+- `tests/run_tests.gd`: 17 suites, **727 checks, 0 failures** — climate/clock
+  golden values, evaluator truth table incl. revolt and early win, resolver
+  matrix incl. the happiness-cost card and meta-lesson gate, crisis semantics,
+  combos, projects (3-turn lifecycle), **market suite** (deterministic deal,
+  offer consumption, answer guarantee, bonus-card gating, on-draw spikes,
+  diplomacy availability), **world suite** (actor curves, damping, fund/treaty
+  ops, summit verdicts, archetype starts), pipeline (BAU dies by mid-run,
+  determinism replay, curve-bent signal), post-mortem heuristics, validator
+  mutation suite (~40 cases), worldgen, board layout, fixtures.
+- Fixture regression (canonical seed 2030): **Safe WIN_NEUTRAL 2095, 12 KP ·
+  Risky LOSS_REVOLT 2065, 3 KP · Mixed WIN_NEUTRAL 2095, 12 KP** —
+  byte-for-byte against `tests/fixtures/seed2030_expected.csv`.
+- 20-seed × 3-strategy batch: **rate corridor** — Risky never wins (it
+  ignores the world's blocs, so global net cannot reach zero); Safe wins
+  12/20, Mixed 11/20 (floors 50% / 40%). Market variance is deliberate:
+  scripted strategies cannot always win; human play outperforms them.
+- `tests/_ui_smoke.gd`: boots the real scene headless and drives the city
+  picker, market funding with codex discovery, offer consumption, pass
+  confirm, DIP1 targeting, project launch, hub + codex toggles, autoplay to a
+  finished run with post-mortem, restart with archetype carry-over, knowledge
+  patch application, and the full tutorial.
 
 ## Spec deviations (deliberate, with reasons)
 
-1. **Phase 1 sample-run decade tables are not byte-reproduced.** The paper
-   model's throwaway script was never committed (golden rule 4); the
-   re-authored strategy scripts hit the same structural outcomes, and the
-   self-generated golden fixture (`tests/fixtures/seed2030_expected.csv`,
-   regenerate via `tools/gen_fixtures.gd`) pins this implementation.
-2. **Card names shortened** to fit the ≤ 24-char validator rule (C2).
-3. **`ERR_INSUFFICIENT_FUNDS` does not exist in Godot** — the Phase 4 spec
+1. **Additive-content invariance now applies to bonus-only cards.** The
+   market deals from the whole pool, so adding a normal card legitimately
+   shifts timelines (it changes the deal); only `bonus_only` cards are
+   timeline-neutral additions. The T10-P5 test is reframed accordingly.
+2. **The structural corridor is a rate corridor.** With a dealt market,
+   "Safe/Mixed always win" is impossible by design; the batch enforces
+   risky-never-wins plus win-rate floors instead.
+3. **Card names shortened** to fit the ≤ 24-char validator rule (C2).
+4. **`ERR_INSUFFICIENT_FUNDS` does not exist in Godot** — the Phase 4 spec
    names a fictional constant; `ERR_CANT_ACQUIRE_RESOURCE` is used, and the
-   UI reads string reason codes (`no_money`, `turn_limit`, …) instead.
-4. **Validator rule E8** (event `order` renumbering vs the previous committed
-   file version) is not implemented — it requires version history.
-5. **C9 guardrail** applies to non-sufficiency sector cards only.
-6. **Resolution beat is instant, not a timed replay**: values update
+   UI reads string reason codes (`no_money`, `not_in_market`, …) instead.
+5. **Resolution beat is instant, not a timed replay**: values update
    immediately; banners play as a non-blocking queue and Space clears them.
-7. **Card chips single-click play** (no expand-then-Enact step). DIP1 still
-   opens its target prompt; project abandonment needs a second confirming
-   click.
-8. **Locked (unlockable) cards are hidden**, deliberately breaking the old
-   "cards are never hidden" rule for the deck-growth pool only: the unlock
-   moment is designed as a reward beat. Blocked-but-available cards still
-   always show their reason.
+6. **Market chips single-click fund** (no expand-then-Enact step). DIP1 still
+   opens its target prompt; project abandonment needs a confirming click.
+7. **Actor targeting is automatic** (fund = biggest emitter, treaty =
+   steepest curve) to keep diplomacy one-click; per-bloc targeting is
+   deferred until playtests demand it.
 
 ## Cut / stubbed (per GoldenRules: cut, don't half-build)
 
 - **Tier B isometric diorama** (spec frozen in Phase 3 docs;
-  `STREAM_TILES` is reserved in `seed_util.gd`).
-- Audio, save/load mid-run, JSONL-to-disk analytics writer (records keep the
-  full run in memory; `TurnRecord.to_jsonl_line()` exists and is used by
-  tests), title screen / export presets (Plan.md Phase 9).
+  `STREAM_TILES` reserved in `seed_util.gd`).
+- Audio, save/load mid-run, JSONL-to-disk analytics writer, title screen /
+  export presets (Plan.md Phase 9).
 - `alliance_affinity` is generated and displayed but has no cost effect.
-- Player-directed crisis assignment (a card auto-answers the first open
-  matching crisis in draw order; choosing which crisis to answer with which
-  card is deferred until playtests demand it).
-- Log pin glyphs for open opportunity flags.
+- Player-directed crisis assignment (cards auto-answer in draw order).
+- Archetype-exclusive cards (archetypes shape the market by weights only, a
+  noted future deepening).
 
-## Content pipeline (add a card, crisis, combo or project without touching code)
+## Content pipeline (add content without touching code)
 
-1. Edit `data/cards.json` / `events.json` / `combos.json` / `projects.json`
-   (templates in `../docs/Phase_5/01_Card_Catalog_Data.md` and
-   `02_Event_Catalog_Data.md`).
-2. `src/tools/content_check.sh` — validator + fixtures + 20-seed batch, < 15 s.
+1. Edit `data/cards.json` / `events.json` / `combos.json` / `projects.json` /
+   `world_actors.json` / `city_archetypes.json` / `summits.json`
+   (templates in `../docs/Phase_5/01` and `02`).
+2. `src/tools/content_check.sh` — validator + fixtures + 20-seed batch.
 3. If a *tuning* change moved the fixtures: inspect the diff, update the
    Phase 1 docs first, then `tools/gen_fixtures.gd` to re-pin.

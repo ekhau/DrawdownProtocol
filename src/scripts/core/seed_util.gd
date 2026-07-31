@@ -7,6 +7,8 @@ const STREAM_WORLD := 1
 const STREAM_EVENTS := 2
 const STREAM_TILES := 3
 const STREAM_NAMES := 4
+const STREAM_MARKET := 5
+const STREAM_RISK := 6
 
 
 static func sub_seed(base_seed: int, stream: int) -> int:

@@ -16,11 +16,12 @@ func _ready() -> void:
 	base_catalog = Catalog.load_default()
 
 
-func start_run(seed_value: int, unlocked_knowledge: Array = [], canonical_start: bool = false) -> void:
+func start_run(seed_value: int, unlocked_knowledge: Array = [], canonical_start: bool = false,
+		archetype_id: StringName = &"", meta_card_ids: Array = []) -> void:
 	current_seed = seed_value
 	canonical = canonical_start
 	var gen := WorldGen.generate(seed_value, canonical_start)
-	run_state = RunState.new_run(gen, base_catalog, unlocked_knowledge)
+	run_state = RunState.new_run(gen, base_catalog, unlocked_knowledge, archetype_id, meta_card_ids)
 	run_started.emit(run_state)
 
 
@@ -28,14 +29,14 @@ func start_run(seed_value: int, unlocked_knowledge: Array = [], canonical_start:
 func autoplay_to_end(strategy: StringName) -> void:
 	if run_state == null or run_state.phase == RunState.Phase.ENDED:
 		return
-	var guard := 200
+	var guard := 60
 	while run_state.phase != RunState.Phase.ENDED and guard > 0:
 		guard -= 1
 		Strategies.play_turn(strategy, run_state)
 
 
-## Debug: advance N years passing (no cards).
-func advance_years_passing(n: int) -> void:
+## Debug: advance N turns passing (no cards).
+func advance_turns_passing(n: int) -> void:
 	if run_state == null:
 		return
 	for i in n:

@@ -1,13 +1,18 @@
 class_name RunState
 extends RefCounted
-## The single source of truth for one run: the yearly crisis-response pipeline
-## of docs/Phase_1/01_Balance_Model.md, implemented per docs/Phase_4/01-05.
-## Each year: income + project upkeep -> 3 crises drawn -> the player plays
-## cards (multi-play, resource-bound) that answer crises and fire combos ->
-## resolve applies the ledger, warming, drift, unanswered crises, feedbacks.
-## Headless-capable: never touches nodes, autoloads or OS. The only
-## nondeterminism is rng_events (stream 2), consumed ONLY by the crisis draw
-## at year start (3x pick + target, fixed order).
+## The single source of truth for one run: the per-turn race against the
+## climate clock (docs/Phase_1/01_Balance_Model.md, docs/Phase_4/01-05).
+## One turn = YEARS_PER_TURN years; a run is 15 decision turns, 2030-2100.
+## Each turn: income + project upkeep -> 3 events drawn (may spike emissions
+## and inject bonus market cards) -> a market of 3-5 cards is dealt -> the
+## player funds cards that answer crises, bend world-actor curves and fire
+## combos -> resolve applies the ledger (city + world actors), warming, drift,
+## unanswered crises, summits, feedbacks - then the world's blocs advance
+## their own emission curves. Victory: net <= 0 before the tipping point.
+## Defeat: +2.0 C (clock 100%), happiness 0 (revolt), or 2100 net-positive.
+## Headless-capable: never touches nodes, autoloads or OS. Nondeterminism
+## lives in three seeded streams: rng_events (crisis draw), rng_market
+## (market deal), rng_risk (push-your-luck cards, consumed only on play).
 
 signal year_started(year: int)
 signal card_played(card_id: StringName, accepted: bool)
@@ -19,6 +24,9 @@ signal card_unlocked(card_id: StringName)
 signal project_changed(project_id: StringName, status: StringName)
 signal warming_band_changed(band: int)
 signal ally_changed(region_id: StringName, is_ally: bool)
+signal summit_resolved(summit_id: StringName, met: bool)
+signal risk_resolved(card_id: StringName, success: bool)
+signal curve_bent(year: int)
 signal run_ended(outcome: StringName, knowledge_points: int)
 
 enum Phase { AWAIT_ACTION, RESOLVING, ENDED }
@@ -39,14 +47,14 @@ class SectorState:
 
 class ReforestEntry:
 	extends RefCounted
-	var per_year: float = 0.0
-	var years_left: int = 0
+	var per_turn: float = 0.0
+	var turns_left: int = 0
 
 
 class ProjectState:
 	extends RefCounted
 	var id: StringName = &""
-	var years_left: int = 0
+	var turns_left: int = 0
 
 
 # --- identity / timeline ---
@@ -70,8 +78,21 @@ var media: bool = false
 var window: bool = false
 var fire_discount: bool = false
 var flood_rebuild: bool = false
-# --- crises (drawn at year start; resolved at year end) ---
-var pending_crises: Array[Dictionary] = []    # {id, kind, region_id, answered, answered_by}
+# --- crises (drawn at turn start; resolved at turn end) ---
+var pending_crises: Array[Dictionary] = []    # {id, kind, region_id, answered, answered_by, on_draw_e}
+# --- the project market (dealt at turn start) ---
+var market: Array[StringName] = []            # current offers (plays consume them)
+var market_bonus: Array[StringName] = []      # subset injected by events this turn
+var market_enforced: bool = true              # op-level test suites may disable
+# --- world actors (the rest of the world's emission curves) ---
+var world_actors: Array[Dictionary] = []      # [{id, name, emissions, trend, floor}]
+# --- city archetype (selected at run start; {} = baseline coalition) ---
+var archetype: Dictionary = {}
+# --- meta-lesson cards (unlocked by past defeats, available from turn 1) ---
+var meta_cards: Array = []                    # Array[String] of card ids
+# --- summits (COPs) ---
+var summit_results: Dictionary = {}           # summit id -> "met"|"missed"
+var curve_bent_year: int = 0                  # first year net <= 0 (0 = never)
 # --- combos ---
 var combo_chain: int = 0
 var combos_fired_run: Dictionary = {}         # combo id -> times fired this run
@@ -91,6 +112,8 @@ var feedback_years: Dictionary = {}
 # --- world (Phase 3) ---
 var world: Array[RegionData] = []
 var rng_events: RandomNumberGenerator
+var rng_market: RandomNumberGenerator
+var rng_risk: RandomNumberGenerator
 var records: Array[TurnRecord] = []
 var catalog: Catalog
 var unlocked_knowledge: Array = []
@@ -102,6 +125,7 @@ var _turn_tags: Dictionary = {}               # tag -> count, this turn
 var _turn_combos: Array[Dictionary] = []      # [{id, chain, mult, rewards}]
 var _turn_project_events: Array[Dictionary] = []
 var _turn_unlocks: Array[StringName] = []
+var _turn_market_offered: Array[StringName] = []  # snapshot at deal time
 
 
 # Named accessors for the three MVP feedback loops (debug overlay / tests).
@@ -113,7 +137,8 @@ var amazon: bool:
 	get: return feedback_years.has("amazon_dieback")
 
 
-static func new_run(gen: WorldGen.WorldGenResult, base_catalog: Catalog, unlocked_ids: Array = []) -> RunState:
+static func new_run(gen: WorldGen.WorldGenResult, base_catalog: Catalog, unlocked_ids: Array = [],
+		archetype_id: StringName = &"", meta_card_ids: Array = []) -> RunState:
 	var rs := RunState.new()
 	rs.run_seed = gen.run_seed
 	rs.year = int(Tuning.c("START_YEAR"))
@@ -129,13 +154,42 @@ static func new_run(gen: WorldGen.WorldGenResult, base_catalog: Catalog, unlocke
 	rs.world = gen.regions
 	rs.rng_events = RandomNumberGenerator.new()
 	rs.rng_events.seed = SeedUtil.sub_seed(gen.run_seed, SeedUtil.STREAM_EVENTS)
+	rs.rng_market = RandomNumberGenerator.new()
+	rs.rng_market.seed = SeedUtil.sub_seed(gen.run_seed, SeedUtil.STREAM_MARKET)
+	rs.rng_risk = RandomNumberGenerator.new()
+	rs.rng_risk.seed = SeedUtil.sub_seed(gen.run_seed, SeedUtil.STREAM_RISK)
 	rs.unlocked_knowledge = unlocked_ids.duplicate()
+	rs.meta_cards = meta_card_ids.duplicate()
 	rs.catalog = base_catalog.duplicate_patched(unlocked_ids)
 	for e in rs.catalog.events:
 		rs._events_by_id[String(e["id"])] = e
+	# World actors: deep-copied definitions become live per-run state.
+	for a in rs.catalog.actors:
+		rs.world_actors.append({
+			"id": String(a["id"]), "name": String(a.get("name", a["id"])),
+			"emissions": float(a["emissions"]), "trend": float(a["trend"]),
+			"floor": float(a.get("floor", 1.0)),
+		})
 	var grants := base_catalog.grants(unlocked_ids)
 	rs.media = bool(grants["media"])
 	rs.adapt = minf(float(Tuning.s("ADAPT_MAX")), float(grants["adapt"]))
+	# City archetype: multiplicative/additive modifiers over the generated
+	# baseline, so procgen jitter and archetype identity compose.
+	if archetype_id != &"":
+		rs.archetype = rs.catalog.archetype(archetype_id)
+	if not rs.archetype.is_empty():
+		rs.money *= float(rs.archetype.get("money_mult", 1.0))
+		rs.influence = maxf(0.0, rs.influence + float(rs.archetype.get("influence_bonus", 0)))
+		rs.happiness = clampf(rs.happiness + float(rs.archetype.get("happiness_delta", 0)), 0.0, 100.0)
+		var smult: Dictionary = rs.archetype.get("sector_mult", {})
+		for sector in WorldEnums.SECTOR_ORDER:
+			rs.sector(sector).base *= float(smult.get(String(sector), 1.0))
+		for i in int(rs.archetype.get("start_allies", 0)):
+			var neutrals := rs.neutral_regions()
+			if neutrals.is_empty():
+				break
+			neutrals[0].ally_state = WorldEnums.AllyState.ALLY
+			rs.allies += 1
 	rs._begin_year()
 	return rs
 
@@ -153,6 +207,7 @@ func avg_progress() -> float:
 	return total / WorldEnums.SECTOR_ORDER.size()
 
 
+## City-sphere gross emissions (the player's direct levers) + feedback extras.
 func gross_emissions() -> float:
 	var e := e_extra
 	for s in WorldEnums.SECTOR_ORDER:
@@ -161,12 +216,64 @@ func gross_emissions() -> float:
 	return e
 
 
+## What the rest of the world emits: the sum of the actor curves.
+func world_emissions() -> float:
+	var e := 0.0
+	for a in world_actors:
+		e += float(a["emissions"])
+	return e
+
+
+## The world's current between-turn drift (before ally damping).
+func world_trend() -> float:
+	var t := 0.0
+	for a in world_actors:
+		t += maxf(0.0, float(a["trend"]))
+	return t
+
+
+func total_emissions() -> float:
+	return gross_emissions() + world_emissions()
+
+
+## THE adversary number: global net. Victory the moment it reaches <= 0.
 func net_emissions() -> float:
-	return gross_emissions() - absorption
+	return total_emissions() - absorption
 
 
 func warming_band() -> int:
 	return ClimateCalc.band(temp)
+
+
+## 1-based decision-turn index (turn 1 = 2030; turn 15 = 2100).
+func turn_index() -> int:
+	@warning_ignore("integer_division")
+	return (year - int(Tuning.c("START_YEAR"))) / int(Tuning.c("YEARS_PER_TURN")) + 1
+
+
+static func total_turns() -> int:
+	@warning_ignore("integer_division")
+	return (int(Tuning.c("END_YEAR")) - int(Tuning.c("START_YEAR"))) \
+			/ int(Tuning.c("YEARS_PER_TURN")) + 1
+
+
+## The Climate Clock: warming as percent of the tipping track (100% = loss).
+func clock_pct() -> float:
+	return ClimateCalc.clock_pct(temp)
+
+
+## Forecast of next turn's clock rise (clock points), assuming no further
+## plays: current city emissions + advanced actor curves - stressed sinks.
+func clock_forecast_pct() -> float:
+	var damp := allies * float(Tuning.s("ACTOR_TREND_PER_ALLY"))
+	var next_world := 0.0
+	for a in world_actors:
+		var use := minf(damp, maxf(0.0, float(a["trend"])))
+		damp -= use
+		next_world += maxf(float(a["floor"]), float(a["emissions"]) + maxf(0.0, float(a["trend"])) - use)
+	var next_a := maxf(ClimateCalc.a_floor(), absorption - ClimateCalc.sink_stress(temp))
+	var n := gross_emissions() + next_world - next_a
+	return ClimateCalc.clock_delta_pct(ClimateCalc.warming_delta(n))
 
 
 func resilience() -> float:
@@ -209,20 +316,38 @@ func ally_regions() -> Array[RegionData]:
 	return out
 
 
-## Cards in the player's current pool (starting cards + run unlocks).
+## Cards in the player's current pool (starting cards + run unlocks + meta
+## lessons). Bonus-only cards exist only while an event holds them in the
+## market.
 func is_card_available(card_id: StringName) -> bool:
 	var card := catalog.card(card_id)
 	if card.is_empty():
 		return false
+	if bool(card.get("bonus_only", false)):
+		return market.has(card_id)
+	if card.has("meta_unlock"):
+		return meta_cards.has(String(card_id))
 	return not card.has("unlock") or unlocked_card_ids.has(card_id)
 
 
+## The market draw pool (excludes bonus-only injections).
 func available_cards() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for c in catalog.cards:
+		if bool(c.get("bonus_only", false)):
+			continue
 		if is_card_available(StringName(String(c["id"]))):
 			out.append(c)
 	return out
+
+
+## Test/debug hook: force this turn's market (headless suites compose exact
+## scenarios; the UI never calls this).
+func force_market(ids: Array) -> void:
+	market = []
+	for id in ids:
+		market.append(StringName(String(id)))
+	_turn_market_offered = market.duplicate()
 
 
 func cards_played_this_turn() -> int:
@@ -277,6 +402,8 @@ func can_play_reason(card_id: StringName) -> StringName:
 		return &"unknown_card"
 	if not is_card_available(card_id):
 		return &"card_locked"
+	if market_enforced and not market.has(card_id):
+		return &"not_in_market"
 	if _turn_actions.size() >= int(Tuning.s("MAX_CARDS_PER_TURN")):
 		return &"turn_limit"
 	if effective_cost_money(card_id) > money:
@@ -292,6 +419,12 @@ func can_play_reason(card_id: StringName) -> StringName:
 		match String(eff.get("op", "")):
 			"ally":
 				if allies >= int(Tuning.s("MAX_ALLIES")) or neutral_regions().is_empty():
+					return &"no_target"
+			"actor_fund":
+				if _actor_by_rank(true).is_empty():
+					return &"no_target"
+			"actor_treaty":
+				if _actor_by_rank(false).is_empty():
 					return &"no_target"
 			"media":
 				if media:
@@ -314,7 +447,7 @@ func can_play(card_id: StringName) -> Error:
 		&"media_active": return ERR_ALREADY_IN_USE
 		&"no_target": return ERR_DOES_NOT_EXIST
 		&"unknown_card": return ERR_INVALID_PARAMETER
-	return ERR_UNAVAILABLE  # ended / resolving / turn_limit / capped
+	return ERR_UNAVAILABLE  # ended / resolving / turn_limit / capped / not_in_market
 
 
 # ------------------------------------------------- step 2: player actions ---
@@ -389,6 +522,22 @@ func play_card(card_id: StringName, target_region: StringName = &"") -> Error:
 			_:
 				applied.append(_apply_simple_effect(eff))
 
+	# 2b. Push-your-luck: roll the card's stated odds. rng_risk is consumed
+	# ONLY here - exactly one randf per risk card played.
+	var risk_outcome := {}
+	var risk_spec: Dictionary = card.get("risk", {})
+	if not risk_spec.is_empty():
+		var chance := float(risk_spec["chance"])
+		var success := rng_risk.randf() < chance
+		var branch: Dictionary = risk_spec.get("on_success" if success else "on_failure", {})
+		var risk_applied: Array[Dictionary] = []
+		for eff: Dictionary in branch.get("effects", []):
+			risk_applied.append(_apply_simple_effect(eff))
+		var risk_gains := _grant_rewards(branch.get("rewards", {}), 1.0)
+		risk_outcome = {"chance": chance, "success": success,
+			"effects_applied": risk_applied, "rewards": risk_gains}
+		risk_resolved.emit(card_id, success)
+
 	# 3. Grant the card's own rewards.
 	var reward_gains := _grant_rewards(card.get("rewards", {}), 1.0)
 
@@ -417,6 +566,9 @@ func play_card(card_id: StringName, target_region: StringName = &"") -> Error:
 		_turn_tags[String(t)] = int(_turn_tags.get(String(t), 0)) + 1
 	var fired := _check_combos()
 
+	# 6. A market offer is a single funding decision: playing consumes it.
+	market.erase(card_id)
+
 	_turn_actions.append({
 		"card": card_id,
 		"target": ally_target.id if ally_target != null else &"",
@@ -426,6 +578,7 @@ func play_card(card_id: StringName, target_region: StringName = &"") -> Error:
 		"rewards": reward_gains,
 		"effects_applied": applied,
 		"waiver": waiver,
+		"risk": risk_outcome,
 		"crisis_answered": answered_id,
 		"combos": fired,
 	})
@@ -468,10 +621,32 @@ func _apply_simple_effect(eff: Dictionary) -> Dictionary:
 			return {"op": op, "requested": amount, "applied": amount}
 		"reforest":
 			var entry := ReforestEntry.new()
-			entry.per_year = float(eff["per_year"])
-			entry.years_left = int(eff["years"])
+			entry.per_turn = float(eff["per_turn"])
+			entry.turns_left = int(eff["turns"])
 			reforest_queue.append(entry)
-			return {"op": op, "per_year": entry.per_year, "years": entry.years_left}
+			return {"op": op, "per_turn": entry.per_turn, "turns": entry.turns_left}
+		"actor_fund":
+			# Buy down the biggest emitter: cheapest tons on Earth, bought abroad.
+			var target := _actor_by_rank(true)
+			if target.is_empty():
+				return {"op": op, "actor": "", "skipped": true}
+			var cut := float(eff.get("cut", 0.0))
+			var floor_e := float(target["floor"])
+			var applied_cut: float = float(target["emissions"]) - maxf(floor_e, float(target["emissions"]) - cut)
+			target["emissions"] = float(target["emissions"]) - applied_cut
+			var tcut := float(eff.get("trend_cut", 0.0))
+			target["trend"] = maxf(0.0, float(target["trend"]) - tcut)
+			return {"op": op, "actor": String(target["id"]), "requested": cut,
+				"applied": applied_cut, "trend_cut": tcut}
+		"actor_treaty":
+			# Bend the steepest curve: the treaty targets the fastest-growing bloc.
+			var target := _actor_by_rank(false)
+			if target.is_empty():
+				return {"op": op, "actor": "", "skipped": true}
+			var tcut := float(eff.get("trend_cut", 0.0))
+			var applied_cut: float = minf(tcut, maxf(0.0, float(target["trend"])))
+			target["trend"] = maxf(0.0, float(target["trend"]) - tcut)
+			return {"op": op, "actor": String(target["id"]), "trend_cut": applied_cut}
 		"adapt":
 			var requested := float(eff["amount"])
 			var add := minf(float(Tuning.s("ADAPT_MAX")), adapt + requested) - adapt
@@ -489,6 +664,53 @@ func _apply_simple_effect(eff: Dictionary) -> Dictionary:
 			ally_changed.emit(target.id, true)
 			return {"op": op, "region": String(target.id)}
 	return {"op": op}
+
+
+## The diplomacy target: by_emissions picks the biggest cuttable emitter
+## (above its floor); otherwise the steepest still-positive trend. Returns {}
+## when no actor qualifies. Fixed iteration order keeps ties deterministic.
+func _actor_by_rank(by_emissions: bool) -> Dictionary:
+	var best: Dictionary = {}
+	var best_v := -INF
+	for a in world_actors:
+		var v: float
+		if by_emissions:
+			if float(a["emissions"]) <= float(a["floor"]):
+				continue
+			v = float(a["emissions"])
+		else:
+			if float(a["trend"]) <= 0.0:
+				continue
+			v = float(a["trend"])
+		if v > best_v:
+			best_v = v
+			best = a
+	return best
+
+
+## Between-turn advance: every actor's curve climbs by its trend, damped by
+## the coalition (each ally absorbs ACTOR_TREND_PER_ALLY of world drift,
+## steepest curves first). This is the clock's automatic escalation.
+func _advance_actors() -> void:
+	var damp := allies * float(Tuning.s("ACTOR_TREND_PER_ALLY"))
+	var order := world_actors.duplicate()
+	order.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if is_equal_approx(float(a["trend"]), float(b["trend"])):
+			return world_actors.find(a) < world_actors.find(b)
+		return float(a["trend"]) > float(b["trend"]))
+	for a: Dictionary in order:
+		var trend := maxf(0.0, float(a["trend"]))
+		var use := minf(damp, trend)
+		damp -= use
+		a["emissions"] = maxf(float(a["floor"]), float(a["emissions"]) + trend - use)
+
+
+func _actors_snapshot() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for a in world_actors:
+		out.append({"id": String(a["id"]), "emissions": float(a["emissions"]),
+			"trend": float(a["trend"])})
+	return out
 
 
 ## Apply a rewards dict (money/influence/happiness scaled by mult; knowledge
@@ -613,8 +835,8 @@ func can_start_project_reason(project_id: StringName) -> StringName:
 	return &"ok"
 
 
-## Launch a project: pays the first year's upkeep immediately; the remaining
-## years charge at each year start until completion.
+## Launch a project: pays the first turn's upkeep immediately; the remaining
+## turns charge at each turn start until completion.
 func start_project(project_id: StringName) -> Error:
 	if can_start_project_reason(project_id) != &"ok":
 		return ERR_UNAVAILABLE
@@ -625,11 +847,11 @@ func start_project(project_id: StringName) -> Error:
 	influence -= cost_i
 	var ps := ProjectState.new()
 	ps.id = project_id
-	ps.years_left = int(p.get("years", 5)) - 1
+	ps.turns_left = int(p.get("turns", 3)) - 1
 	active_projects.append(ps)
 	_turn_project_events.append({
 		"id": String(project_id), "event": "launched",
-		"cost_money": cost_m, "cost_influence": cost_i, "years_left": ps.years_left,
+		"cost_money": cost_m, "cost_influence": cost_i, "turns_left": ps.turns_left,
 	})
 	project_changed.emit(project_id, &"launched")
 	return OK
@@ -663,7 +885,7 @@ func _apply_project_penalty(project_id: StringName) -> Dictionary:
 	return {"happiness": h, "influence": i}
 
 
-## Year-start upkeep: pay or fail, complete on the last paid year.
+## Turn-start upkeep: pay or fail, complete on the last paid turn.
 func _charge_projects() -> void:
 	var still_active: Array[ProjectState] = []
 	for ps in active_projects:
@@ -680,8 +902,8 @@ func _charge_projects() -> void:
 			continue
 		money -= cost_m
 		influence -= cost_i
-		ps.years_left -= 1
-		if ps.years_left <= 0:
+		ps.turns_left -= 1
+		if ps.turns_left <= 0:
 			var completion: Dictionary = p.get("completion", {})
 			var applied: Array[Dictionary] = []
 			for eff: Dictionary in completion.get("effects", []):
@@ -703,7 +925,7 @@ func _charge_projects() -> void:
 			_turn_project_events.append({
 				"id": String(ps.id), "event": "charged",
 				"cost_money": cost_m, "cost_influence": cost_i,
-				"years_left": ps.years_left,
+				"turns_left": ps.turns_left,
 			})
 	active_projects = still_active
 
@@ -716,17 +938,20 @@ func _begin_year() -> void:
 	_turn_combos = []
 	_turn_project_events = []
 	_turn_unlocks = []
-	# Step 1: income (strongest happiness penalty only) + completion passives.
+	# Step 1: income (strongest happiness penalty only, archetype-scaled) +
+	# completion passives.
 	var inc := SocietyCalc.income(happiness, allies)
-	var inc_money := float(inc["amount"]) + float(passives.get("income_money", 0.0))
+	var inc_money := float(inc["amount"]) * float(archetype.get("income_mult", 1.0)) \
+			+ float(passives.get("income_money", 0.0))
 	money += inc_money
 	var inf_gain := SocietyCalc.influence_income(allies, media) \
+			+ float(archetype.get("influence_income_bonus", 0.0)) \
 			+ float(passives.get("income_influence", 0.0))
 	influence += inf_gain
-	if passives.get("happiness_per_year", 0.0) != 0.0:
-		happiness = clampf(happiness + float(passives["happiness_per_year"]), 0.0, 100.0)
-	if passives.get("absorption_per_year", 0.0) != 0.0:
-		absorption += float(passives["absorption_per_year"])
+	if passives.get("happiness_per_turn", 0.0) != 0.0:
+		happiness = clampf(happiness + float(passives["happiness_per_turn"]), 0.0, 100.0)
+	if passives.get("absorption_per_turn", 0.0) != 0.0:
+		absorption += float(passives["absorption_per_turn"])
 	var rebuild := false
 	var rebuild_amount := 0.0
 	if flood_rebuild:
@@ -744,9 +969,13 @@ func _begin_year() -> void:
 	}
 	# Step 1b: project upkeep (pay, fail, or complete).
 	_charge_projects()
-	# Step 1c: draw this year's crises (the ONLY consumer of rng_events;
-	# fixed order: pick then target, three times).
+	# Step 1c: draw this turn's crises (the ONLY consumer of rng_events;
+	# fixed order: pick then target, three times), then apply on-draw spikes.
 	_draw_crises()
+	_apply_on_draw_effects()
+	# Step 1d: deal the project market (the ONLY consumer of rng_market),
+	# then let qualifying crises inject their bonus cards.
+	_deal_market()
 	phase = Phase.AWAIT_ACTION
 	year_started.emit(year)
 
@@ -790,7 +1019,116 @@ func _draw_crises() -> void:
 		})
 
 
-## Resolve steps 3-8 for the current year. Playing zero cards is legal and
+## On-draw spikes (a record heat wave bakes in extra emissions the moment it
+## lands). Answering the crisis this turn dissipates the spike before the
+## ledger is read; ignoring it makes the spike permanent.
+func _apply_on_draw_effects() -> void:
+	for crisis in pending_crises:
+		var on_draw: Dictionary = crisis_def(crisis["id"]).get("on_draw", {})
+		var e := float(on_draw.get("e_extra", 0.0))
+		if e != 0.0:
+			e_extra += e
+			crisis["on_draw_e"] = e
+
+
+## Deal MARKET_SIZE offers from the available pool: weighted (card
+## market_weight x the archetype's tag lean), without replacement, fixed pool
+## order; consumes exactly MARKET_SIZE randf draws. Then the guarantee rule
+## and event bonus injections (both RNG-free).
+func _deal_market() -> void:
+	market = []
+	market_bonus = []
+	var pool := available_cards()
+	var deal := mini(int(Tuning.s("MARKET_SIZE")), pool.size())
+	var arch_weights: Dictionary = archetype.get("market_weights", {})
+	var picked: Dictionary = {}
+	for n in deal:
+		var weights: Array[float] = []
+		var total := 0.0
+		for c in pool:
+			var w := 0.0
+			if not picked.has(String(c["id"])):
+				w = float(c.get("market_weight", 1.0))
+				var lean := 1.0
+				for tag in c.get("tags", []):
+					lean = maxf(lean, float(arch_weights.get(String(tag), 1.0)))
+				w *= lean
+			weights.append(w)
+			total += w
+		var roll := rng_market.randf() * total  # always consume the draw
+		var pick: Dictionary = {}
+		var acc := 0.0
+		for j in pool.size():
+			acc += weights[j]
+			if pick.is_empty() and weights[j] > 0.0 and roll < acc:
+				pick = pool[j]
+		if pick.is_empty():  # numeric edge: last eligible entry
+			for j in range(pool.size() - 1, -1, -1):
+				if weights[j] > 0.0:
+					pick = pool[j]
+					break
+		if pick.is_empty():
+			break
+		picked[String(pick["id"])] = true
+		market.append(StringName(String(pick["id"])))
+	_ensure_answer_offer(pool)
+	_inject_bonus_cards()
+	_turn_market_offered = market.duplicate()
+
+
+## Guarantee rule: if no offer carries any response tag of this turn's
+## events, swap the last slot for the cheapest answering card (catalog order
+## breaks ties). Keeps every turn interactive without extra randomness.
+func _ensure_answer_offer(pool: Array[Dictionary]) -> void:
+	if market.is_empty():
+		return
+	var wanted := {}
+	for crisis in pending_crises:
+		for tag in crisis_def(crisis["id"]).get("response", {}).get("tags_any", []):
+			wanted[String(tag)] = true
+	if wanted.is_empty():
+		return
+	for id in market:
+		for tag in catalog.card(id).get("tags", []):
+			if wanted.has(String(tag)):
+				return  # already answerable
+	var best: Dictionary = {}
+	for c in pool:
+		if market.has(StringName(String(c["id"]))):
+			continue
+		var hits := false
+		for tag in c.get("tags", []):
+			if wanted.has(String(tag)):
+				hits = true
+		if hits and (best.is_empty() or float(c.get("cost_money", 0)) < float(best.get("cost_money", 0))):
+			best = c
+	if not best.is_empty():
+		market[market.size() - 1] = StringName(String(best["id"]))
+
+
+## Event -> card links (design doc: conditional bonus cards): a drawn event
+## adds its bonus card to the market when the resource gate is met at draw
+## time. Data-driven via events.json "bonus_card".
+func _inject_bonus_cards() -> void:
+	for crisis in pending_crises:
+		var spec: Dictionary = crisis_def(crisis["id"]).get("bonus_card", {})
+		if spec.is_empty():
+			continue
+		var requires: Dictionary = spec.get("requires", {})
+		if happiness < float(requires.get("happiness_gte", -1e30)):
+			continue
+		if money < float(requires.get("money_gte", -1e30)):
+			continue
+		if influence < float(requires.get("influence_gte", -1e30)):
+			continue
+		var cid := StringName(String(spec["card"]))
+		if catalog.card(cid).is_empty() or market.has(cid):
+			continue
+		market.append(cid)
+		market_bonus.append(cid)
+
+
+## Resolve steps 3-8 for the current turn. Playing zero cards is legal and
 ## is recorded as an explicit pass.
 func resolve_year() -> TurnRecord:
 	if phase == Phase.ENDED:
@@ -799,38 +1137,50 @@ func resolve_year() -> TurnRecord:
 
 	var rec := TurnRecord.new()
 	rec.year = year
+	rec.turn = turn_index()
 	rec.income_money = float(_pending_income.get("money", 0.0))
 	rec.income_influence = float(_pending_income.get("influence", 0.0))
 	rec.income_penalty = _pending_income.get("penalty", &"none")
 	rec.rebuild_bonus_applied = bool(_pending_income.get("rebuild", false))
 	rec.rebuild_bonus_amount = float(_pending_income.get("rebuild_amount", 0.0))
 	rec.project_events = _turn_project_events
+	rec.market_offered = _turn_market_offered
+	rec.market_bonus = market_bonus.duplicate()
 	rec.actions = _turn_actions
 	rec.combos_fired = _turn_combos
 
-	# --- Step 3: carbon ledger (mature -> stress -> floor -> E -> N) ---
+	# --- Step 3: carbon ledger (clear answered spikes -> mature -> stress ->
+	# floor -> E city + E world -> N) ---
+	for crisis in pending_crises:
+		if crisis["answered"] and crisis.get("on_draw_e", 0.0) != 0.0:
+			e_extra -= float(crisis["on_draw_e"])  # the spike dissipates
 	var matured := 0.0
 	for entry in reforest_queue:
-		absorption += entry.per_year
-		matured += entry.per_year
-		entry.years_left -= 1
-	reforest_queue = reforest_queue.filter(func(e: ReforestEntry) -> bool: return e.years_left > 0)
+		absorption += entry.per_turn
+		matured += entry.per_turn
+		entry.turns_left -= 1
+	reforest_queue = reforest_queue.filter(func(e: ReforestEntry) -> bool: return e.turns_left > 0)
 	var t_prev := temp
-	var stress := ClimateCalc.sink_stress(t_prev)  # reads LAST year's temperature
+	var stress := ClimateCalc.sink_stress(t_prev)  # reads LAST turn's temperature
 	absorption = maxf(ClimateCalc.a_floor(), absorption - stress)
-	var e := gross_emissions()
+	var e_city := gross_emissions()
+	var e_world := world_emissions()
+	var e := e_city + e_world
 	var n := ClimateCalc.net(e, absorption)
 	rec.sink_matured = matured
 	rec.sink_stress = stress
 	rec.emissions = e
+	rec.emissions_city = e_city
+	rec.emissions_world = e_world
 	rec.absorption = absorption
 	rec.net = n
 
-	# --- Step 4: warming ---
+	# --- Step 4: warming (the clock ticks) ---
 	var dt := ClimateCalc.warming_delta(n)
 	temp = ClimateCalc.apply_warming(temp, n)
 	rec.warming_delta = dt
 	rec.temp = temp
+	rec.clock_pct = ClimateCalc.clock_pct(temp)
 	var band_prev := ClimateCalc.band(t_prev)
 	var band_new := ClimateCalc.band(temp)
 	rec.band_prev = band_prev
@@ -859,6 +1209,30 @@ func resolve_year() -> TurnRecord:
 		rec.combo_chain = combo_chain
 	rec.cards_unlocked = _turn_unlocks
 
+	# --- Step 6b: summit (COP) evaluation - the mid-run sub-objective.
+	# The target was announced turns in advance; it reads this turn's net.
+	var summit := catalog.summit_for_turn(rec.turn)
+	if not summit.is_empty():
+		var goal: Dictionary = summit.get("goal", {})
+		var value := n
+		if String(goal.get("metric", "net")) == "clock_pct":
+			value = rec.clock_pct
+		var met := value <= float(goal.get("lte", 0.0))
+		var sid := String(summit["id"])
+		summit_results[sid] = "met" if met else "missed"
+		var outcome := {"id": sid, "name": String(summit.get("name", sid)),
+			"met": met, "value": value, "target": float(goal.get("lte", 0.0))}
+		if met:
+			outcome["gains"] = _grant_rewards(summit.get("reward", {}), 1.0)
+		else:
+			var penalty: Dictionary = summit.get("penalty", {})
+			influence = maxf(0.0, influence - float(penalty.get("influence", 0)))
+			happiness = clampf(happiness - float(penalty.get("happiness", 0)), 0.0, 100.0)
+			money = maxf(0.0, money - float(penalty.get("money", 0)))
+			outcome["penalty"] = penalty
+		rec.summit = outcome
+		summit_resolved.emit(StringName(sid), met)
+
 	# --- Step 7: one-time feedback loops (post-crisis state, fixed order) ---
 	for fb in catalog.feedback_events():
 		var fb_id := String(fb["id"])
@@ -880,14 +1254,23 @@ func resolve_year() -> TurnRecord:
 			rec.feedbacks.append(StringName(fb_id))
 			event_struck.emit(StringName(fb_id), &"", &"")
 
+	# --- Step 7b: the world's blocs advance their curves between turns (the
+	# clock's automatic escalation, damped by the coalition's allies).
+	var status := EndState.evaluate(year, temp, n, happiness)
+	if status == EndState.RunStatus.RUNNING:
+		_advance_actors()
+	rec.actors = _actors_snapshot()
+
 	# --- Step 8: end-of-turn check ---
-	var status := EndState.evaluate(year, temp, n)
 	rec.end_status = EndState.status_string(status)
 	rec.money = money
 	rec.influence = influence
 	rec.allies = allies
 	rec.resilience = resilience()
 	rec.kp_earned = kp_earned
+	if n <= 0.0 and curve_bent_year == 0:
+		curve_bent_year = year
+		curve_bent.emit(year)
 
 	if status != EndState.RunStatus.RUNNING:
 		var progs: Array = []
@@ -900,7 +1283,7 @@ func resolve_year() -> TurnRecord:
 
 	if status == EndState.RunStatus.RUNNING:
 		year_advanced.emit(rec)
-		year += 1
+		year += int(Tuning.c("YEARS_PER_TURN"))
 		_begin_year()
 	else:
 		phase = Phase.ENDED
@@ -1021,7 +1404,7 @@ func _build_log_lines(rec: TurnRecord) -> PackedStringArray:
 	# Step 1b: project events, in occurrence order.
 	for pe in rec.project_events:
 		lines.append(_project_line(pe))
-	# Step 1c: the year's crisis draw.
+	# Step 1c: the turn's event draw, on-draw spikes and bonus-card windows.
 	if not rec.crises.is_empty():
 		var names: PackedStringArray = []
 		for crisis in rec.crises:
@@ -1032,7 +1415,19 @@ func _build_log_lines(rec: TurnRecord) -> PackedStringArray:
 				label += " (%s)" % region.display_name
 			names.append(label)
 		lines.append(LogFormatter.render("system", "crises_faced", {"list": ", ".join(names)}))
-	# Step 2: actions (plays, answers, combos - in play order).
+	for crisis in rec.crises:
+		if float(crisis.get("on_draw_e", 0.0)) != 0.0:
+			var ev := crisis_def(crisis["id"])
+			var key := "on_draw_cleared" if crisis["answered"] else "on_draw_hit"
+			lines.append(LogFormatter.render("system", key, {
+				"name": String(ev.get("name", crisis["id"])),
+				"e_extra": float(crisis["on_draw_e"]),
+			}))
+	for cid in rec.market_bonus:
+		lines.append(LogFormatter.render("system", "bonus_card", {
+			"name": catalog.card(cid).get("name", String(cid)),
+		}))
+	# Step 2: actions (plays, risk rolls, answers, combos - in play order).
 	if rec.actions.is_empty():
 		lines.append(LogFormatter.render("system", "pass"))
 	for action in rec.actions:
@@ -1047,6 +1442,16 @@ func _build_log_lines(rec: TurnRecord) -> PackedStringArray:
 		}))
 		for eff in action["effects_applied"]:
 			lines.append("  " + _effect_line(eff))
+		var risk: Dictionary = action.get("risk", {})
+		if not risk.is_empty():
+			var risk_key := "risk_success" if risk["success"] else "risk_failure"
+			lines.append("  " + LogFormatter.render("system", risk_key, {
+				"name": card.get("name", String(action["card"])),
+				"chance": roundi(float(risk["chance"]) * 100.0),
+				"gains": _gains_note(risk.get("rewards", {})),
+			}))
+			for eff in risk.get("effects_applied", []):
+				lines.append("  " + _effect_line(eff))
 		if not (action["rewards"] as Dictionary).is_empty():
 			lines.append("  " + LogFormatter.render("system", "rewards", {
 				"gains": _gains_note(action["rewards"]),
@@ -1057,15 +1462,19 @@ func _build_log_lines(rec: TurnRecord) -> PackedStringArray:
 			for fired in rec.combos_fired:
 				if String(fired["id"]) == String(combo_id):
 					lines.append(combo_line(fired))
-	# Steps 3-4: ledger and warming.
+	# Steps 3-4: ledger (city + world) and the climate clock.
 	if rec.sink_matured > 0.0:
 		lines.append(LogFormatter.render("system", "sink_matured", {"amount": rec.sink_matured}))
 	lines.append(LogFormatter.render("system", "ledger", {
-		"e": rec.emissions, "a": rec.absorption, "n": _signed(rec.net),
+		"ec": rec.emissions_city, "ew": rec.emissions_world,
+		"a": rec.absorption, "n": _signed(rec.net),
 	}))
 	lines.append(LogFormatter.render("system", "warming", {
-		"t": "%.2f" % rec.temp, "dt": _signed_precise(rec.warming_delta),
+		"clock": "%.0f" % rec.clock_pct, "t": "+%.2f" % rec.temp,
+		"dt": _signed_precise(rec.warming_delta),
 	}))
+	if rec.net <= 0.0:
+		lines.append(LogFormatter.render("system", "curve_bent"))
 	if rec.band != rec.band_prev:
 		var key := "band_up_%d" % rec.band if rec.band > rec.band_prev else "band_down_%d" % rec.band
 		lines.append(LogFormatter.render("system", key))
@@ -1088,14 +1497,40 @@ func _build_log_lines(rec: TurnRecord) -> PackedStringArray:
 			}))
 		if crisis.get("opportunity", &"") != &"":
 			lines.append(LogFormatter.render("events", String(crisis["id"]) + "_opp"))
+	# Step 6b: the summit verdict.
+	if not rec.summit.is_empty():
+		if bool(rec.summit["met"]):
+			lines.append(LogFormatter.render("system", "summit_met", {
+				"name": rec.summit["name"], "value": _signed(float(rec.summit["value"])),
+				"target": float(rec.summit["target"]),
+				"gains": LogFormatter.render("system", "rewards", {
+					"gains": _gains_note(rec.summit.get("gains", {}))}),
+			}))
+		else:
+			var penalty: Dictionary = rec.summit.get("penalty", {})
+			var notes: PackedStringArray = []
+			for key in ["influence", "happiness", "money"]:
+				if float(penalty.get(key, 0)) > 0.0:
+					notes.append("-%s %s" % [LogFormatter.fmt(penalty[key]), key])
+			lines.append(LogFormatter.render("system", "summit_missed", {
+				"name": rec.summit["name"], "value": _signed(float(rec.summit["value"])),
+				"target": float(rec.summit["target"]), "penalty_note": ", ".join(notes),
+			}))
 	# Deck growth.
 	for cid in rec.cards_unlocked:
 		lines.append(LogFormatter.render("system", "card_unlocked", {
 			"name": catalog.card(cid).get("name", String(cid)),
 		}))
-	# Step 7: feedbacks.
+	# Step 7: feedbacks, then the world's between-turn drift.
 	for fb in rec.feedbacks:
 		lines.append(LogFormatter.render("events", String(fb) + "_hit"))
+	if rec.end_status == &"RUNNING":
+		var trend_total := 0.0
+		for a in rec.actors:
+			trend_total += maxf(0.0, float(a["trend"]))
+		lines.append(LogFormatter.render("system", "world_drift", {
+			"we": rec.emissions_world, "trend": trend_total,
+		}))
 	# Step 8: terminal.
 	if rec.end_status != &"RUNNING":
 		lines.append(LogFormatter.render("endings", String(rec.end_status)))
@@ -1112,14 +1547,14 @@ func _project_line(pe: Dictionary) -> String:
 			if float(pe.get("cost_influence", 0.0)) > 0.0:
 				upkeep += ", -%s influence" % LogFormatter.fmt(pe.get("cost_influence", 0.0))
 			return LogFormatter.render("system", "project_launched", {
-				"name": pname, "upkeep_note": upkeep, "years": int(p.get("years", 5)),
+				"name": pname, "upkeep_note": upkeep, "turns": int(p.get("turns", 3)),
 			})
 		"charged":
 			var cost := "-%s funds" % LogFormatter.fmt(pe.get("cost_money", 0.0))
 			if float(pe.get("cost_influence", 0.0)) > 0.0:
 				cost += ", -%s influence" % LogFormatter.fmt(pe.get("cost_influence", 0.0))
 			return LogFormatter.render("system", "project_charged", {
-				"name": pname, "cost_note": cost, "years_left": int(pe.get("years_left", 0)),
+				"name": pname, "cost_note": cost, "turns_left": int(pe.get("turns_left", 0)),
 			})
 		"completed":
 			var payoffs: PackedStringArray = []
@@ -1127,7 +1562,7 @@ func _project_line(pe: Dictionary) -> String:
 				payoffs.append(_effect_line(eff))
 			var passive: Dictionary = p.get("completion", {}).get("passive", {})
 			for key in passive:
-				payoffs.append("%s +%s/yr" % [String(key).replace("_", " "), LogFormatter.fmt(passive[key])])
+				payoffs.append("%s +%s" % [String(key).replace("_", " "), LogFormatter.fmt(passive[key])])
 			return LogFormatter.render("system", "project_completed", {
 				"name": pname, "payoff_note": "; ".join(payoffs),
 			})
@@ -1211,9 +1646,20 @@ func _effect_line(eff: Dictionary) -> String:
 		"sink_now":
 			return LogFormatter.render("ops", op, {"amount": eff["applied"]})
 		"reforest":
-			return LogFormatter.render("ops", op, {"per_year": eff["per_year"], "years": eff["years"]})
+			return LogFormatter.render("ops", op, {"per_turn": eff["per_turn"], "turns": eff["turns"]})
 		"adapt":
 			return LogFormatter.render("ops", op, {"amount": eff["applied"]})
+		"actor_fund", "actor_treaty":
+			if eff.get("skipped", false):
+				return "No bloc left to move."
+			var actor_name := String(eff.get("actor", ""))
+			for a in world_actors:
+				if String(a["id"]) == actor_name:
+					actor_name = String(a["name"])
+			return LogFormatter.render("ops", op, {
+				"actor": actor_name, "applied": eff.get("applied", 0.0),
+				"trend_cut": eff.get("trend_cut", 0.0),
+			})
 		"media":
 			return LogFormatter.render("ops", op)
 		"ally":

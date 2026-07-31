@@ -91,7 +91,7 @@ Key game pillars to respect in every design and implementation decision:
    first; match existing naming and architecture rather than inventing parallel systems.
 2. **Design, then implement.** For a new mechanic, state the design intent (player
    experience, inputs/outputs, failure modes, balance levers) in a few sentences
-   before writing code.
+   before writing code using godot source code in the `godot/` directory.
 3. **Keep the sim testable.** Gameplay logic goes in plain, signal-emitting classes
    that can run headless; UI subscribes to it. Prefer typed GDScript everywhere.
 4. **Verify.** After changes, at minimum parse-check scripts and, when feasible, run

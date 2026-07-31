@@ -1,111 +1,115 @@
 # Sample Runs — The Drawdown Protocol (Phase 1)
 
-Three scripted strategies simulated over the full 2030–2100 timeline with the formulas in
+Three scripted strategies simulated over the 15-turn timeline with the formulas in
 `01_Balance_Model.md`, canonical seed **2030** (deterministic; the tables below are decade
 snapshots of the committed golden fixture `src/tests/fixtures/seed2030_expected.csv`,
 regenerable with `src/tools/gen_fixtures.gd`). All three assume a first run:
-**no Knowledge nodes active**.
+**no Knowledge nodes, baseline city (no archetype)**.
 
-Together they satisfy the Phase 1 pacing check: at least one viable winning strategy,
-multiple losing paths, and pressure that peaks mid-century.
+Together they satisfy the Phase 1 pacing check: viable winning strategies, a structural
+losing path, and pressure that peaks mid-century. Because the market deals a different
+hand each turn, these are **anchors, not certainties** — the corridor across 20 seeds is
+a rate corridor (`05_Balance_Bands.md`).
 
-Column key: Net in GtCO2e/yr; Money in funds; Happiness 0–100. Rows are end-of-decade
-snapshots (post-resolution).
+Column key: Net in GtCO2e/yr (city + world − absorption); Money in funds; Happiness
+0–100. Rows are end-of-decade snapshots (post-resolution; a decade = 2 turns).
 
 ---
 
-## Run A — Safe (Steady Transition) — **WIN (carbon-neutral), 18 Knowledge Points**
+## Run A — Safe (Steady Shield) — **WIN (carbon-neutral) in 2095, turn 14, 12 Knowledge Points**
 
-Answers the crises first every year (cheap response cards matched to the drawn tags),
-then plays the fundamentals: media, adaptation, sinks, an even three-sector transition,
-four-to-six alliances, and the **Global Sink Trust** project sustained to completion.
-243 cards over the run, 212 crises answered, 59 combos (final chain 33), all six
-unlockable cards earned.
+Answers everything, keeps happiness healthy, and pulls every lever a little: buys down
+the world's actors, plants sinks, runs an even three-sector transition, and sustains the
+**Global Sink Trust** and **Universal Services** projects to completion.
 
 | Year | Warming °C | Net | Money | Happiness |
 |---|---|---|---|---|
-| 2040 | 1.56 | +13.0 | 96 | 91 |
-| 2050 | 1.57 | −16.5 | 144 | 100 |
-| 2060 | 1.50 | −36.5 | 315 | 100 |
-| 2070 | 1.40 | −44.3 | 1477 | 100 |
-| 2080 | 1.28 | −48.9 | 2731 | 100 |
-| 2090 | 1.20 | −51.2 | 3830 | 100 |
-| 2100 | 1.20 | −59.9 | 4892 | 100 |
+| 2040 | 1.46 | +45.0 | 151 | 64 |
+| 2050 | 1.55 | +39.9 | 321 | 59 |
+| 2060 | 1.62 | +30.1 | 485 | 65 |
+| 2070 | 1.68 | +22.8 | 549 | 75 |
+| 2080 | 1.71 | +14.7 | 570 | 70 |
+| 2090 | 1.72 | +1.0 | 1002 | 66 |
+| 2095 | — | **≤ 0** | — | — |
 
-**Decade notes.** 2030s: response cards (Relief Corps, Water Stewardship, Community
-Kitchens) contain nearly every draw while media and the first sinks go down; the first
-combos land (Water Cycle, Public Trust). 2040s: peak warming +1.58 °C — Overshoot I is
-brushed, never held; the Sink Trust completes and absorption starts compounding. 2050s:
-net emissions turn deeply negative; happiness saturates as answered crises stop hurting
-and co-benefits bloom. 2070s onward: the world cools to the +1.20 °C floor. Why it wins:
-answering crises is cheap insurance that also pays influence, and the chain multiplier
-turns routine pairs (forest+water, civic+health) into a steady second income.
+**Decade notes.** 2030s–40s: the world's blocs push net up faster than home cuts pull it
+down; Overshoot I arrives in the late 2040s and never leaves. 2050s–60s: the grind —
+answered crises, actor funding and project upkeep hold the line while the clock creeps
+toward 72%. 2070s–80s: the curve visibly bends; happiness rides co-benefits against
+Overshoot stress. 2090s: net crosses zero in 2095 — the drawdown moment, five years
+before the deadline. Why it wins: it never lets any pillar bleed, and it spends on the
+world ledger (allies, funded transitions) instead of only its own.
 
 ---
 
-## Run B — Risky (Tech Rush) — **LOSS at +2.0 °C in 2064, 4 Knowledge Points**
+## Run B — Risky (Moonshot Rush) — **LOSS (revolt) in 2065, turn 8, 3 Knowledge Points**
 
-Pure green-growth: several big tech cards per year (Clean Energy Grid, Affordable EVs,
-Agroecology), never a response card, never media, sufficiency, sinks, adaptation or
-diplomacy. Only 14 cards ever played — unanswered crises bleed the budget dry almost
-immediately. 11 unanswered mega fires; all three feedback loops fire (Amazon dieback
-2041, permafrost 2053, ocean sink weakening 2060). Sectors die at 30 / 65 / 70.
+Pure home tech and research bets, several per turn: Clean Energy Grid, Affordable EVs,
+Fusion Moonshot, Direct Air Capture. Never a response card, never diplomacy, sufficiency
+or wellbeing. The world's actors climb undamped; every crisis strikes unanswered.
 
 | Year | Warming °C | Net | Money | Happiness |
 |---|---|---|---|---|
-| 2040 | 1.54 | +16.5 | 48 | 46 |
-| 2050 | 1.71 | +15.7 | 15 | 16 |
-| 2060 | 1.91 | +22.8 | 0 | 0 |
-| 2064 | 2.00 | — | — | — |
+| 2040 | 1.49 | +57.1 | 417 | 52 |
+| 2050 | 1.62 | +60.4 | 546 | 28 |
+| 2060 | 1.75 | +58.2 | 818 | 4 |
+| 2065 | — | — | — | **0 — revolt** |
 
-**Decade notes.** 2030s: a fast start on paper — but three unanswered crises a year cost
-more than the cards being bought. 2040s: fires burn the sink toward the floor and the
-third fire triggers Amazon dieback as early as 2041; happiness slides with every ignored
-heat wave. 2050s: income penalties bite (H < 25 halves income), the tech rush stalls
-short of even the 70% caps for lack of money, permafrost adds +2 E. 2060s: absorption at
-the 5.0 floor, net rising, ocean sink weakens — the run dies in 2064. Why it loses: the
-game's argument sharpened — ignoring people and crises now kills you decades *before*
-the sufficiency ceiling would have.
+**Decade notes.** 2030s: a fast start on paper — but three unanswered crises a turn,
+heat-wave spikes baking in, and happiness-cost policies with no counterweight. 2040s:
+below 40 happiness the income penalty bites and social crises weight ×3 into every draw.
+2050s: Overshoot II arrives on schedule (band 2 at 2060); stress −4 per turn with zero
+co-benefit cushion. 2065: the city rises with **818 funds still banked** — money was
+never the constraint; consent was. Why it loses twice over: even had the city held, the
+world's blocs (untouched, still climbing) make global net-zero unreachable — the
+Moonshot Rush is structurally unable to win, not merely unlucky.
 
 ---
 
-## Run C — Mixed (Alliance Web) — **WIN (carbon-neutral), 18 Knowledge Points**
+## Run C — Mixed (Grand Alliance) — **WIN (carbon-neutral) in 2095, turn 14, 12 Knowledge Points**
 
-Diplomacy-first: answers the crises, then media, alliances up to six, Joint Transition
-Projects as the main transition engine, sufficiency lifts, and the **Continental Rail
-Compact** sustained to completion. 297 cards, 212 crises answered, 68 combos (final
-chain 46 — the treaty+energy+civic Grand Bargain fires year after year).
+Diplomacy-first: allies and the world's actors before home optimization — Form Alliance,
+Emissions Treaty, Fund a Transition, joint projects, and the **Continental Rail Compact**
+sustained to completion.
 
 | Year | Warming °C | Net | Money | Happiness |
 |---|---|---|---|---|
-| 2040 | 1.51 | +1.2 | 107 | 100 |
-| 2050 | 1.47 | −26.2 | 168 | 100 |
-| 2060 | 1.40 | −32.3 | 132 | 100 |
-| 2070 | 1.31 | −37.6 | 114 | 100 |
-| 2080 | 1.21 | −40.8 | 88 | 100 |
-| 2090 | 1.20 | −41.5 | 67 | 100 |
-| 2100 | 1.20 | −48.7 | 129 | 100 |
+| 2040 | 1.46 | +45.0 | 192 | 64 |
+| 2050 | 1.55 | +39.1 | 312 | 66 |
+| 2060 | 1.62 | +30.9 | 543 | 67 |
+| 2070 | 1.68 | +22.4 | 568 | 77 |
+| 2080 | 1.71 | +14.2 | 590 | 70 |
+| 2090 | 1.72 | +0.9 | 1023 | 63 |
+| 2095 | — | **≤ 0** | — | — |
 
-**Decade notes.** 2030s: the alliance engine spins up fast — crisis answers pay
-influence, influence buys allies, allies pay income. 2040s: the Rail Compact completes
-(+5% to every sector, +2 influence/yr forever); net crosses zero before 2045 — the
-earliest pivot of the three runs. 2050s+: joint projects and the Grand Bargain chain
-carry the transition; money runs lean (67–170 all century) because every surplus goes
-straight back into answers and treaties — the intended Alliance Web texture. Why it
-wins: diplomacy compounds twice — in income and in the combo chain.
+**Decade notes.** 2030s: the alliance engine spins up — crisis answers pay influence,
+influence buys allies, every ally damps world drift by 0.2. 2040s–50s: treaties and
+funded transitions bend the blocs' curves while the Rail Compact completes; the two
+winning lines track each other closely on the global ledger but Mixed carries happiness
+a shade higher through the squeeze. 2090s: net crosses zero in 2095. Why it wins:
+diplomacy compounds three ways — income, drift damping, and the treaty-tagged combo
+chain.
 
 ---
+
+## Reference — BAU (all-pass)
+
+Funding nothing at all dies around **turn 7 (~2060)** — a revolt or an overheat,
+whichever the seed serves first. The clock's automatic escalation makes "do nothing"
+a fast loss, not a slow one; this is the baseline every strategy must beat.
 
 ## Cross-Run Pacing Read
 
-- **Early game (2030s):** the crisis draw teaches immediately — every year has three
-  visible questions and the response cards are the affordable answers.
-- **Mid game (2040s–2050s):** the squeeze — transformation, upkeep, and answering
-  compete for the same money; peak warming lands here (winners brush +1.5 °C, Risky
-  sails through it).
-- **Late game (2060s+):** winners ride compounding sinks, passives, and deep combo
-  chains into the cooling floor; the crisis-ignoring path is already dead — Risky's
-  loss lands 2055–2068 across the 20-seed batch, never reaching 2100.
-- Overshoot is no longer guaranteed for winners: a sharp early transition can hold the
-  world at the +1.5 °C doorstep. The escalation ladder now expresses itself through the
-  crisis draw weights as much as through the bands.
+- **Early game (2030s):** the market teaches immediately — every turn has three visible
+  questions, four visible offers, and a guaranteed affordable answer among them.
+- **Mid game (2040s–2060s):** the squeeze — transformation, upkeep, actor funding,
+  answering, and the first two summit targets (2045: net ≤ 45; 2065: net ≤ 25) compete
+  for the same treasury; winners enter Overshoot I here and hold at the band-2 doorstep
+  (~+1.72 °C, clock ~72%) without crossing it.
+- **Late game (2070s–90s):** winners ride compounding sinks, passives, and deep combo
+  chains through the Last Horizon target (2085: net ≤ 8) into the drawdown moment; the
+  people-ignoring path is long dead — Risky's revolt lands around turn 8, never seeing
+  the second summit.
+- Winners never exit Overshoot in-run: the win is crossing net zero *before* the clock
+  runs out, not cooling the world back down — the cooling is the epilogue the victory
+  screen promises.
