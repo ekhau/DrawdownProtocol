@@ -41,4 +41,14 @@
 - Main de 4 cartes avec un magasin OU des boon à la Hades ou les deux (genre boon qui augment ton magasin/ta main)
 - Deckbuilding, je paye la carte au moment ou je la prends, ou je la paye quand je la joue 
 
-- Current problem: At crisis nothing append, no pop up
+- Current problem: 
+    - explicit reason why I can't pick a gard (like missing resources in red in the cost)
+    - Too much money, add annual expenses of a city (explicite in top bar)
+    - add absorption per year
+    - add marker in climate bar, marker for current warming and a marker for objective of neutrality with current absorption 
+    - bug cards do not disappear when picked, or does not applied whereas I have the resources
+    - chaneg starting values, too much money, too much support
+    -  reroll doesn't work each time
+    - Exploicit the change of act
+
+- political support / People support?

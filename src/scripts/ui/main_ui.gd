@@ -212,6 +212,9 @@ func _on_run_started() -> void:
 	_refresh_stats()
 	_refresh_sectors()
 	_refresh_market()
+	# The sim's first phase_changed fires before Game connects our signals —
+	# repaint from the current phase so a turn-1 crisis modal isn't lost.
+	_on_phase_changed(Game.state().phase)
 
 
 func _refresh_stats() -> void:

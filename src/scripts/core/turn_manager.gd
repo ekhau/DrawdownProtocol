@@ -83,8 +83,10 @@ func _start_turn() -> void:
 		market.refresh()  # free era refresh
 		state.era_started.emit(era.id)
 	if state.turn >= int(state.catalog.config.crisis_start_turn):
-		state.set_phase(RunState.Phase.CRISIS)
+		# Draw BEFORE the phase signal: the UI paints the crisis modal on
+		# phase_changed, so `current` must already be populated.
 		crisis_deck.draw()
+		state.set_phase(RunState.Phase.CRISIS)
 	else:
 		state.set_phase(RunState.Phase.ACTION)
 
