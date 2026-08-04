@@ -62,6 +62,8 @@ static func _wishlist(sim: TurnManager, policy: String) -> Array:
 		var card: Dictionary = sim.state.catalog.cards_by_id[id]
 		if card.sector == "temptation":
 			continue
+		if card.has("risk") and sim.market.success_chance(id) < 70:
+			continue  # clean bot only gambles on good odds; greedy gambles on anything
 		if _fully_wasted(sim.state, card):
 			continue
 		if card.has("combo"):

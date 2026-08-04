@@ -115,6 +115,12 @@ func _validate() -> void:
 				errors.append("%s: missing '%s'" % [where, key])
 		if card.has("requires_popularity") and not (card.requires_popularity is float or card.requires_popularity is int):
 			errors.append("%s: 'requires_popularity' must be numeric" % where)
+		if card.has("risk"):
+			var risk: Dictionary = card.risk
+			for key in ["offset", "boost_cost", "boost_amount", "boost_max", "cap", "on_fail"]:
+				if not risk.has(key):
+					errors.append("%s: risk block missing '%s'" % [where, key])
+			_validate_effects(risk.get("on_fail", []), sectors, where + " (on_fail)")
 		if card.has("id"):
 			if card_ids.has(card.id):
 				errors.append("%s: duplicate id" % where)

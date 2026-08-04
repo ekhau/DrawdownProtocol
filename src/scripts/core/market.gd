@@ -62,7 +62,9 @@ func can_buy(card_id: String) -> bool:
 ## Read-only, for the UI: why this card can't be bought right now. Empty = buyable.
 ## Popularity has two rules: `requires_popularity` is a gate (checked, never
 ## spent), and spending is strict — a purchase may never drop popularity into
-## the collapse zone. Only crises can bring a government down.
+## the collapse zone. Only crises can bring a government down; for risk cards
+## that extends to the failure outcome (`risk_floor`), which doubles as a soft
+## popularity gate on gambles.
 func blockers(card_id: String) -> Dictionary:
 	var card: Dictionary = state.catalog.cards_by_id[card_id]
 	var out := {}
@@ -77,25 +79,62 @@ func blockers(card_id: String) -> Dictionary:
 			out.popularity = cost - state.popularity
 		elif state.popularity - cost < int(state.catalog.config.popularity_collapse):
 			out.popularity_floor = true
+	if card.has("risk"):
+		var fail_pop := 0
+		for atom in card.risk.on_fail:
+			if atom.type == "popularity" and int(atom.amount) < 0:
+				fail_pop += int(atom.amount)
+		if state.popularity - cost + fail_pop < int(state.catalog.config.popularity_collapse):
+			out.risk_floor = true
 	return out
 
 
-func buy(card_id: String) -> bool:
+## Success chance for a risk card: popularity + the card's offset + campaign
+## boosts, clamped to [0, cap]. Money improves the odds but never buys certainty.
+func success_chance(card_id: String, boosts: int = 0) -> int:
+	var risk: Dictionary = state.catalog.cards_by_id[card_id].risk
+	var n := clampi(boosts, 0, int(risk.boost_max))
+	return clampi(state.popularity + int(risk.offset) + n * int(risk.boost_amount), 0, int(risk.cap))
+
+
+func buy(card_id: String, boosts: int = 0) -> bool:
 	if not can_buy(card_id):
 		return false
 	var card: Dictionary = state.catalog.cards_by_id[card_id]
+	var money_cost := int(card.cost_money)
+	if card.has("risk"):
+		boosts = clampi(boosts, 0, int(card.risk.boost_max))
+		money_cost += boosts * int(card.risk.boost_cost)
+		if state.money < money_cost:
+			return false
 	# Leave the offer BEFORE costs land: applying costs emits resources_changed,
 	# and any repaint that fires mid-buy must already see the card gone.
 	offer.erase(card_id)
 	var cost_atoms := []
-	if int(card.cost_money) > 0:
-		cost_atoms.append({"type": "money", "amount": -int(card.cost_money)})
+	if money_cost > 0:
+		cost_atoms.append({"type": "money", "amount": -money_cost})
 	if int(card.cost_popularity) > 0:
 		cost_atoms.append({"type": "popularity", "amount": -int(card.cost_popularity)})
 	if not cost_atoms.is_empty():
-		Effects.apply(cost_atoms, "Bought %s" % card.name, state)
-	Effects.apply(card.effects, card.name, state)
-	state.owned_cards.append(card_id)
+		var verb := "Attempted" if card.has("risk") else "Bought"
+		Effects.apply(cost_atoms, "%s %s" % [verb, card.name], state)
+	if card.has("risk"):
+		# One attempt per run: the card is consumed win or lose, money is spent,
+		# and the roll is logged — dice must be as traceable as everything else.
+		var chance := success_chance(card_id, boosts)
+		var roll := state.rng.randi_range(1, 100)
+		var success := roll <= chance
+		state.log_event("%s: rolled %d vs %d%% — the reform %s" % [
+			card.name, roll, chance, "passes" if success else "fails"])
+		if success:
+			Effects.apply(card.effects, card.name, state)
+			state.owned_cards.append(card_id)
+		else:
+			Effects.apply(card.risk.on_fail, "%s — backlash" % card.name, state)
+		state.risk_resolved.emit(card_id, success)
+	else:
+		Effects.apply(card.effects, card.name, state)
+		state.owned_cards.append(card_id)
 	# Refill only the emptied slot — buying must not reroll the rest of the offer.
 	_fill()
 	return true

@@ -25,6 +25,7 @@ func _init() -> void:
 	_test_market_buy_updates_offer(catalog)
 	_test_market_reroll(catalog)
 	_test_buy_blockers(catalog)
+	_test_risk_cards(catalog)
 	_test_popularity_drift(catalog)
 	_test_social_crisis_pool(catalog)
 	_test_popularity_collapse(catalog)
@@ -141,10 +142,10 @@ func _test_era_gating(catalog: Catalog) -> void:
 
 func _test_era_brief(catalog: Catalog) -> void:
 	var act1: Dictionary = catalog.era_brief("act1")
-	_check(act1.new_cards.size() == 20 and act1.floor_drops.is_empty(),
-		"act1 brief: 20 starting cards, no floor drops to report")
+	_check(act1.new_cards.size() == 21 and act1.floor_drops.is_empty(),
+		"act1 brief: 21 starting cards, no floor drops to report")
 	var act2: Dictionary = catalog.era_brief("act2")
-	_check(act2.new_cards.size() == 14, "act2 brief: 14 cards unlock in 2038")
+	_check(act2.new_cards.size() == 16, "act2 brief: 16 cards unlock in 2038")
 	_check(act2.floor_drops.size() == 4, "act2 brief: all four sector floors fall")
 	var total_cards: int = act1.new_cards.size() + act2.new_cards.size() \
 		+ catalog.era_brief("act3").new_cards.size()
@@ -212,6 +213,73 @@ func _test_buy_blockers(catalog: Catalog) -> void:
 	sim.state.popularity = gate
 	_check(not sim.market.blockers(gated_card).has("popularity_gate"),
 		"the gate opens at the required popularity")
+
+
+func _test_risk_cards(catalog: Catalog) -> void:
+	var sim := TurnManager.new(catalog, 51)
+	while sim.state.phase == RunState.Phase.CRISIS:
+		sim.choose_response(Bots.pick_response(sim, "default"))
+	var card: Dictionary = catalog.cards_by_id.climate_referendum
+	var risk: Dictionary = card.risk
+	# Odds math: popularity + offset + boosts, clamped to the cap.
+	sim.state.popularity = 60  # test-only pokes throughout
+	_check(sim.market.success_chance("climate_referendum") == 60 + int(risk.offset),
+		"risk odds equal popularity + card offset")
+	_check(sim.market.success_chance("climate_referendum", 2) == 60 + int(risk.offset) + 2 * int(risk.boost_amount),
+		"campaign boosts raise the odds")
+	sim.state.popularity = 100
+	_check(sim.market.success_chance("climate_referendum", 3) == int(risk.cap),
+		"odds are capped — certainty is not for sale")
+	# Risk floor: an attempt whose failure could collapse the government is blocked.
+	sim.state.money = 99
+	var collapse := int(catalog.config.popularity_collapse)
+	sim.state.popularity = collapse + 10 - 1   # fail −10 would land below the floor
+	_check(sim.market.blockers("climate_referendum").has("risk_floor"),
+		"a gamble you can't survive failing is blocked")
+	sim.state.popularity = collapse + 10
+	_check(not sim.market.blockers("climate_referendum").has("risk_floor"),
+		"the gamble unblocks once failure is survivable")
+	# Resolution: predict the roll by cloning the seeded RNG, then verify the
+	# exact branch — consumed either way, boosts paid, effects or backlash.
+	if not sim.market.offer.has("climate_referendum"):
+		sim.market.pool.erase("climate_referendum")
+		sim.market.offer.append("climate_referendum")
+	sim.state.popularity = 50
+	var money_before: int = sim.state.money
+	var pop_before: int = sim.state.popularity
+	var clone := RandomNumberGenerator.new()
+	clone.seed = sim.state.rng.seed
+	clone.state = sim.state.rng.state
+	var expected_roll := clone.randi_range(1, 100)
+	var chance: int = sim.market.success_chance("climate_referendum", 1)
+	_check(sim.buy_card("climate_referendum", 1), "risk attempt accepted")
+	_check(not sim.market.offer.has("climate_referendum"), "attempted card leaves the offer win or lose")
+	_check(sim.state.money == money_before - int(card.cost_money) - int(risk.boost_cost),
+		"attempt costs the card price plus campaign spending")
+	if expected_roll <= chance:
+		_check(sim.state.owned_cards.has("climate_referendum") and sim.state.popularity == pop_before + 10,
+			"success applies the card effects and ownership (roll %d ≤ %d%%)" % [expected_roll, chance])
+	else:
+		_check(not sim.state.owned_cards.has("climate_referendum") and sim.state.popularity == pop_before - 10,
+			"failure applies the backlash and no ownership (roll %d > %d%%)" % [expected_roll, chance])
+	# Second attempt at long odds (5%) so the other branch is exercised too.
+	if not sim.market.offer.has("fossil_phaseout_act"):
+		sim.market.pool.erase("fossil_phaseout_act")
+		sim.market.offer.append("fossil_phaseout_act")
+	sim.state.popularity = 25   # 25 − 20 offset = 5% chance, fail −15 exactly survivable
+	pop_before = sim.state.popularity
+	var income_before: int = sim.state.sectors.industry.income
+	clone.seed = sim.state.rng.seed
+	clone.state = sim.state.rng.state
+	var roll2 := clone.randi_range(1, 100)
+	var chance2: int = sim.market.success_chance("fossil_phaseout_act")
+	_check(sim.buy_card("fossil_phaseout_act"), "long-shot attempt accepted at survivable odds")
+	if roll2 <= chance2:
+		_check(sim.state.owned_cards.has("fossil_phaseout_act"),
+			"long-shot success owned (roll %d ≤ %d%%)" % [roll2, chance2])
+	else:
+		_check(sim.state.popularity == pop_before - 15 and sim.state.sectors.industry.income == income_before,
+			"long-shot failure: backlash only, no card effects (roll %d > %d%%)" % [roll2, chance2])
 
 
 func _test_popularity_drift(catalog: Catalog) -> void:

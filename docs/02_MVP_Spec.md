@@ -48,7 +48,7 @@ Baseline net = 20 → +0.04°/turn → **doing nothing loses on turn 13** (recor
 - **Lose:** thermometer ≥ +2.00°, or popularity < 10%.
 - Both end on a **post-mortem screen**: timeline number, final year, temperature curve, sector states, one-line cause ("Industry never decarbonized").
 
-## 2. Cards (pool of 40; each run shuffles, market draws without replacement)
+## 2. Cards (pool of 43; each run shuffles, market draws without replacement)
 
 Format: **Name — cost → effect**. `(C:X)` = part of combo X. `req ≥N%` = popularity gate (checked, never spent).
 
@@ -109,6 +109,12 @@ Many cards are drawn from real programmes: France's **Convention Citoyenne pour 
 - Concrete Boom — 0$ → +4$ now, +5% popularity, Housing +1 permanently
 - SUV Boom — 0$ → +4$ now, +5% popularity, Transport +1 permanently
 - Airport Expansion — 0$ → +5$ now, +5% popularity, Transport +1 & Industry +1 permanently *(2038)*
+
+**Gambles** (risk cards — a `risk` block instead of certainty). **Success chance = popularity + the card's offset + campaign boosts (+5% per 2M$, max 3), clamped to a 90% cap** — money improves the odds, certainty is not for sale. One attempt per run: the card is consumed win or lose, success applies its effects, failure applies the printed backlash (in the domain of the reform). The market blocks any attempt whose failure could drop popularity below the collapse floor — the anti-suicide clause extended to dice, which doubles as a soft popularity gate. Rolls come from the run's seeded RNG and are logged ("rolled 71 vs 68%"). Format: **Name — cost · offset → success / failure**.
+
+- National Climate Referendum — 3$ · ±0 → +10% popularity, +1$/turn / −10% popularity
+- Industry Transition Pact — 5$ · +10 (industry likes a deal) → Industry −2, Industry income +1/turn / Industry income −1/turn perm *(2038)*
+- Fossil Phase-Out Act — 4$ · −20 (deeply divisive) → Industry −2, Transport −1 / −15% popularity *(2038)*
 
 ### Combos (announced with a banner the moment the set completes)
 

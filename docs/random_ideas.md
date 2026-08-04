@@ -49,3 +49,7 @@
     - change reward of some cards to obtain benefits in several turns instead of right now
 
     - Opprotunity /Card with vote, push your luck, certain rate to succed
+
+    - Cheat code: add triple click Mafemme est medecin -> + 10M$
+    - add expense or net income for each field
+    - why min emission floor by field by area ?

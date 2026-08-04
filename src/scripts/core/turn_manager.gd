@@ -36,10 +36,10 @@ func choose_response(index: int) -> bool:
 	return true
 
 
-func buy_card(card_id: String) -> bool:
+func buy_card(card_id: String, boosts: int = 0) -> bool:
 	if state.ended or state.phase != RunState.Phase.ACTION:
 		return false
-	if not market.buy(card_id):
+	if not market.buy(card_id, boosts):
 		return false
 	combo_checker.check()
 	_check_popularity_collapse()

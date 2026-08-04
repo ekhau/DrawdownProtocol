@@ -9,6 +9,7 @@ signal temperature_changed(temp: float)
 signal phase_changed(phase: int)
 signal market_changed
 signal combo_discovered(combo_id: String)
+signal risk_resolved(card_id: String, success: bool)
 signal era_started(era_id: String)
 signal log_line(text: String)
 signal run_ended(result: Dictionary)
@@ -38,6 +39,7 @@ func new_run(seed_value: int = -1) -> void:
 	s.phase_changed.connect(func(p): phase_changed.emit(p))
 	s.market_changed.connect(func(): market_changed.emit())
 	s.combo_discovered.connect(func(id): combo_discovered.emit(id))
+	s.risk_resolved.connect(func(id, ok): risk_resolved.emit(id, ok))
 	s.era_started.connect(func(id): era_started.emit(id))
 	s.log_line.connect(func(t): log_line.emit(t))
 	s.run_ended.connect(func(r): run_ended.emit(r))
@@ -48,8 +50,8 @@ func choose_response(index: int) -> void:
 	sim.choose_response(index)
 
 
-func buy_card(card_id: String) -> void:
-	sim.buy_card(card_id)
+func buy_card(card_id: String, boosts: int = 0) -> void:
+	sim.buy_card(card_id, boosts)
 
 
 func reroll() -> void:

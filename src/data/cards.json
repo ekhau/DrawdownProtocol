@@ -652,6 +652,104 @@
       ]
     },
     {
+      "id": "climate_referendum",
+      "name": "National Climate Referendum",
+      "sector": "civic",
+      "cost_money": 3,
+      "cost_popularity": 0,
+      "available_from": 2030,
+      "risk": {
+        "offset": 0,
+        "boost_cost": 2,
+        "boost_amount": 5,
+        "boost_max": 3,
+        "cap": 90,
+        "on_fail": [
+          {
+            "type": "popularity",
+            "amount": -10
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "popularity",
+          "amount": 10
+        },
+        {
+          "type": "income_per_turn",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "industry_transition_pact",
+      "name": "Industry Transition Pact",
+      "sector": "industry",
+      "cost_money": 5,
+      "cost_popularity": 0,
+      "available_from": 2038,
+      "risk": {
+        "offset": 10,
+        "boost_cost": 2,
+        "boost_amount": 5,
+        "boost_max": 3,
+        "cap": 90,
+        "on_fail": [
+          {
+            "type": "sector_income",
+            "sector": "industry",
+            "amount": -1
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "industry",
+          "amount": -2
+        },
+        {
+          "type": "sector_income",
+          "sector": "industry",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "fossil_phaseout_act",
+      "name": "Fossil Phase-Out Act",
+      "sector": "industry",
+      "cost_money": 4,
+      "cost_popularity": 0,
+      "available_from": 2038,
+      "risk": {
+        "offset": -20,
+        "boost_cost": 2,
+        "boost_amount": 5,
+        "boost_max": 3,
+        "cap": 90,
+        "on_fail": [
+          {
+            "type": "popularity",
+            "amount": -15
+          }
+        ]
+      },
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "industry",
+          "amount": -2
+        },
+        {
+          "type": "sector_emissions",
+          "sector": "transport",
+          "amount": -1
+        }
+      ]
+    },
+    {
       "id": "fossil_subsidy",
       "name": "Fossil Subsidy",
       "sector": "temptation",

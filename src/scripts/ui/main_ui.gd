@@ -37,6 +37,15 @@ var era_modal: Control           # act interstitial — topmost, covers even the
 var era_style: StyleBoxFlat
 var era_title: Label
 var era_body: RichTextLabel
+var risk_modal: Control          # gamble confirm: odds, outcomes, campaign boosts
+var risk_title: Label
+var risk_odds: Label
+var risk_success: Label
+var risk_fail: Label
+var risk_boost_btn: Button
+var risk_attempt_btn: Button
+var risk_card_id := ""
+var risk_boosts := 0
 var intro_shown := false         # the launch intro plays once per session, not per run
 
 
@@ -51,6 +60,7 @@ func _ready() -> void:
 	Game.phase_changed.connect(_on_phase_changed)
 	Game.market_changed.connect(_refresh_market)
 	Game.combo_discovered.connect(_on_combo)
+	Game.risk_resolved.connect(_on_risk_resolved)
 	Game.era_started.connect(_on_era)
 	Game.log_line.connect(_on_log)
 	Game.run_ended.connect(_on_run_ended)
@@ -256,6 +266,55 @@ func _build_layout() -> void:
 	ov.add_child(overlay_text)
 	overlay_btn = Button.new()
 	ov.add_child(overlay_btn)
+
+	# Gamble confirm dialog — the game's only two-step purchase: a risk card
+	# shows its odds and both outcomes, and lets the player buy campaign boosts
+	# before committing to the roll.
+	risk_modal = _full_overlay()
+	var rcenter := CenterContainer.new()
+	rcenter.set_anchors_preset(Control.PRESET_FULL_RECT)
+	risk_modal.add_child(rcenter)
+	var rpanel := PanelContainer.new()
+	rpanel.custom_minimum_size = Vector2(520, 0)
+	var rstyle := StyleBoxFlat.new()
+	rstyle.bg_color = Color(0.12, 0.12, 0.14)
+	rstyle.set_corner_radius_all(10)
+	rstyle.set_border_width_all(3)
+	rstyle.border_color = Color("#e8c34a")
+	rstyle.set_content_margin_all(16)
+	rpanel.add_theme_stylebox_override("panel", rstyle)
+	rcenter.add_child(rpanel)
+	var rv := VBoxContainer.new()
+	rv.add_theme_constant_override("separation", 10)
+	rpanel.add_child(rv)
+	risk_title = _label(rv, "", 26)
+	risk_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	risk_odds = _label(rv, "", 40)
+	risk_odds.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tip(risk_odds, "The chance the reform passes: your popularity plus the card's own bias,\nplus campaign spending. Capped — certainty is not for sale.")
+	risk_success = _label(rv, "", 16)
+	risk_success.add_theme_color_override("font_color", Color("#5ec962"))
+	risk_fail = _label(rv, "", 16)
+	risk_fail.add_theme_color_override("font_color", Color("#fc8961"))
+	risk_boost_btn = Button.new()
+	risk_boost_btn.custom_minimum_size = Vector2(0, 40)
+	risk_boost_btn.pressed.connect(func():
+		risk_boosts += 1
+		_refresh_risk_dialog())
+	rv.add_child(risk_boost_btn)
+	var risk_row := HBoxContainer.new()
+	risk_row.add_theme_constant_override("separation", 8)
+	rv.add_child(risk_row)
+	risk_attempt_btn = Button.new()
+	risk_attempt_btn.custom_minimum_size = Vector2(0, 48)
+	risk_attempt_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	risk_attempt_btn.pressed.connect(_attempt_risk)
+	risk_row.add_child(risk_attempt_btn)
+	var risk_cancel := Button.new()
+	risk_cancel.text = "Not now"
+	risk_cancel.custom_minimum_size = Vector2(120, 48)
+	risk_cancel.pressed.connect(func(): risk_modal.visible = false)
+	risk_row.add_child(risk_cancel)
 
 	# Act interstitial — added last so it stacks above the crisis modal: on an
 	# era turn the act card is read (and dismissed) before the year's crisis.
@@ -497,12 +556,17 @@ func _refresh_market() -> void:
 func _card_button(card_id: String, s: RunState) -> Button:
 	var card: Dictionary = Game.catalog.cards_by_id[card_id]
 	var blockers: Dictionary = Game.sim.market.blockers(card_id)
+	var is_risk := card.has("risk")
 	var b := Button.new()
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.custom_minimum_size = Vector2(0, 84)
+	b.custom_minimum_size = Vector2(0, 96 if is_risk else 84)
 	b.disabled = s.phase != RunState.Phase.ACTION or not Game.sim.market.can_buy(card_id)
-	b.pressed.connect(Game.buy_card.bind(card_id))
-	b.tooltip_text = "Effects are immediate and permanent.\nBought cards leave the pool for the rest of the run."
+	if is_risk:
+		b.pressed.connect(_show_risk_dialog.bind(card_id))
+		b.tooltip_text = "A gamble: opens a confirm dialog with the odds and both outcomes.\nOne attempt per run — the card is consumed win or lose."
+	else:
+		b.pressed.connect(Game.buy_card.bind(card_id))
+		b.tooltip_text = "Effects are immediate and permanent.\nBought cards leave the pool for the rest of the run."
 	var cost := "%dM$" % int(card.cost_money)
 	if blockers.has("money"):
 		cost = "[color=#ff5c5c]%s[/color]" % cost
@@ -517,7 +581,14 @@ func _card_button(card_id: String, s: RunState) -> Button:
 		if blockers.has("popularity_gate"):
 			req = "[color=#ff5c5c]%s[/color]" % req
 		cost += " · " + req
-	var text := "[center]%s  (%s)\n%s" % [card.name, cost, Effects.describe(card.effects, Game.catalog)]
+	var text: String
+	if is_risk:
+		text = "[center]%s  (%s · odds %d%%)\n✓ %s\n[color=#fc8961]✘ %s[/color]" % [
+			card.name, cost, Game.sim.market.success_chance(card_id),
+			Effects.describe(card.effects, Game.catalog),
+			Effects.describe(card.risk.on_fail, Game.catalog)]
+	else:
+		text = "[center]%s  (%s)\n%s" % [card.name, cost, Effects.describe(card.effects, Game.catalog)]
 	if s.phase == RunState.Phase.ACTION and not blockers.is_empty():
 		var why: PackedStringArray = []
 		if blockers.has("money"):
@@ -528,6 +599,8 @@ func _card_button(card_id: String, s: RunState) -> Button:
 			why.append("need %d%% more popularity" % int(blockers.popularity))
 		if blockers.has("popularity_floor"):
 			why.append("would collapse the government (<%d%%)" % int(Game.catalog.config.popularity_collapse))
+		if blockers.has("risk_floor"):
+			why.append("too risky — failure could collapse the government")
 		text += "\n[color=#fc8961]✗ %s[/color]" % ", ".join(why)
 	text += "[/center]"
 	# Buttons can't render bbcode — a click-transparent RichTextLabel carries
@@ -614,15 +687,56 @@ func _show_era_screen(era_id: String) -> void:
 	era_modal.visible = true
 
 
+func _show_risk_dialog(card_id: String) -> void:
+	risk_card_id = card_id
+	risk_boosts = 0
+	_refresh_risk_dialog()
+	risk_modal.visible = true
+
+
+func _refresh_risk_dialog() -> void:
+	var card: Dictionary = Game.catalog.cards_by_id[risk_card_id]
+	var risk: Dictionary = card.risk
+	var s: RunState = Game.state()
+	var chance: int = Game.sim.market.success_chance(risk_card_id, risk_boosts)
+	var total_cost: int = int(card.cost_money) + risk_boosts * int(risk.boost_cost)
+	risk_title.text = card.name
+	risk_odds.text = "%d%%" % chance
+	risk_odds.add_theme_color_override("font_color",
+		Color("#5ec962") if chance >= 70 else (Color("#fc8961") if chance < 40 else Color.WHITE))
+	risk_success.text = "✓ Passes: %s" % Effects.describe(card.effects, Game.catalog)
+	risk_fail.text = "✘ Fails: %s" % Effects.describe(risk.on_fail, Game.catalog)
+	risk_boost_btn.text = "Campaign +%d%% (%dM$)  —  %d/%d used" % [
+		int(risk.boost_amount), int(risk.boost_cost), risk_boosts, int(risk.boost_max)]
+	risk_boost_btn.disabled = risk_boosts >= int(risk.boost_max) or chance >= int(risk.cap) \
+		or s.money < total_cost + int(risk.boost_cost)
+	risk_attempt_btn.text = "Attempt (%dM$) ▶" % total_cost
+	risk_attempt_btn.disabled = s.money < total_cost
+
+
+func _attempt_risk() -> void:
+	risk_modal.visible = false
+	Game.buy_card(risk_card_id, risk_boosts)
+
+
+func _on_risk_resolved(card_id: String, success: bool) -> void:
+	var card: Dictionary = Game.catalog.cards_by_id[card_id]
+	_flash_banner(("✓ %s PASSES" % card.name) if success else ("✘ %s FAILS — backlash" % card.name))
+
+
 func _on_combo(combo_id: String) -> void:
 	for combo in Game.catalog.combos:
 		if combo.id == combo_id:
-			banner.text = "COMBO DISCOVERED — %s" % combo.name
-			banner.modulate.a = 0.0
-			var tween := create_tween()
-			tween.tween_property(banner, "modulate:a", 1.0, 0.3)
-			tween.tween_interval(2.0)
-			tween.tween_property(banner, "modulate:a", 0.0, 0.8)
+			_flash_banner("COMBO DISCOVERED — %s" % combo.name)
+
+
+func _flash_banner(text: String) -> void:
+	banner.text = text
+	banner.modulate.a = 0.0
+	var tween := create_tween()
+	tween.tween_property(banner, "modulate:a", 1.0, 0.3)
+	tween.tween_interval(2.0)
+	tween.tween_property(banner, "modulate:a", 0.0, 0.8)
 
 
 func _on_log(text: String) -> void:
@@ -659,6 +773,8 @@ func _rules_text() -> String:
 Each year: face a [b]crisis[/b] (every answer costs something — money, popularity, or a permanent scar; costs rise with the thermometer), then [b]buy cards[/b] from the market, then collect [b]income[/b], then the [b]climate[/b] advances by net emissions × 0.002°.
 
 Approval is rented, never owned: popularity drifts 3% a year back toward 50%. Below [b]30%[/b] the streets take over — strikes, riots and no-confidence motions replace the year's crisis until you win the public back (every social crisis has a way out, at a price). The boldest policies (carbon tax, car-free centers…) [b]require[/b] a popular government — the green marks on the popularity bar — and your own purchases can never drop you into collapse; only crises can.
+
+Some cards are [b]gambles[/b] (gold dialog): the chance a reform passes equals your [b]popularity[/b] plus the card's own bias, and campaign money can raise it — capped, certainty is not for sale. One attempt per run: success applies the card, failure triggers the printed backlash. A gamble you can't survive failing is blocked, like any other suicide purchase.
 
 On the climate bar: the [b]white needle[/b] is today's warming, pink ticks are the crisis cost bands. From the needle, next year's gross jump is sketched in degrees: the [b]orange segment[/b] ends exactly where the needle stands when the year ends (net × 0.002°), and the [b]green segment[/b] beyond it is the push your absorption cancels. Cut gross or grow absorption until no orange is left — the needle stops: net zero. The [b]◆[/b] marks where the mercury settles if you keep your recent pace of cuts (absorption frozen at today's value) — green means net zero is in reach, orange means +2.0° arrives first.
 
