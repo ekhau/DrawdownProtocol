@@ -38,6 +38,8 @@ func _fill() -> void:
 			pool.remove_at(i)
 		else:
 			i += 1
+	# Every offer mutation ends here — the one signal the market UI repaints from.
+	state.market_changed.emit()
 
 
 func can_reroll() -> bool:
@@ -54,16 +56,31 @@ func reroll() -> bool:
 
 
 func can_buy(card_id: String) -> bool:
-	if not offer.has(card_id):
-		return false
+	return offer.has(card_id) and blockers(card_id).is_empty()
+
+
+## Read-only, for the UI: why this card can't be bought right now. Empty = buyable.
+## Support is strict (must stay above the cost): spending to exactly 0 support
+## would end the run, so the market refuses the suicide purchase.
+func blockers(card_id: String) -> Dictionary:
 	var card: Dictionary = state.catalog.cards_by_id[card_id]
-	return state.money >= int(card.cost_money) and state.support > int(card.cost_support)
+	var out := {}
+	if state.money < int(card.cost_money):
+		out.money = int(card.cost_money) - state.money
+	if state.support < int(card.cost_support):
+		out.support = int(card.cost_support) - state.support
+	elif state.support == int(card.cost_support) and int(card.cost_support) > 0:
+		out.support_floor = true
+	return out
 
 
 func buy(card_id: String) -> bool:
 	if not can_buy(card_id):
 		return false
 	var card: Dictionary = state.catalog.cards_by_id[card_id]
+	# Leave the offer BEFORE costs land: applying costs emits resources_changed,
+	# and any repaint that fires mid-buy must already see the card gone.
+	offer.erase(card_id)
 	var cost_atoms := []
 	if int(card.cost_money) > 0:
 		cost_atoms.append({"type": "money", "amount": -int(card.cost_money)})
@@ -74,7 +91,6 @@ func buy(card_id: String) -> bool:
 	Effects.apply(card.effects, card.name, state)
 	state.owned_cards.append(card_id)
 	# Refill only the emptied slot — buying must not reroll the rest of the offer.
-	offer.erase(card_id)
 	_fill()
 	return true
 

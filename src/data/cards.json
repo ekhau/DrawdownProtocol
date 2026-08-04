@@ -92,6 +92,108 @@
       ]
     },
     {
+      "id": "bulk_deposit_law",
+      "name": "Bulk & Deposit Law",
+      "sector": "industry",
+      "cost_money": 4,
+      "cost_support": 0,
+      "available_from": 2030,
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "industry",
+          "amount": -1
+        },
+        {
+          "type": "support",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "carbon_ad_ban",
+      "name": "High-Carbon Ad Ban",
+      "sector": "industry",
+      "cost_money": 2,
+      "cost_support": 2,
+      "available_from": 2038,
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "industry",
+          "amount": -1
+        },
+        {
+          "type": "sector_emissions",
+          "sector": "food",
+          "amount": -1
+        }
+      ]
+    },
+    {
+      "id": "process_electrification",
+      "name": "Process Electrification",
+      "sector": "industry",
+      "cost_money": 9,
+      "cost_support": 0,
+      "available_from": 2038,
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "industry",
+          "amount": -2
+        },
+        {
+          "type": "sector_income",
+          "sector": "industry",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "cement_carbon_capture",
+      "name": "Cement Carbon Capture",
+      "sector": "industry",
+      "cost_money": 10,
+      "cost_support": 0,
+      "available_from": 2044,
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "industry",
+          "amount": -2
+        },
+        {
+          "type": "absorption",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "circular_economy_law",
+      "name": "Circular Economy Law",
+      "sector": "industry",
+      "cost_money": 9,
+      "cost_support": 0,
+      "available_from": 2044,
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "industry",
+          "amount": -1
+        },
+        {
+          "type": "sector_emissions",
+          "sector": "housing",
+          "amount": -1
+        },
+        {
+          "type": "income_per_turn",
+          "amount": 1
+        }
+      ]
+    },
+    {
       "id": "bike_network",
       "name": "Bike Network",
       "sector": "transport",
@@ -170,6 +272,7 @@
       "cost_money": 9,
       "cost_support": 0,
       "available_from": 2038,
+      "combo": "rail_nation",
       "effects": [
         {
           "type": "sector_emissions",
@@ -180,6 +283,58 @@
           "type": "sector_emissions",
           "sector": "industry",
           "amount": -1
+        }
+      ]
+    },
+    {
+      "id": "motorway_speed_limit",
+      "name": "110 on the Motorway",
+      "sector": "transport",
+      "cost_money": 0,
+      "cost_support": 1,
+      "available_from": 2030,
+      "combo": "sufficiency_laws",
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "transport",
+          "amount": -1
+        }
+      ]
+    },
+    {
+      "id": "short_haul_ban",
+      "name": "Short-Haul Flight Ban",
+      "sector": "transport",
+      "cost_money": 2,
+      "cost_support": 1,
+      "available_from": 2030,
+      "combo": "sufficiency_laws",
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "transport",
+          "amount": -1
+        }
+      ]
+    },
+    {
+      "id": "night_trains",
+      "name": "Night Train Revival",
+      "sector": "transport",
+      "cost_money": 8,
+      "cost_support": 0,
+      "available_from": 2038,
+      "combo": "rail_nation",
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "transport",
+          "amount": -2
+        },
+        {
+          "type": "support",
+          "amount": 1
         }
       ]
     },
@@ -257,6 +412,55 @@
       ]
     },
     {
+      "id": "fertilizer_tax",
+      "name": "Fertilizer Tax",
+      "sector": "food",
+      "cost_money": 2,
+      "cost_support": 1,
+      "available_from": 2030,
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "food",
+          "amount": -1
+        }
+      ]
+    },
+    {
+      "id": "agroecology_transition",
+      "name": "Agroecology Transition",
+      "sector": "food",
+      "cost_money": 7,
+      "cost_support": 0,
+      "available_from": 2038,
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "food",
+          "amount": -2
+        }
+      ]
+    },
+    {
+      "id": "soil_carbon_4p1000",
+      "name": "4-per-1000 Soils",
+      "sector": "food",
+      "cost_money": 10,
+      "cost_support": 0,
+      "available_from": 2044,
+      "effects": [
+        {
+          "type": "absorption",
+          "amount": 2
+        },
+        {
+          "type": "sector_emissions",
+          "sector": "food",
+          "amount": -1
+        }
+      ]
+    },
+    {
       "id": "insulation_drive",
       "name": "Insulation Drive",
       "sector": "housing",
@@ -310,6 +514,42 @@
       ]
     },
     {
+      "id": "heated_terrace_ban",
+      "name": "Heated Terrace Ban",
+      "sector": "housing",
+      "cost_money": 0,
+      "cost_support": 1,
+      "available_from": 2030,
+      "combo": "sufficiency_laws",
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "housing",
+          "amount": -1
+        }
+      ]
+    },
+    {
+      "id": "sprawl_moratorium",
+      "name": "Sprawl Moratorium",
+      "sector": "housing",
+      "cost_money": 5,
+      "cost_support": 1,
+      "available_from": 2038,
+      "effects": [
+        {
+          "type": "sector_emissions",
+          "sector": "housing",
+          "amount": -1
+        },
+        {
+          "type": "sector_emissions",
+          "sector": "transport",
+          "amount": -1
+        }
+      ]
+    },
+    {
       "id": "urban_forest",
       "name": "Urban Forest",
       "sector": "nature",
@@ -340,6 +580,38 @@
         {
           "type": "absorption",
           "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "hedgerow_replanting",
+      "name": "Hedgerow Replanting",
+      "sector": "nature",
+      "cost_money": 6,
+      "cost_support": 0,
+      "available_from": 2030,
+      "effects": [
+        {
+          "type": "absorption",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "forest_restoration",
+      "name": "Forest Restoration Plan",
+      "sector": "nature",
+      "cost_money": 9,
+      "cost_support": 0,
+      "available_from": 2044,
+      "effects": [
+        {
+          "type": "absorption",
+          "amount": 2
+        },
+        {
+          "type": "support",
+          "amount": 1
         }
       ]
     },
@@ -381,6 +653,57 @@
         {
           "type": "sector_emissions",
           "sector": "housing",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "suv_boom",
+      "name": "SUV Boom",
+      "sector": "temptation",
+      "cost_money": 0,
+      "cost_support": 0,
+      "available_from": 2030,
+      "effects": [
+        {
+          "type": "money",
+          "amount": 4
+        },
+        {
+          "type": "support",
+          "amount": 1
+        },
+        {
+          "type": "sector_emissions",
+          "sector": "transport",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "airport_expansion",
+      "name": "Airport Expansion",
+      "sector": "temptation",
+      "cost_money": 0,
+      "cost_support": 0,
+      "available_from": 2038,
+      "effects": [
+        {
+          "type": "money",
+          "amount": 5
+        },
+        {
+          "type": "support",
+          "amount": 1
+        },
+        {
+          "type": "sector_emissions",
+          "sector": "transport",
+          "amount": 1
+        },
+        {
+          "type": "sector_emissions",
+          "sector": "industry",
           "amount": 1
         }
       ]

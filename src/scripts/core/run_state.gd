@@ -9,6 +9,7 @@ signal resources_changed
 signal sector_changed(sector_id: String)
 signal temperature_changed(temp: float)
 signal phase_changed(phase: int)
+signal market_changed
 signal combo_discovered(combo_id: String)
 signal era_started(era_id: String)
 signal log_line(text: String)

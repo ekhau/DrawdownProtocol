@@ -36,6 +36,31 @@ static func load_all(base_path: String = "res://data") -> Catalog:
 	return cat
 
 
+## Read-only, for the act interstitial: what this era changes — the cards that
+## unlock during it, and the hard-to-abate floors it lowers vs the era before.
+func era_brief(era_id: String) -> Dictionary:
+	var eras: Array = config.eras
+	var idx := 0
+	for i in eras.size():
+		if eras[i].id == era_id:
+			idx = i
+	var era: Dictionary = eras[idx]
+	var until := int(eras[idx + 1].from_year) if idx + 1 < eras.size() else 9999
+	var new_cards := []
+	for card in cards:
+		if int(card.available_from) >= int(era.from_year) and int(card.available_from) < until:
+			new_cards.append(card)
+	var floor_drops := []
+	if idx > 0:
+		var prev: Dictionary = eras[idx - 1].min_sector_emissions
+		for s in config.sectors:
+			var was := int(prev[s.id])
+			var now := int(era.min_sector_emissions[s.id])
+			if now < was:
+				floor_drops.append({"name": s.name, "was": was, "now": now})
+	return {"era": era, "new_cards": new_cards, "floor_drops": floor_drops}
+
+
 func sector_ids() -> Array:
 	var ids := []
 	for s in config.get("sectors", []):

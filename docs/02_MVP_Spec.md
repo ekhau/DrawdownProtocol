@@ -16,7 +16,7 @@ One city, one screen. **1 turn = 1 year**, starting 2030 at **+1.50°**.
 ### Turn structure
 
 1. **Crisis phase** (from turn 2): draw 1 card from the crisis deck — usually a crisis (every response hurts; they differ in *which* resource they cost and *when*), occasionally a windfall: good news with a sting (see §3).
-2. **Action phase**: market shows 3 face-up cards. Buy any number you can afford; effects are immediate and permanent. Once per turn, pay 1 money to reroll the market.
+2. **Action phase**: market shows 4 face-up cards. Buy any number you can afford; effects are immediate and permanent. Once per turn, pay 1 money to reroll the market.
 3. **Income phase**: gain money from sectors.
 4. **Climate phase**: `net = gross emissions − absorption`; thermometer += `net × 0.002°`. Check win/lose.
 
@@ -48,44 +48,63 @@ Baseline net = 20 → +0.04°/turn → **doing nothing loses on turn 13** (recor
 - **Lose:** thermometer ≥ +2.00°, or support ≤ 0.
 - Both end on a **post-mortem screen**: timeline number, final year, temperature curve, sector states, one-line cause ("Industry never decarbonized").
 
-## 2. Cards (pool of 21; each run shuffles, market draws without replacement)
+## 2. Cards (pool of 38; each run shuffles, market draws without replacement)
 
 Format: **Name — cost → effect**. `(C:X)` = part of combo X.
+
+Many cards are drawn from real programmes: France's **Convention Citoyenne pour le Climat** (110 km/h, short-haul flight ban, heated terrace ban, ad regulation, sprawl moratorium / ZAN, bulk & deposit, hedgerows, fertilizer tax, forest plan) and **The Shift Project's PTEF** (process electrification, rail revival, cement capture), plus the French-launched **4-per-1000** soil-carbon initiative. Policy cards cost support instead of money — sufficiency is cheap but unpopular.
 
 **Eras-lite:** each card has an `available_from` year; the market only deals unlocked cards. Unmarked cards are available from 2030 (Act I — *The Easy Wins*); gated cards are marked *(2038)* (Act II — *The Hard Core*) or *(2044)* (Act III — *The Drawdown*). The MVP compresses era boundaries to 2038/2044 so Act III is reachable inside the win window; the full game restores decade boundaries. When an era begins, the market refreshes for free.
 
 **Industry**
 - Efficiency Retrofit — 3$ → Industry −1
 - Solar Farm — 6$ → Industry −2 (C:Clean Grid)
+- Bulk & Deposit Law — 4$ → Industry −1, +1 support
 - Grid Storage — 7$ → Industry −1, Housing −1 (C:Clean Grid) *(2038)*
 - Green Steel — 10$ → Industry −3, Industry income −1/turn *(2038)*
 - Carbon Tax — 3 support → +2$/turn, Industry −1 *(2038)*
+- High-Carbon Ad Ban — 2$ + 2 support → Industry −1, Food −1 *(2038)*
+- Process Electrification — 9$ → Industry −2, Industry income +1/turn *(2038)*
+- Cement Carbon Capture — 10$ → Industry −2, Absorption +1 *(2044)*
+- Circular Economy Law — 9$ → Industry −1, Housing −1, +1$/turn *(2044)*
 
 **Transport**
 - Bike Network — 3$ → Transport −1, +1 support (C:15-Minute City)
+- 110 on the Motorway — 1 support → Transport −1 (C:Sufficiency Laws)
+- Short-Haul Flight Ban — 2$ + 1 support → Transport −1 (C:Sufficiency Laws)
+- Electric Buses — 6$ → Transport −2
 - Dense Housing — 7$ → Housing −1, Transport −1 (C:15-Minute City) *(2038)*
 - Car-Free Center — 6$ + 2 support → Transport −2 (C:15-Minute City) *(2038)*
-- Electric Buses — 6$ → Transport −2
-- Rail Freight — 9$ → Transport −2, Industry −1 *(2038)*
+- Rail Freight — 9$ → Transport −2, Industry −1 (C:Rail Nation) *(2038)*
+- Night Train Revival — 8$ → Transport −2, +1 support (C:Rail Nation) *(2038)*
 
 **Food**
 - Plant-Forward Canteens — 3$ → Food −1
 - Local Farms — 5$ → Food −1, +1 support
 - Food Waste Program — 5$ → Food −1, +1$/turn
+- Fertilizer Tax — 2$ + 1 support → Food −1
+- Agroecology Transition — 7$ → Food −2 *(2038)*
 - Regenerative Agriculture — 8$ → Food −2, Absorption +1 (C:Living Land) *(2044)*
+- 4-per-1000 Soils — 10$ → Absorption +2, Food −1 *(2044)*
 
 **Housing**
 - Insulation Drive — 3$ → Housing −1, +1 support
 - Heat Pumps — 6$ → Housing −2
+- Heated Terrace Ban — 1 support → Housing −1 (C:Sufficiency Laws)
 - District Heating — 8$ → Housing −2, +1$/turn *(2038)*
+- Sprawl Moratorium — 5$ + 1 support → Housing −1, Transport −1 *(2038)*
 
 **Nature**
 - Urban Forest — 5$ → Absorption +1, +1 support (C:Living Land)
+- Hedgerow Replanting — 6$ → Absorption +1
 - Wetland Restoration — 8$ → Absorption +2 (C:Living Land) *(2044)*
+- Forest Restoration Plan — 9$ → Absorption +2, +1 support *(2044)*
 
 **Temptation** (the dirty-money test — always tempting, never mandatory)
 - Fossil Subsidy — 0$ → +5$ now, Industry +1 permanently
 - Concrete Boom — 0$ → +4$ now, +1 support, Housing +1 permanently
+- SUV Boom — 0$ → +4$ now, +1 support, Transport +1 permanently
+- Airport Expansion — 0$ → +5$ now, +1 support, Transport +1 & Industry +1 permanently *(2038)*
 
 ### Combos (announced with a banner the moment the set completes)
 
@@ -93,9 +112,11 @@ Format: **Name — cost → effect**. `(C:X)` = part of combo X.
 |---|---|---|
 | 15-Minute City | Bike Network + Dense Housing + Car-Free Center | Transport −2, +2 support |
 | Clean Grid | Solar Farm + Grid Storage | Industry −1, Housing −1 |
+| Sufficiency Laws | 110 on the Motorway + Heated Terrace Ban + Short-Haul Flight Ban | +2 support, Transport −1 |
+| Rail Nation | Night Train Revival + Rail Freight | Transport −1, +1 support |
 | Living Land | Regenerative Agriculture + Urban Forest + Wetland Restoration | Absorption +2 |
 
-Era gating staggers combo completion across the acts: Clean Grid and 15-Minute City can only complete from 2038, Living Land from 2044 — each act delivers a new "aha" window.
+Era gating staggers combo completion across the acts: Sufficiency Laws can complete in Act I, Clean Grid, 15-Minute City and Rail Nation only from 2038, Living Land from 2044 — each act delivers a new "aha" window.
 
 ## 3. Crises & windfalls (one deck of 13 — 10 crises + 3 windfalls, reshuffled when empty)
 
@@ -136,10 +157,10 @@ Variability comes from 13 deck cards × 2–3 responses × band scaling × game 
 
 ## 4. UI (single screen, mouse only, placeholder art)
 
-- **Top bar:** thermometer +1.50°→+2.00° (the hero element — big, animated on change), year, money, support.
+- **Top bar:** thermometer +1.50°→+2.00° (the hero element — big, animated on change), year, money, support. Markers on the bar: 0.1° scale ticks, crisis-band boundaries (1.7°, 1.85°), a white needle at current warming, and a **neutrality diamond ◆** — where the mercury is projected to stop if the player keeps their recent pace of structural-net cuts (absorption frozen at today's value, era floors respected). Green ◆ = net zero in reach, orange ◆ pinned at +2.0° = current pace loses; a one-line caption under the bar states the projected year and temperature.
 - **Center:** 4 sector panels (ColorRect placeholders), each showing emissions + income; panel tint samples the **active era's colormap** at `1 − emissions/start`. Absorption shown beside them.
 - **Era palettes:** each act keys the UI's color ramp to a scientific colormap — Act I **magma** (dark heat: the burning 2030s), Act II **viridis** (the green transition), Act III **parula** (bright blue-green: solarpunk drawdown). Sector tints, thermometer accents, and banners all sample the active ramp, so the whole screen's mood shifts with the era. Ramps live in `config.json` as gradient stops (data-driven, like everything else).
-- **Bottom:** market (3 cards), reroll button, end-turn button.
+- **Bottom:** market (4 cards), reroll button, end-turn button.
 - **Turn start:** crisis modal presenting the 2–3 responses as buttons, each with its full cost/effect spelled out; permanent effects visually flagged (⚠ perm). Windfalls use the same modal with hopeful styling (green accent) — the player should feel the relief before reading a word.
 - **Era transitions** (2038, 2044): full-width banner ("Act II — The Hard Core: heavy decarbonization now possible"), free market refresh, palette crossfade to the new era's colormap, one line in the log.
 - **Turn log** (collapsible): one line per event — every number change must be traceable (clarity was a top playtest complaint last cycle).

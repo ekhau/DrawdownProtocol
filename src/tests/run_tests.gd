@@ -21,7 +21,13 @@ func _init() -> void:
 	_test_band_scaling(catalog)
 	_test_windfalls_never_scale(catalog)
 	_test_era_gating(catalog)
+	_test_era_brief(catalog)
+	_test_market_buy_updates_offer(catalog)
+	_test_market_reroll(catalog)
+	_test_buy_blockers(catalog)
 	_test_combo_detection(catalog)
+	_test_neutrality_projection(catalog)
+	_test_breakeven_gross(catalog)
 
 	print("\n%d/%d checks passed" % [checks - failures, checks])
 	quit(0 if failures == 0 else 1)
@@ -130,6 +136,68 @@ func _test_era_gating(catalog: Catalog) -> void:
 	_check(eras_seen.has("act2"), "Act II era fires before the run ends (2038 reached)")
 
 
+func _test_era_brief(catalog: Catalog) -> void:
+	var act1: Dictionary = catalog.era_brief("act1")
+	_check(act1.new_cards.size() == 19 and act1.floor_drops.is_empty(),
+		"act1 brief: 19 starting cards, no floor drops to report")
+	var act2: Dictionary = catalog.era_brief("act2")
+	_check(act2.new_cards.size() == 13, "act2 brief: 13 cards unlock in 2038")
+	_check(act2.floor_drops.size() == 4, "act2 brief: all four sector floors fall")
+	var total_cards: int = act1.new_cards.size() + act2.new_cards.size() \
+		+ catalog.era_brief("act3").new_cards.size()
+	_check(total_cards == catalog.cards.size(), "era briefs partition the whole card pool")
+
+
+func _test_market_buy_updates_offer(catalog: Catalog) -> void:
+	var sim := TurnManager.new(catalog, 42)
+	while sim.state.phase == RunState.Phase.CRISIS:
+		sim.choose_response(Bots.pick_response(sim, "default"))
+	sim.state.money = 99  # test-only poke: afford anything
+	var pings := [0]
+	sim.state.market_changed.connect(func(): pings[0] += 1)
+	var first: String = sim.market.offer[0]
+	_check(sim.buy_card(first), "buy accepted with ample funds")
+	_check(not sim.market.offer.has(first), "bought card leaves the offer")
+	_check(sim.market.offer.size() == int(catalog.config.market_size), "offer refills after buy")
+	_check(pings[0] >= 1, "market_changed fires after buy (the UI repaint hook)")
+	_check(not sim.buy_card(first), "ghost click on the bought card is rejected")
+
+
+func _test_market_reroll(catalog: Catalog) -> void:
+	var sim := TurnManager.new(catalog, 6)
+	while sim.state.phase == RunState.Phase.CRISIS:
+		sim.choose_response(Bots.pick_response(sim, "default"))
+	sim.state.money = 99  # test-only poke
+	var pings := [0]
+	sim.state.market_changed.connect(func(): pings[0] += 1)
+	_check(sim.reroll(), "first reroll of the year accepted")
+	_check(pings[0] >= 1, "market_changed fires after reroll")
+	_check(not sim.reroll(), "second reroll the same year rejected")
+	sim.end_turn()
+	if sim.state.phase == RunState.Phase.CRISIS:
+		sim.choose_response(Bots.pick_response(sim, "default"))
+	_check(sim.market.can_reroll(), "reroll available again next year")
+
+
+func _test_buy_blockers(catalog: Catalog) -> void:
+	var sim := TurnManager.new(catalog, 9)
+	var money_card := ""
+	var support_card := ""
+	for c in catalog.cards:
+		if money_card == "" and int(c.cost_money) > 0:
+			money_card = c.id
+		if support_card == "" and int(c.cost_support) > 0:
+			support_card = c.id
+	sim.state.money = 0  # test-only pokes from here on
+	_check(sim.market.blockers(money_card).has("money"), "empty wallet blocks money-cost cards")
+	sim.state.money = 99
+	sim.state.support = int(catalog.cards_by_id[support_card].cost_support)
+	_check(sim.market.blockers(support_card).has("support_floor"),
+		"support exactly at cost is blocked (would collapse to 0)")
+	sim.state.support = int(catalog.cards_by_id[support_card].cost_support) + 1
+	_check(sim.market.blockers(support_card).is_empty(), "one spare support point unblocks the buy")
+
+
 func _test_combo_detection(catalog: Catalog) -> void:
 	var sim := TurnManager.new(catalog, 3)
 	var industry_before: int = sim.state.sectors.industry.emissions
@@ -139,3 +207,50 @@ func _test_combo_detection(catalog: Catalog) -> void:
 	_check(sim.state.sectors.industry.emissions == industry_before - 1, "combo bonus applied through Effects")
 	sim.combo_checker.check()
 	_check(sim.state.discovered_combos.count("clean_grid") == 1, "combo never fires twice")
+
+
+func _test_neutrality_projection(catalog: Catalog) -> void:
+	# Fresh run, nothing bought: no pace → mercury pinned at the lose temp.
+	var idle := TurnManager.new(catalog, 21)
+	var p := ClimateCalc.neutrality_projection(idle.state)
+	_check(not p.reachable and is_equal_approx(p.temp, float(catalog.config.lose_temp)),
+		"projection: no cuts → pinned at +2.0°")
+	# Already structurally neutral: marker sits at today's temp, this year.
+	var done := TurnManager.new(catalog, 22)
+	done.state.add_absorption(50)
+	var q := ClimateCalc.neutrality_projection(done.state)
+	_check(q.reachable and is_equal_approx(q.temp, done.state.temp) and q.year == done.state.year,
+		"projection: structural net ≤ 0 → marker at current temp")
+	# Steady cuts (2/yr): reachable, warmer than today, cooler than the lose temp.
+	var steady := TurnManager.new(catalog, 23)
+	steady.state.add_sector_emissions("industry", -3)
+	steady.state.snapshot()
+	steady.state.turn = 2
+	steady.state.add_sector_emissions("transport", -3)
+	steady.state.snapshot()
+	steady.state.turn = 3
+	var r := ClimateCalc.neutrality_projection(steady.state)
+	_check(r.reachable and r.temp > steady.state.temp and r.temp < float(catalog.config.lose_temp),
+		"projection: steady cuts → net zero before +2.0°")
+	_check(int(r.year) >= 2044, "projection respects era floors (net zero needs Act III)")
+
+
+func _test_breakeven_gross(catalog: Catalog) -> void:
+	# No pace: only fully-absorbed emissions are safe — the line sits on the green edge.
+	var idle := TurnManager.new(catalog, 31)
+	_check(ClimateCalc.breakeven_gross(idle.state) == idle.state.absorption,
+		"2.0° line: no cuts → line sits at absorption")
+	# Steady cuts push the line past absorption, and the line must agree with
+	# the ◆ verdict: gross within the line ⟺ projection says reachable.
+	var steady := TurnManager.new(catalog, 32)
+	steady.state.add_sector_emissions("industry", -3)
+	steady.state.snapshot()
+	steady.state.turn = 2
+	steady.state.add_sector_emissions("transport", -3)
+	steady.state.snapshot()
+	steady.state.turn = 3
+	var line := ClimateCalc.breakeven_gross(steady.state)
+	_check(line > steady.state.absorption, "2.0° line: steady cuts move the line past absorption")
+	var reachable: bool = ClimateCalc.neutrality_projection(steady.state).reachable
+	_check(reachable == (steady.state.gross_emissions() <= line),
+		"2.0° line agrees with the ◆ projection verdict")

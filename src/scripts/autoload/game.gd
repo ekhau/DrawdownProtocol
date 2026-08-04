@@ -7,6 +7,7 @@ signal resources_changed
 signal sector_changed(sector_id: String)
 signal temperature_changed(temp: float)
 signal phase_changed(phase: int)
+signal market_changed
 signal combo_discovered(combo_id: String)
 signal era_started(era_id: String)
 signal log_line(text: String)
@@ -35,6 +36,7 @@ func new_run(seed_value: int = -1) -> void:
 	s.sector_changed.connect(func(id): sector_changed.emit(id))
 	s.temperature_changed.connect(func(t): temperature_changed.emit(t))
 	s.phase_changed.connect(func(p): phase_changed.emit(p))
+	s.market_changed.connect(func(): market_changed.emit())
 	s.combo_discovered.connect(func(id): combo_discovered.emit(id))
 	s.era_started.connect(func(id): era_started.emit(id))
 	s.log_line.connect(func(t): log_line.emit(t))
@@ -62,6 +64,14 @@ func end_turn() -> void:
 
 func state() -> RunState:
 	return sim.state if sim else null
+
+
+func neutrality_projection() -> Dictionary:
+	return ClimateCalc.neutrality_projection(sim.state)
+
+
+func breakeven_gross() -> int:
+	return ClimateCalc.breakeven_gross(sim.state)
 
 
 func era_palette() -> Gradient:

@@ -42,13 +42,8 @@
 - Deckbuilding, je paye la carte au moment ou je la prends, ou je la paye quand je la joue 
 
 - Current problem: 
-    - explicit reason why I can't pick a gard (like missing resources in red in the cost)
-    - Too much money, add annual expenses of a city (explicite in top bar)
-    - add absorption per year
-    - add marker in climate bar, marker for current warming and a marker for objective of neutrality with current absorption 
-    - bug cards do not disappear when picked, or does not applied whereas I have the resources
-    - chaneg starting values, too much money, too much support
-    -  reroll doesn't work each time
-    - Exploicit the change of act
 
-- political support / People support?
+    - Too much money, add annual expenses of a city (explicite in top bar)
+    - change starting values, too much money, too much support
+    - change reward of some cards to obtain benefits in several turns instead of right now
+    - One bar in toolbar

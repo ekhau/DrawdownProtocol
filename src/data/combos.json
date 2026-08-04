@@ -23,6 +23,24 @@
       "name": "Living Land",
       "cards": ["regenerative_agriculture", "urban_forest", "wetland_restoration"],
       "effects": [{ "type": "absorption", "amount": 2 }]
+    },
+    {
+      "id": "sufficiency_laws",
+      "name": "Sufficiency Laws",
+      "cards": ["motorway_speed_limit", "heated_terrace_ban", "short_haul_ban"],
+      "effects": [
+        { "type": "support", "amount": 2 },
+        { "type": "sector_emissions", "sector": "transport", "amount": -1 }
+      ]
+    },
+    {
+      "id": "rail_nation",
+      "name": "Rail Nation",
+      "cards": ["night_trains", "rail_freight"],
+      "effects": [
+        { "type": "sector_emissions", "sector": "transport", "amount": -1 },
+        { "type": "support", "amount": 1 }
+      ]
     }
   ]
 }
