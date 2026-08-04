@@ -5,7 +5,7 @@
       "name": "Efficiency Retrofit",
       "sector": "industry",
       "cost_money": 3,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "effects": [
         {
@@ -20,7 +20,7 @@
       "name": "Solar Farm",
       "sector": "industry",
       "cost_money": 6,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "combo": "clean_grid",
       "effects": [
@@ -36,7 +36,7 @@
       "name": "Grid Storage",
       "sector": "industry",
       "cost_money": 7,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2038,
       "combo": "clean_grid",
       "effects": [
@@ -57,7 +57,7 @@
       "name": "Green Steel",
       "sector": "industry",
       "cost_money": 10,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2038,
       "effects": [
         {
@@ -77,7 +77,8 @@
       "name": "Carbon Tax",
       "sector": "industry",
       "cost_money": 0,
-      "cost_support": 3,
+      "cost_popularity": 15,
+      "requires_popularity": 75,
       "available_from": 2038,
       "effects": [
         {
@@ -96,7 +97,7 @@
       "name": "Bulk & Deposit Law",
       "sector": "industry",
       "cost_money": 4,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "effects": [
         {
@@ -105,8 +106,8 @@
           "amount": -1
         },
         {
-          "type": "support",
-          "amount": 1
+          "type": "popularity",
+          "amount": 5
         }
       ]
     },
@@ -115,7 +116,8 @@
       "name": "High-Carbon Ad Ban",
       "sector": "industry",
       "cost_money": 2,
-      "cost_support": 2,
+      "cost_popularity": 10,
+      "requires_popularity": 60,
       "available_from": 2038,
       "effects": [
         {
@@ -135,7 +137,7 @@
       "name": "Process Electrification",
       "sector": "industry",
       "cost_money": 9,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2038,
       "effects": [
         {
@@ -155,7 +157,7 @@
       "name": "Cement Carbon Capture",
       "sector": "industry",
       "cost_money": 10,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2044,
       "effects": [
         {
@@ -174,7 +176,7 @@
       "name": "Circular Economy Law",
       "sector": "industry",
       "cost_money": 9,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2044,
       "effects": [
         {
@@ -198,7 +200,7 @@
       "name": "Bike Network",
       "sector": "transport",
       "cost_money": 3,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "combo": "fifteen_minute_city",
       "effects": [
@@ -208,8 +210,8 @@
           "amount": -1
         },
         {
-          "type": "support",
-          "amount": 1
+          "type": "popularity",
+          "amount": 5
         }
       ]
     },
@@ -218,7 +220,7 @@
       "name": "Dense Housing",
       "sector": "transport",
       "cost_money": 7,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2038,
       "combo": "fifteen_minute_city",
       "effects": [
@@ -239,7 +241,8 @@
       "name": "Car-Free Center",
       "sector": "transport",
       "cost_money": 6,
-      "cost_support": 2,
+      "cost_popularity": 10,
+      "requires_popularity": 60,
       "available_from": 2038,
       "combo": "fifteen_minute_city",
       "effects": [
@@ -255,7 +258,7 @@
       "name": "Electric Buses",
       "sector": "transport",
       "cost_money": 6,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "effects": [
         {
@@ -270,7 +273,7 @@
       "name": "Rail Freight",
       "sector": "transport",
       "cost_money": 9,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2038,
       "combo": "rail_nation",
       "effects": [
@@ -291,7 +294,7 @@
       "name": "110 on the Motorway",
       "sector": "transport",
       "cost_money": 0,
-      "cost_support": 1,
+      "cost_popularity": 5,
       "available_from": 2030,
       "combo": "sufficiency_laws",
       "effects": [
@@ -307,7 +310,7 @@
       "name": "Short-Haul Flight Ban",
       "sector": "transport",
       "cost_money": 2,
-      "cost_support": 1,
+      "cost_popularity": 5,
       "available_from": 2030,
       "combo": "sufficiency_laws",
       "effects": [
@@ -323,7 +326,7 @@
       "name": "Night Train Revival",
       "sector": "transport",
       "cost_money": 8,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2038,
       "combo": "rail_nation",
       "effects": [
@@ -333,8 +336,8 @@
           "amount": -2
         },
         {
-          "type": "support",
-          "amount": 1
+          "type": "popularity",
+          "amount": 5
         }
       ]
     },
@@ -343,7 +346,7 @@
       "name": "Plant-Forward Canteens",
       "sector": "food",
       "cost_money": 3,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "effects": [
         {
@@ -358,7 +361,7 @@
       "name": "Local Farms",
       "sector": "food",
       "cost_money": 5,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "effects": [
         {
@@ -367,8 +370,8 @@
           "amount": -1
         },
         {
-          "type": "support",
-          "amount": 1
+          "type": "popularity",
+          "amount": 5
         }
       ]
     },
@@ -377,7 +380,7 @@
       "name": "Food Waste Program",
       "sector": "food",
       "cost_money": 5,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "effects": [
         {
@@ -396,7 +399,7 @@
       "name": "Regenerative Agriculture",
       "sector": "food",
       "cost_money": 8,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2044,
       "combo": "living_land",
       "effects": [
@@ -416,7 +419,7 @@
       "name": "Fertilizer Tax",
       "sector": "food",
       "cost_money": 2,
-      "cost_support": 1,
+      "cost_popularity": 5,
       "available_from": 2030,
       "effects": [
         {
@@ -431,7 +434,7 @@
       "name": "Agroecology Transition",
       "sector": "food",
       "cost_money": 7,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2038,
       "effects": [
         {
@@ -446,7 +449,7 @@
       "name": "4-per-1000 Soils",
       "sector": "food",
       "cost_money": 10,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2044,
       "effects": [
         {
@@ -465,7 +468,7 @@
       "name": "Insulation Drive",
       "sector": "housing",
       "cost_money": 3,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "effects": [
         {
@@ -474,8 +477,8 @@
           "amount": -1
         },
         {
-          "type": "support",
-          "amount": 1
+          "type": "popularity",
+          "amount": 5
         }
       ]
     },
@@ -484,7 +487,7 @@
       "name": "Heat Pumps",
       "sector": "housing",
       "cost_money": 6,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "effects": [
         {
@@ -499,7 +502,7 @@
       "name": "District Heating",
       "sector": "housing",
       "cost_money": 8,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2038,
       "effects": [
         {
@@ -518,7 +521,7 @@
       "name": "Heated Terrace Ban",
       "sector": "housing",
       "cost_money": 0,
-      "cost_support": 1,
+      "cost_popularity": 5,
       "available_from": 2030,
       "combo": "sufficiency_laws",
       "effects": [
@@ -534,7 +537,8 @@
       "name": "Sprawl Moratorium",
       "sector": "housing",
       "cost_money": 5,
-      "cost_support": 1,
+      "cost_popularity": 5,
+      "requires_popularity": 60,
       "available_from": 2038,
       "effects": [
         {
@@ -554,7 +558,7 @@
       "name": "Urban Forest",
       "sector": "nature",
       "cost_money": 5,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "combo": "living_land",
       "effects": [
@@ -563,8 +567,8 @@
           "amount": 1
         },
         {
-          "type": "support",
-          "amount": 1
+          "type": "popularity",
+          "amount": 5
         }
       ]
     },
@@ -573,7 +577,7 @@
       "name": "Wetland Restoration",
       "sector": "nature",
       "cost_money": 8,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2044,
       "combo": "living_land",
       "effects": [
@@ -588,7 +592,7 @@
       "name": "Hedgerow Replanting",
       "sector": "nature",
       "cost_money": 6,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "effects": [
         {
@@ -602,7 +606,7 @@
       "name": "Forest Restoration Plan",
       "sector": "nature",
       "cost_money": 9,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2044,
       "effects": [
         {
@@ -610,7 +614,39 @@
           "amount": 2
         },
         {
-          "type": "support",
+          "type": "popularity",
+          "amount": 5
+        }
+      ]
+    },
+    {
+      "id": "citizens_assembly",
+      "name": "Citizens' Climate Assembly",
+      "sector": "civic",
+      "cost_money": 2,
+      "cost_popularity": 0,
+      "available_from": 2030,
+      "effects": [
+        {
+          "type": "popularity",
+          "amount": 10
+        }
+      ]
+    },
+    {
+      "id": "green_jobs_program",
+      "name": "Green Jobs Program",
+      "sector": "civic",
+      "cost_money": 6,
+      "cost_popularity": 0,
+      "available_from": 2038,
+      "effects": [
+        {
+          "type": "popularity",
+          "amount": 10
+        },
+        {
+          "type": "income_per_turn",
           "amount": 1
         }
       ]
@@ -620,7 +656,7 @@
       "name": "Fossil Subsidy",
       "sector": "temptation",
       "cost_money": 0,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "effects": [
         {
@@ -639,7 +675,7 @@
       "name": "Concrete Boom",
       "sector": "temptation",
       "cost_money": 0,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "effects": [
         {
@@ -647,8 +683,8 @@
           "amount": 4
         },
         {
-          "type": "support",
-          "amount": 1
+          "type": "popularity",
+          "amount": 5
         },
         {
           "type": "sector_emissions",
@@ -662,7 +698,7 @@
       "name": "SUV Boom",
       "sector": "temptation",
       "cost_money": 0,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2030,
       "effects": [
         {
@@ -670,8 +706,8 @@
           "amount": 4
         },
         {
-          "type": "support",
-          "amount": 1
+          "type": "popularity",
+          "amount": 5
         },
         {
           "type": "sector_emissions",
@@ -685,7 +721,7 @@
       "name": "Airport Expansion",
       "sector": "temptation",
       "cost_money": 0,
-      "cost_support": 0,
+      "cost_popularity": 0,
       "available_from": 2038,
       "effects": [
         {
@@ -693,8 +729,8 @@
           "amount": 5
         },
         {
-          "type": "support",
-          "amount": 1
+          "type": "popularity",
+          "amount": 5
         },
         {
           "type": "sector_emissions",

@@ -26,9 +26,9 @@ var year: int = 0
 var phase: int = Phase.ACTION
 var temp: float = 0.0
 var money: int = 0
-var support: int = 0
+var popularity: int = 0            # government approval 0-100%; below popularity_collapse the run ends
 var absorption: int = 0
-var income_bonus: int = 0          # flat $/turn from income_per_turn atoms
+var income_bonus: int = 0          # flat M$/turn from income_per_turn atoms
 var gross_this_turn_delta: int = 0 # transient, reset each turn (e.g. Mild Winter)
 var sectors: Dictionary = {}       # id -> {name, emissions, income, start_emissions}
 var owned_cards: Array = []        # card ids, purchase order
@@ -47,7 +47,7 @@ func _init(cat: Catalog, seed_value: int) -> void:
 	year = int(cfg.start_year)
 	temp = float(cfg.start_temp)
 	money = int(cfg.start_money)
-	support = int(cfg.start_support)
+	popularity = int(cfg.start_popularity)
 	absorption = int(cfg.start_absorption)
 	for s in cfg.sectors:
 		sectors[s.id] = {
@@ -117,8 +117,8 @@ func add_money(amount: int) -> void:
 	resources_changed.emit()
 
 
-func add_support(amount: int) -> void:
-	support = mini(support + amount, int(catalog.config.support_cap))
+func add_popularity(amount: int) -> void:
+	popularity = clampi(popularity + amount, 0, int(catalog.config.popularity_cap))
 	resources_changed.emit()
 
 
@@ -177,7 +177,7 @@ func snapshot() -> void:
 	history.append({
 		"turn": turn, "year": year, "temp": temp,
 		"gross": gross_emissions(), "net": net_emissions(),
-		"money": money, "support": support, "absorption": absorption,
+		"money": money, "popularity": popularity, "absorption": absorption,
 		"sectors": sector_states,
 	})
 

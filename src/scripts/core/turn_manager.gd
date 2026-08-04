@@ -30,7 +30,7 @@ func choose_response(index: int) -> bool:
 		return false
 	if not crisis_deck.choose(index):
 		return false
-	if _check_support_collapse():
+	if _check_popularity_collapse():
 		return true
 	state.set_phase(RunState.Phase.ACTION)
 	return true
@@ -42,7 +42,7 @@ func buy_card(card_id: String) -> bool:
 	if not market.buy(card_id):
 		return false
 	combo_checker.check()
-	_check_support_collapse()
+	_check_popularity_collapse()
 	return true
 
 
@@ -59,6 +59,7 @@ func end_turn() -> bool:
 	state.set_phase(RunState.Phase.INCOME)
 	var income := state.total_income()
 	Effects.apply([{"type": "money", "amount": income}], "Income", state)
+	_apply_popularity_drift()
 	# Climate phase
 	state.set_phase(RunState.Phase.CLIMATE)
 	ClimateCalc.run_phase(state)
@@ -91,9 +92,21 @@ func _start_turn() -> void:
 		state.set_phase(RunState.Phase.ACTION)
 
 
-func _check_support_collapse() -> bool:
-	if not state.ended and state.support <= 0:
+## Approval is rented, never owned: each year public opinion drifts back toward
+## the baseline — slow natural recovery when the streets are against you, steady
+## erosion of any goodwill hoarded above the line.
+func _apply_popularity_drift() -> void:
+	var cfg: Dictionary = state.catalog.config
+	var step := int(cfg.popularity_drift)
+	var delta := clampi(int(cfg.popularity_baseline) - state.popularity, -step, step)
+	if delta != 0:
+		Effects.apply([{"type": "popularity", "amount": delta}], "Public opinion drift", state)
+
+
+func _check_popularity_collapse() -> bool:
+	var floor_value := int(state.catalog.config.popularity_collapse)
+	if not state.ended and state.popularity < floor_value:
 		state.snapshot()
-		state.end_run(false, "Support collapsed — the city voted the Institute out.")
+		state.end_run(false, "Popularity fell below %d%% — the government collapsed and the Institute was dissolved." % floor_value)
 		return true
 	return false

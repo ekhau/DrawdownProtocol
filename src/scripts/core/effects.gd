@@ -3,7 +3,7 @@ extends RefCounted
 ## The effect resolver — the ONLY code allowed to mutate RunState.
 ## Applying here guarantees every change emits its signal and writes a log line,
 ## so the turn-log clarity rule holds by construction.
-## Atom vocabulary (see catalog.gd): money, support, absorption,
+## Atom vocabulary (see catalog.gd): money, popularity, absorption,
 ## sector_emissions, sector_income, income_per_turn, gross_this_turn.
 
 const PERM_TYPES := ["sector_emissions", "sector_income", "income_per_turn", "absorption"]
@@ -14,8 +14,8 @@ static func apply(atoms: Array, source: String, state: RunState) -> void:
 		match atom.type:
 			"money":
 				state.add_money(int(atom.amount))
-			"support":
-				state.add_support(int(atom.amount))
+			"popularity":
+				state.add_popularity(int(atom.amount))
 			"absorption":
 				state.add_absorption(int(atom.amount))
 			"sector_emissions":
@@ -32,15 +32,20 @@ static func apply(atoms: Array, source: String, state: RunState) -> void:
 	state.log_event("%s: %s" % [source, describe(atoms, state.catalog)])
 
 
-## Deep-copies crisis-response atoms with band scaling applied: the bump makes
-## money/support COSTS (negative amounts) worse. Gains and permanent effects
-## never scale (spec §3). Windfalls skip this entirely (crisis_deck.gd).
-static func scaled(atoms: Array, cost_bump: int) -> Array:
+## Deep-copies crisis-response atoms with band scaling applied: the bumps make
+## money/popularity COSTS (negative amounts) worse — each resource has its own
+## bump because they live on different scales (money in M$, popularity in %).
+## Gains and permanent effects never scale (spec §3). Windfalls skip this
+## entirely (crisis_deck.gd).
+static func scaled(atoms: Array, money_bump: int, popularity_bump: int) -> Array:
 	var out := []
 	for atom in atoms:
 		var copy: Dictionary = atom.duplicate(true)
-		if copy.type in ["money", "support"] and int(copy.amount) < 0:
-			copy.amount = int(copy.amount) - cost_bump
+		if int(copy.amount) < 0:
+			if copy.type == "money":
+				copy.amount = int(copy.amount) - money_bump
+			elif copy.type == "popularity":
+				copy.amount = int(copy.amount) - popularity_bump
 		out.append(copy)
 	return out
 
@@ -53,17 +58,17 @@ static func describe(atoms: Array, catalog: Catalog) -> String:
 		var perm := " (perm)" if atom.type in PERM_TYPES else ""
 		match atom.type:
 			"money":
-				parts.append("%s$" % signed)
-			"support":
-				parts.append("%s support" % signed)
+				parts.append("%sM$" % signed)
+			"popularity":
+				parts.append("%s%% popularity" % signed)
 			"absorption":
 				parts.append("Absorption %s%s" % [signed, perm])
 			"sector_emissions":
 				parts.append("%s emissions %s%s" % [_sector_name(atom.sector, catalog), signed, perm])
 			"sector_income":
-				parts.append("%s income %s$/turn" % [_sector_name(atom.sector, catalog), signed])
+				parts.append("%s income %sM$/turn" % [_sector_name(atom.sector, catalog), signed])
 			"income_per_turn":
-				parts.append("%s$/turn" % signed)
+				parts.append("%sM$/turn" % signed)
 			"gross_this_turn":
 				parts.append("this turn's gross emissions %s" % signed)
 	return ", ".join(parts)

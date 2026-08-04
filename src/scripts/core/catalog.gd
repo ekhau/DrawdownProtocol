@@ -4,7 +4,7 @@ extends RefCounted
 ## names the file and entry. The validator is the compiler for JSON.
 ## Pure — no Nodes, no scene tree.
 
-const ATOM_TYPES := ["money", "support", "absorption", "sector_emissions", "sector_income", "income_per_turn", "gross_this_turn"]
+const ATOM_TYPES := ["money", "popularity", "absorption", "sector_emissions", "sector_income", "income_per_turn", "gross_this_turn"]
 const ARCHETYPES := ["pay", "absorb", "mortgage", "invest"]
 const CRISIS_KINDS := ["crisis", "windfall"]
 
@@ -85,12 +85,18 @@ func _validate() -> void:
 		errors.append("one or more data files empty or unreadable")
 		return
 	for key in ["start_year", "start_temp", "lose_temp", "warming_per_net_emission",
-			"start_money", "start_support", "support_cap", "start_absorption",
+			"start_money", "start_popularity", "popularity_cap", "popularity_collapse",
+			"popularity_baseline", "popularity_drift", "social_crisis_threshold", "start_absorption",
 			"market_size", "reroll_cost", "crisis_start_turn", "bands", "eras", "sectors", "palettes"]:
 		if not config.has(key):
 			errors.append("config.json: missing key '%s'" % key)
 	if not errors.is_empty():
 		return
+
+	for band in config.bands:
+		for key in ["id", "min_temp", "cost_bump_money", "cost_bump_popularity"]:
+			if not band.has(key):
+				errors.append("config.json: band '%s' missing '%s'" % [band.get("id", "?"), key])
 
 	var sectors := sector_ids()
 	for era in config.eras:
@@ -104,19 +110,24 @@ func _validate() -> void:
 	var card_ids := {}
 	for card in cards:
 		var where := "cards.json: '%s'" % card.get("id", "<no id>")
-		for key in ["id", "name", "sector", "cost_money", "cost_support", "available_from", "effects"]:
+		for key in ["id", "name", "sector", "cost_money", "cost_popularity", "available_from", "effects"]:
 			if not card.has(key):
 				errors.append("%s: missing '%s'" % [where, key])
+		if card.has("requires_popularity") and not (card.requires_popularity is float or card.requires_popularity is int):
+			errors.append("%s: 'requires_popularity' must be numeric" % where)
 		if card.has("id"):
 			if card_ids.has(card.id):
 				errors.append("%s: duplicate id" % where)
 			card_ids[card.id] = true
 		_validate_effects(card.get("effects", []), sectors, where)
 
+	var social_count := 0
 	for crisis in crises:
 		var where := "crises.json: '%s'" % crisis.get("id", "<no id>")
 		if not CRISIS_KINDS.has(crisis.get("kind", "")):
 			errors.append("%s: kind must be one of %s" % [where, CRISIS_KINDS])
+		if crisis.get("social", false):
+			social_count += 1
 		var responses: Array = crisis.get("responses", [])
 		if responses.size() < 1 or responses.size() > 3:
 			errors.append("%s: needs 1-3 responses, has %d" % [where, responses.size()])
@@ -125,6 +136,8 @@ func _validate() -> void:
 			if not ARCHETYPES.has(r.get("archetype", "")):
 				errors.append("%s: archetype must be one of %s" % [rwhere, ARCHETYPES])
 			_validate_effects(r.get("effects", []), sectors, rwhere)
+	if social_count == 0:
+		errors.append("crises.json: needs at least one 'social: true' crisis — the low-popularity pool would be empty")
 
 	for combo in combos:
 		var where := "combos.json: '%s'" % combo.get("id", "<no id>")

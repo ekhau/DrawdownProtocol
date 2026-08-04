@@ -25,16 +25,16 @@ static func play(catalog: Catalog, seed_value: int, buy_policy: String, crisis_p
 static func pick_response(sim: TurnManager, policy: String) -> int:
 	var responses: Array = sim.crisis_deck.current.responses
 	if sim.crisis_deck.current.crisis.kind == "windfall":
-		return _best_support(responses)
+		return _best_popularity(responses)
 	if policy != "default":
 		for i in responses.size():
 			if responses[i].archetype == policy:
 				return i
-	# Default: first money-only option we can afford, else least support loss.
+	# Default: first money-only option we can afford, else least popularity loss.
 	for i in responses.size():
 		if _money_only(responses[i].effects) and _affordable(sim.state, responses[i].effects):
 			return i
-	return _best_support(responses)
+	return _best_popularity(responses)
 
 
 static func act(sim: TurnManager, policy: String) -> void:
@@ -82,7 +82,7 @@ static func _fully_wasted(state: RunState, card: Dictionary) -> bool:
 					has_cut = true
 					if state.sectors[atom.sector].emissions > state.sector_floor(atom.sector):
 						return false
-			"absorption", "income_per_turn", "support", "money":
+			"absorption", "income_per_turn", "popularity", "money":
 				if int(atom.amount) > 0:
 					return false
 	return has_cut
@@ -103,13 +103,13 @@ static func _affordable(state: RunState, effects: Array) -> bool:
 	return state.money + delta >= 0
 
 
-static func _best_support(responses: Array) -> int:
+static func _best_popularity(responses: Array) -> int:
 	var best := 0
 	var best_delta := -999
 	for i in responses.size():
 		var delta := 0
 		for atom in responses[i].effects:
-			if atom.type == "support":
+			if atom.type == "popularity":
 				delta += int(atom.amount)
 		if delta > best_delta:
 			best_delta = delta

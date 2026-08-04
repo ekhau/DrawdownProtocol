@@ -60,17 +60,23 @@ func can_buy(card_id: String) -> bool:
 
 
 ## Read-only, for the UI: why this card can't be bought right now. Empty = buyable.
-## Support is strict (must stay above the cost): spending to exactly 0 support
-## would end the run, so the market refuses the suicide purchase.
+## Popularity has two rules: `requires_popularity` is a gate (checked, never
+## spent), and spending is strict — a purchase may never drop popularity into
+## the collapse zone. Only crises can bring a government down.
 func blockers(card_id: String) -> Dictionary:
 	var card: Dictionary = state.catalog.cards_by_id[card_id]
 	var out := {}
 	if state.money < int(card.cost_money):
 		out.money = int(card.cost_money) - state.money
-	if state.support < int(card.cost_support):
-		out.support = int(card.cost_support) - state.support
-	elif state.support == int(card.cost_support) and int(card.cost_support) > 0:
-		out.support_floor = true
+	var gate := int(card.get("requires_popularity", 0))
+	if gate > 0 and state.popularity < gate:
+		out.popularity_gate = gate
+	var cost := int(card.cost_popularity)
+	if cost > 0:
+		if state.popularity < cost:
+			out.popularity = cost - state.popularity
+		elif state.popularity - cost < int(state.catalog.config.popularity_collapse):
+			out.popularity_floor = true
 	return out
 
 
@@ -84,8 +90,8 @@ func buy(card_id: String) -> bool:
 	var cost_atoms := []
 	if int(card.cost_money) > 0:
 		cost_atoms.append({"type": "money", "amount": -int(card.cost_money)})
-	if int(card.cost_support) > 0:
-		cost_atoms.append({"type": "support", "amount": -int(card.cost_support)})
+	if int(card.cost_popularity) > 0:
+		cost_atoms.append({"type": "popularity", "amount": -int(card.cost_popularity)})
 	if not cost_atoms.is_empty():
 		Effects.apply(cost_atoms, "Bought %s" % card.name, state)
 	Effects.apply(card.effects, card.name, state)

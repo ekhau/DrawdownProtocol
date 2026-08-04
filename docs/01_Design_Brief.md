@@ -13,16 +13,16 @@
 
 ## Core loop (one turn = one year)
 
-**Crisis** (draw one, choose one of 2–3 costly responses — pay money, spend support, or take a permanent scar; worse as the thermometer climbs; rare windfalls bring good news with a sting) → **Act** (buy policy/tech cards from a small market with money + political support) → **Income** → **Climate** (thermometer advances by net emissions).
+**Crisis** (draw one, choose one of 2–3 costly responses — pay money, spend popularity, or take a permanent scar; worse as the thermometer climbs; rare windfalls bring good news with a sting) → **Act** (buy policy/tech cards from a small market with money + popularity) → **Income** → **Climate** (thermometer advances by net emissions).
 
-**Win:** net emissions ≤ 0 before +2.0°. **Lose:** thermometer hits +2.0°, or social support collapses to 0 — decarbonize too brutally and society breaks. Speed vs. acceptance is the central tension.
+**Win:** net emissions ≤ 0 before +2.0°. **Lose:** thermometer hits +2.0°, or the government's popularity collapses below 10% — decarbonize too brutally and society breaks (below 30%, strikes and riots replace the year's crisis first). Speed vs. acceptance is the central tension.
 
 ## Rogue-lite mapping
 
 | Slay the Spire / Hades | Drawdown Protocol |
 |---|---|
 | Boss | The thermometer |
-| HP | Political support |
+| HP | Government popularity (0–100% approval rate) |
 | Cards | Policies & tech projects |
 | Relics | Infrastructure & institutions |
 | Boons | Breakthroughs: every ~4 years, pick 1 of 3 shifts the world offers you |
@@ -31,7 +31,7 @@
 | Meta currency | Insights from post-mortems |
 | Ascension | Start at +1.6°, faster clock, double crises |
 
-**Cards vs. breakthroughs (boons).** Cards are what your city *does*: policies you pick from the market and pay for with your own money and support. Breakthroughs are what the world *hands you*: technology and social shifts you don't control and don't pay for. Every ~4 years the world offers a choice of 1 out of 3 free, permanent, run-shaping gifts — "Battery costs collapse: Transport & Industry cards cost −2", "Green hydrogen matures: 3 new cards join the pool", "Youth climate movement: +1 support per turn". Each run rolls a different set, so one timeline gets cheap solar in 2034 and builds around electrification, while another never sees fusion and must win through sufficiency. Cards are your actions; breakthroughs are your run's *shape* — that per-run build identity is exactly what Hades gets from boons.
+**Cards vs. breakthroughs (boons).** Cards are what your city *does*: policies you pick from the market and pay for with your own money and popularity. Breakthroughs are what the world *hands you*: technology and social shifts you don't control and don't pay for. Every ~4 years the world offers a choice of 1 out of 3 free, permanent, run-shaping gifts — "Battery costs collapse: Transport & Industry cards cost −2", "Green hydrogen matures: 3 new cards join the pool", "Youth climate movement: +2% popularity per turn". Each run rolls a different set, so one timeline gets cheap solar in 2034 and builds around electrification, while another never sees fusion and must win through sufficiency. Cards are your actions; breakthroughs are your run's *shape* — that per-run build identity is exactly what Hades gets from boons.
 
 **Acts — depth over time.** Same city all game; what changes is the *nature of the problem*, mirroring the real decarbonization curve where every ton gets harder. Act 1, *The Easy Wins* (2030s): cut the low-hanging fruit — grid, buses, insulation. Act 2, *The Hard Core* (2040s): the hard-to-abate sectors (steel, cement, aviation, farming) while impacts intensify and adaptation enters the game. Act 3, *The Drawdown* (2050s): go net-negative — carbon capture, ecosystem restoration, repair. The game is named after Act 3.
 

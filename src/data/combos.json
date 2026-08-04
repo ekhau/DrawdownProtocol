@@ -6,7 +6,7 @@
       "cards": ["bike_network", "dense_housing", "car_free_center"],
       "effects": [
         { "type": "sector_emissions", "sector": "transport", "amount": -2 },
-        { "type": "support", "amount": 2 }
+        { "type": "popularity", "amount": 10 }
       ]
     },
     {
@@ -29,7 +29,7 @@
       "name": "Sufficiency Laws",
       "cards": ["motorway_speed_limit", "heated_terrace_ban", "short_haul_ban"],
       "effects": [
-        { "type": "support", "amount": 2 },
+        { "type": "popularity", "amount": 10 },
         { "type": "sector_emissions", "sector": "transport", "amount": -1 }
       ]
     },
@@ -39,7 +39,7 @@
       "cards": ["night_trains", "rail_freight"],
       "effects": [
         { "type": "sector_emissions", "sector": "transport", "amount": -1 },
-        { "type": "support", "amount": 1 }
+        { "type": "popularity", "amount": 5 }
       ]
     }
   ]

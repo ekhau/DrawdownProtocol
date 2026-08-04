@@ -25,7 +25,7 @@ One city, one screen. **1 turn = 1 year**, starting 2030 at **+1.50°**.
 | Resource | Start | Notes |
 |---|---|---|
 | Money | 10 | Earned each income phase, spent on cards & crises |
-| Support | 10 (cap 12) | HP. Crises and radical policies drain it. **0 = loss** |
+| Popularity | 50% (cap 100%) | Government approval — the licence to govern. Crises and radical policies drain it; each year it drifts 3% back toward 50% (approval is rented, never owned). **Below 30%: social crises replace the year's crisis. Below 10%: the government falls = loss.** Radical cards carry a `requires_popularity` gate (checked, never spent); purchases can never drop you into the collapse zone — only crises can |
 | Absorption | 3 | Forests/ocean sink, raised by nature cards |
 
 ### Sectors
@@ -45,119 +45,130 @@ Baseline net = 20 → +0.04°/turn → **doing nothing loses on turn 13** (recor
 ### Win / lose
 
 - **Win:** *structural* net emissions ≤ 0 at end of climate phase — sectors minus absorption, excluding one-turn effects (a Mild Winter slows the clock but is never a win).
-- **Lose:** thermometer ≥ +2.00°, or support ≤ 0.
+- **Lose:** thermometer ≥ +2.00°, or popularity < 10%.
 - Both end on a **post-mortem screen**: timeline number, final year, temperature curve, sector states, one-line cause ("Industry never decarbonized").
 
-## 2. Cards (pool of 38; each run shuffles, market draws without replacement)
+## 2. Cards (pool of 40; each run shuffles, market draws without replacement)
 
-Format: **Name — cost → effect**. `(C:X)` = part of combo X.
+Format: **Name — cost → effect**. `(C:X)` = part of combo X. `req ≥N%` = popularity gate (checked, never spent).
 
-Many cards are drawn from real programmes: France's **Convention Citoyenne pour le Climat** (110 km/h, short-haul flight ban, heated terrace ban, ad regulation, sprawl moratorium / ZAN, bulk & deposit, hedgerows, fertilizer tax, forest plan) and **The Shift Project's PTEF** (process electrification, rail revival, cement capture), plus the French-launched **4-per-1000** soil-carbon initiative. Policy cards cost support instead of money — sufficiency is cheap but unpopular.
+Many cards are drawn from real programmes: France's **Convention Citoyenne pour le Climat** (110 km/h, short-haul flight ban, heated terrace ban, ad regulation, sprawl moratorium / ZAN, bulk & deposit, hedgerows, fertilizer tax, forest plan) and **The Shift Project's PTEF** (process electrification, rail revival, cement capture), plus the French-launched **4-per-1000** soil-carbon initiative. Policy cards cost popularity instead of money — sufficiency is cheap but unpopular — and the boldest also *require* a popular government, creating the core political loop: pass popular measures to build approval, then spend the window on radical reform before drift pulls you back to 50%.
 
 **Eras-lite:** each card has an `available_from` year; the market only deals unlocked cards. Unmarked cards are available from 2030 (Act I — *The Easy Wins*); gated cards are marked *(2038)* (Act II — *The Hard Core*) or *(2044)* (Act III — *The Drawdown*). The MVP compresses era boundaries to 2038/2044 so Act III is reachable inside the win window; the full game restores decade boundaries. When an era begins, the market refreshes for free.
 
 **Industry**
 - Efficiency Retrofit — 3$ → Industry −1
 - Solar Farm — 6$ → Industry −2 (C:Clean Grid)
-- Bulk & Deposit Law — 4$ → Industry −1, +1 support
+- Bulk & Deposit Law — 4$ → Industry −1, +5% popularity
 - Grid Storage — 7$ → Industry −1, Housing −1 (C:Clean Grid) *(2038)*
 - Green Steel — 10$ → Industry −3, Industry income −1/turn *(2038)*
-- Carbon Tax — 3 support → +2$/turn, Industry −1 *(2038)*
-- High-Carbon Ad Ban — 2$ + 2 support → Industry −1, Food −1 *(2038)*
+- Carbon Tax — 15% popularity, req ≥75% → +2$/turn, Industry −1 *(2038)*
+- High-Carbon Ad Ban — 2$ + 10% popularity, req ≥60% → Industry −1, Food −1 *(2038)*
 - Process Electrification — 9$ → Industry −2, Industry income +1/turn *(2038)*
 - Cement Carbon Capture — 10$ → Industry −2, Absorption +1 *(2044)*
 - Circular Economy Law — 9$ → Industry −1, Housing −1, +1$/turn *(2044)*
 
 **Transport**
-- Bike Network — 3$ → Transport −1, +1 support (C:15-Minute City)
-- 110 on the Motorway — 1 support → Transport −1 (C:Sufficiency Laws)
-- Short-Haul Flight Ban — 2$ + 1 support → Transport −1 (C:Sufficiency Laws)
+- Bike Network — 3$ → Transport −1, +5% popularity (C:15-Minute City)
+- 110 on the Motorway — 5% popularity → Transport −1 (C:Sufficiency Laws)
+- Short-Haul Flight Ban — 2$ + 5% popularity → Transport −1 (C:Sufficiency Laws)
 - Electric Buses — 6$ → Transport −2
 - Dense Housing — 7$ → Housing −1, Transport −1 (C:15-Minute City) *(2038)*
-- Car-Free Center — 6$ + 2 support → Transport −2 (C:15-Minute City) *(2038)*
+- Car-Free Center — 6$ + 10% popularity, req ≥60% → Transport −2 (C:15-Minute City) *(2038)*
 - Rail Freight — 9$ → Transport −2, Industry −1 (C:Rail Nation) *(2038)*
-- Night Train Revival — 8$ → Transport −2, +1 support (C:Rail Nation) *(2038)*
+- Night Train Revival — 8$ → Transport −2, +5% popularity (C:Rail Nation) *(2038)*
 
 **Food**
 - Plant-Forward Canteens — 3$ → Food −1
-- Local Farms — 5$ → Food −1, +1 support
+- Local Farms — 5$ → Food −1, +5% popularity
 - Food Waste Program — 5$ → Food −1, +1$/turn
-- Fertilizer Tax — 2$ + 1 support → Food −1
+- Fertilizer Tax — 2$ + 5% popularity → Food −1
 - Agroecology Transition — 7$ → Food −2 *(2038)*
 - Regenerative Agriculture — 8$ → Food −2, Absorption +1 (C:Living Land) *(2044)*
 - 4-per-1000 Soils — 10$ → Absorption +2, Food −1 *(2044)*
 
 **Housing**
-- Insulation Drive — 3$ → Housing −1, +1 support
+- Insulation Drive — 3$ → Housing −1, +5% popularity
 - Heat Pumps — 6$ → Housing −2
-- Heated Terrace Ban — 1 support → Housing −1 (C:Sufficiency Laws)
+- Heated Terrace Ban — 5% popularity → Housing −1 (C:Sufficiency Laws)
 - District Heating — 8$ → Housing −2, +1$/turn *(2038)*
-- Sprawl Moratorium — 5$ + 1 support → Housing −1, Transport −1 *(2038)*
+- Sprawl Moratorium — 5$ + 5% popularity, req ≥60% → Housing −1, Transport −1 *(2038)*
 
 **Nature**
-- Urban Forest — 5$ → Absorption +1, +1 support (C:Living Land)
+- Urban Forest — 5$ → Absorption +1, +5% popularity (C:Living Land)
 - Hedgerow Replanting — 6$ → Absorption +1
 - Wetland Restoration — 8$ → Absorption +2 (C:Living Land) *(2044)*
-- Forest Restoration Plan — 9$ → Absorption +2, +1 support *(2044)*
+- Forest Restoration Plan — 9$ → Absorption +2, +5% popularity *(2044)*
+
+**Civic** (popularity builders — how a 50%-start government reaches the 60/75% gates)
+- Citizens' Climate Assembly — 2$ → +10% popularity
+- Green Jobs Program — 6$ → +10% popularity, +1$/turn *(2038)*
 
 **Temptation** (the dirty-money test — always tempting, never mandatory)
 - Fossil Subsidy — 0$ → +5$ now, Industry +1 permanently
-- Concrete Boom — 0$ → +4$ now, +1 support, Housing +1 permanently
-- SUV Boom — 0$ → +4$ now, +1 support, Transport +1 permanently
-- Airport Expansion — 0$ → +5$ now, +1 support, Transport +1 & Industry +1 permanently *(2038)*
+- Concrete Boom — 0$ → +4$ now, +5% popularity, Housing +1 permanently
+- SUV Boom — 0$ → +4$ now, +5% popularity, Transport +1 permanently
+- Airport Expansion — 0$ → +5$ now, +5% popularity, Transport +1 & Industry +1 permanently *(2038)*
 
 ### Combos (announced with a banner the moment the set completes)
 
 | Combo | Cards | Bonus |
 |---|---|---|
-| 15-Minute City | Bike Network + Dense Housing + Car-Free Center | Transport −2, +2 support |
+| 15-Minute City | Bike Network + Dense Housing + Car-Free Center | Transport −2, +10% popularity |
 | Clean Grid | Solar Farm + Grid Storage | Industry −1, Housing −1 |
-| Sufficiency Laws | 110 on the Motorway + Heated Terrace Ban + Short-Haul Flight Ban | +2 support, Transport −1 |
-| Rail Nation | Night Train Revival + Rail Freight | Transport −1, +1 support |
+| Sufficiency Laws | 110 on the Motorway + Heated Terrace Ban + Short-Haul Flight Ban | +10% popularity, Transport −1 |
+| Rail Nation | Night Train Revival + Rail Freight | Transport −1, +5% popularity |
 | Living Land | Regenerative Agriculture + Urban Forest + Wetland Restoration | Absorption +2 |
 
 Era gating staggers combo completion across the acts: Sufficiency Laws can complete in Act I, Clean Grid, 15-Minute City and Rail Nation only from 2038, Living Land from 2044 — each act delivers a new "aha" window.
 
-## 3. Crises & windfalls (one deck of 13 — 10 crises + 3 windfalls, reshuffled when empty)
+## 3. Crises & windfalls (normal deck of 13 — 10 crises + 3 windfalls — plus a social pool of 3, each reshuffled when empty)
 
 This is the dilemma engine. Design rules:
 
 - Each crisis offers **2–3 responses and the player must pick exactly one**. There is no clean answer — every option costs something.
 - Responses are priced in **different currencies and time horizons**, built from four archetypes:
   - **Pay** — money now, no scars.
-  - **Absorb** — support now; society takes the hit.
+  - **Absorb** — popularity now; society takes the hit.
   - **Mortgage** — free or even profitable now, but a permanent scar (sector +1 emissions, absorption −1, income −1$/turn).
-  - **Invest** — over-priced now (money, often support too), but leaves the city structurally *better*. Build back better.
-- **No option may dominate.** Pay is right when rich, Absorb when support is flush (early), Mortgage when desperate — but a mortgage taken early compounds for the whole run, the single worst mistake in the game. Invest is the "good time" compromise: crisis as opportunity, only when you can afford it.
-- Archetype tags are design guidance, not rules — some crises bend them (e.g. Windfall Tax *gains* money at support cost).
-- Band scaling: **A** < 1.7° base · **B** ≥ 1.7° money/support costs +1 · **C** ≥ 1.85° +2. Permanent effects never scale.
+  - **Invest** — over-priced now (money, often popularity too), but leaves the city structurally *better*. Build back better.
+- **No option may dominate.** Pay is right when rich, Absorb when popularity is flush, Mortgage when desperate — but a mortgage taken early compounds for the whole run, the single worst mistake in the game. Invest is the "good time" compromise: crisis as opportunity, only when you can afford it.
+- Archetype tags are design guidance, not rules — some crises bend them (e.g. Windfall Tax *gains* money at popularity cost).
+- Band scaling: **A** < 1.7° base · **B** ≥ 1.7° money costs +1$, popularity costs +5% · **C** ≥ 1.85° +2$ / +10%. Permanent effects never scale.
+- **Social crises** (`social: true`): while popularity sits **below 30%**, the year's draw comes from a separate pool of strikes, riots and no-confidence motions — replacing, never adding to, the normal crisis. Every social crisis carries at least one **recovery choice** (expensive, but popularity-positive), so the spiral always has counterplay; drift (+3%/yr below 50%) is the second escape valve.
 
 Costs below at band A. Permanent effects marked *perm*.
 
-- **Heatwave** — *Cooling centers* (Pay: −2$) · *Ride it out* (Absorb: −2 sup) · *Green streets* (Invest: −5$ → Housing −1 perm, +1 sup)
-- **Megafire** — *Firefighting surge* (Pay: −3$) · *Call on neighbour cities* (Absorb: −2 sup) · *Let it burn* (Mortgage: Absorption −1 perm)
-- **River flood** — *Emergency repairs* (Pay: −3$) · *Cheap rebuild* (Mortgage: Housing +1 perm) · *Sponge city* (Invest: −6$ → Absorption +1 perm, +1 sup)
-- **Drought** — *Import food* (Pay: −3$) · *Ration water* (Absorb: −2 sup) · *Intensive irrigation* (Mortgage: Food +1 perm)
-- **Economic slump** — *Austerity* (Absorb: −2 sup) · *Dirty stimulus* (Mortgage: +3$ now, Industry +1 perm) · *Green stimulus* (Invest: −5$ → +1$/turn)
-- **Fuel price shock** — *Subsidize the pump* (Pay: −3$) · *Let prices bite* (Absorb: −3 sup, Transport −1 perm) · *Windfall tax* (+3$ now, −2 sup)
-- **Climate refugees** — *Welcome & integrate* (Invest: −3$ → +1 sup) · *Transit camps* (−1$, −1 sup) · *Close the gates* (Absorb: −2 sup)
-- **Storm surge** — *Sea walls* (Pay: −4$) · *Take the hit* (Absorb: −3 sup) · *Managed retreat, wetland buffer* (Invest: −6$ → Absorption +1 perm)
-- **Toxic smog** — *Health emergency* (Pay: −2$) · *Traffic ban week* (Absorb: −2 sup) · *Clean air act* (Invest: −5$, −1 sup → Transport −1 perm)
-- **Insurance collapse** — *Public backstop* (Pay: −4$) · *Let it fail* (Mortgage: −1$/turn, −1 sup)
+- **Heatwave** — *Cooling centers* (Pay: −2$) · *Ride it out* (Absorb: −10% pop) · *Green streets* (Invest: −5$ → Housing −1 perm, +5% pop)
+- **Megafire** — *Firefighting surge* (Pay: −3$) · *Call on neighbour cities* (Absorb: −10% pop) · *Let it burn* (Mortgage: Absorption −1 perm)
+- **River flood** — *Emergency repairs* (Pay: −3$) · *Cheap rebuild* (Mortgage: Housing +1 perm) · *Sponge city* (Invest: −6$ → Absorption +1 perm, +5% pop)
+- **Drought** — *Import food* (Pay: −3$) · *Ration water* (Absorb: −10% pop) · *Intensive irrigation* (Mortgage: Food +1 perm)
+- **Economic slump** — *Austerity* (Absorb: −10% pop) · *Dirty stimulus* (Mortgage: +3$ now, Industry +1 perm) · *Green stimulus* (Invest: −5$ → +1$/turn)
+- **Fuel price shock** — *Subsidize the pump* (Pay: −3$) · *Let prices bite* (Absorb: −15% pop, Transport −1 perm) · *Windfall tax* (+3$ now, −10% pop)
+- **Climate refugees** — *Welcome & integrate* (Invest: −3$ → +5% pop) · *Transit camps* (−1$, −5% pop) · *Close the gates* (Absorb: −10% pop)
+- **Storm surge** — *Sea walls* (Pay: −4$) · *Take the hit* (Absorb: −15% pop) · *Managed retreat, wetland buffer* (Invest: −6$ → Absorption +1 perm)
+- **Toxic smog** — *Health emergency* (Pay: −2$) · *Traffic ban week* (Absorb: −10% pop) · *Clean air act* (Invest: −5$, −5% pop → Transport −1 perm)
+- **Insurance collapse** — *Public backstop* (Pay: −4$) · *Let it fail* (Mortgage: −1$/turn, −5% pop)
+
+### Social crises (pool of 3 — drawn only below 30% popularity)
+
+- **General Strike** — *Negotiate with the unions* (Pay: −5$ → +10% pop) · *Hold the line* (Absorb: −10% pop) · *Green public works deal* (Invest: −6$ → +1$/turn, +5% pop)
+- **Streets on Fire** — *National climate dialogue* (Invest: −4$ → +10% pop) · *Curfew and riot police* (Absorb: −10% pop) · *Cash handouts* (Pay: −6$ → +5% pop)
+- **No-Confidence Motion** — *Horse-trade for votes* (Pay: −6$ → +5% pop) · *Face the vote alone* (Absorb: −15% pop) · *Sacrifice a minister* (Mortgage: −1$/turn perm → +10% pop)
 
 ### Windfalls (3 in the deck — good news with a sting)
 
 The pacing valleys of the run: campfire moments. Design rules: **net-positive**, so drawing one is relief — but never consequence-free, because the transition creates losers too. Windfalls ignore band scaling. Where there's a choice, both options are good-with-a-sting, so picking feels pleasant rather than punishing.
 
-- **Record renewables year** — *Sell the surplus* (+4$) · *Retire the coal plant early* (Industry −1 perm, −1 sup — the plant's workers march)
-- **Youth climate wave** — *Embrace and fund the movement* (−2$ → +2 sup) · *Warm words* (+1 sup)
-- **Mild winter** — no choice: heating demand collapses (+2$, this turn's gross emissions −4), but the missing snow unsettles everyone (−1 sup)
+- **Record renewables year** — *Sell the surplus* (+4$) · *Retire the coal plant early* (Industry −1 perm, −5% pop — the plant's workers march)
+- **Youth climate wave** — *Embrace and fund the movement* (−2$ → +10% pop) · *Warm words* (+5% pop)
+- **Mild winter** — no choice: heating demand collapses (+2$, this turn's gross emissions −4), but the missing snow unsettles everyone (−5% pop)
 
-Variability comes from 13 deck cards × 2–3 responses × band scaling × game state (the same Megafire is a different decision rich vs. broke). Post-MVP, deepen by **adding crises and windfalls, not mechanics**.
+Variability comes from 16 deck cards × 2–3 responses × band scaling × game state (the same Megafire is a different decision rich vs. broke). Post-MVP, deepen by **adding crises and windfalls, not mechanics**.
 
 ## 4. UI (single screen, mouse only, placeholder art)
 
-- **Top bar:** thermometer +1.50°→+2.00° (the hero element — big, animated on change), year, money, support. Markers on the bar: 0.1° scale ticks, crisis-band boundaries (1.7°, 1.85°), a white needle at current warming, and a **neutrality diamond ◆** — where the mercury is projected to stop if the player keeps their recent pace of structural-net cuts (absorption frozen at today's value, era floors respected). Green ◆ = net zero in reach, orange ◆ pinned at +2.0° = current pace loses; a one-line caption under the bar states the projected year and temperature.
+- **Top bar:** thermometer +1.50°→+2.00° (the hero element — big, animated on change), year, money, popularity (a 0–100% mini-bar with threshold marks: red 10% collapse, orange 30% unrest, green card gates). Markers on the bar: 0.1° scale ticks, crisis-band boundaries (1.7°, 1.85°), a white needle at current warming, and a **neutrality diamond ◆** — where the mercury is projected to stop if the player keeps their recent pace of structural-net cuts (absorption frozen at today's value, era floors respected). Green ◆ = net zero in reach, orange ◆ pinned at +2.0° = current pace loses; a one-line caption under the bar states the projected year and temperature.
 - **Center:** 4 sector panels (ColorRect placeholders), each showing emissions + income; panel tint samples the **active era's colormap** at `1 − emissions/start`. Absorption shown beside them.
 - **Era palettes:** each act keys the UI's color ramp to a scientific colormap — Act I **magma** (dark heat: the burning 2030s), Act II **viridis** (the green transition), Act III **parula** (bright blue-green: solarpunk drawdown). Sector tints, thermometer accents, and banners all sample the active ramp, so the whole screen's mood shifts with the era. Ramps live in `config.json` as gradient stops (data-driven, like everything else).
 - **Bottom:** market (4 cards), reroll button, end-turn button.
@@ -192,7 +203,7 @@ src/
 
 Three decisions carry the maintainability load:
 
-- **Effects are data, not code.** Every card effect, crisis response, windfall, and combo bonus is expressed in one small vocabulary of effect atoms — `{"sector": "industry", "emissions": -2}`, `{"money": 4}`, `{"support": -1}`, `{"income_per_turn": 1}`, `{"absorption": 1}`, with a `perm` flag. `effects.apply(list, source)` is the **only** mutation path into `run_state`: it emits the signals *and* writes the turn-log line, so the clarity rule (§4) is enforced by construction. Adding a card = a JSON entry; a new mechanic = one new atom in one `match`.
+- **Effects are data, not code.** Every card effect, crisis response, windfall, and combo bonus is expressed in one small vocabulary of effect atoms — `{"sector": "industry", "emissions": -2}`, `{"money": 4}`, `{"popularity": -5}`, `{"income_per_turn": 1}`, `{"absorption": 1}`, with a `perm` flag. `effects.apply(list, source)` is the **only** mutation path into `run_state`: it emits the signals *and* writes the turn-log line, so the clarity rule (§4) is enforced by construction. Adding a card = a JSON entry; a new mechanic = one new atom in one `match`.
 - **Five-verb API, signals back.** The UI may only call `game.choose_response(i)`, `buy_card(id)`, `reroll()`, `end_turn()`, `new_run(seed)` — and updates only in reaction to `resources_changed`, `sector_changed`, `temperature_changed`, `phase_changed`, `combo_discovered`, `era_started`, `log_line`, `run_ended`. No arithmetic, no rules in UI scripts. Reskinning touches zero game logic, and vice versa.
 - **Seeded RNG, owned by the sim.** One `RandomNumberGenerator` seeded per run drives the card shuffle and crisis deck. Every bug report becomes "seed 4821, turn 9" — reproducible, and the prerequisite for the test bots.
 

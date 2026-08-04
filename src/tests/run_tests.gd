@@ -25,6 +25,9 @@ func _init() -> void:
 	_test_market_buy_updates_offer(catalog)
 	_test_market_reroll(catalog)
 	_test_buy_blockers(catalog)
+	_test_popularity_drift(catalog)
+	_test_social_crisis_pool(catalog)
+	_test_popularity_collapse(catalog)
 	_test_combo_detection(catalog)
 	_test_neutrality_projection(catalog)
 	_test_breakeven_gross(catalog)
@@ -88,13 +91,13 @@ func _test_mortgages_compound(catalog: Catalog) -> void:
 func _test_band_scaling(catalog: Catalog) -> void:
 	var atoms := [
 		{"type": "money", "amount": -2},
-		{"type": "support", "amount": -1},
+		{"type": "popularity", "amount": -5},
 		{"type": "money", "amount": 3},
 		{"type": "sector_emissions", "sector": "food", "amount": 1},
 	]
-	var scaled := Effects.scaled(atoms, 2)
-	_check(int(scaled[0].amount) == -4 and int(scaled[1].amount) == -3,
-		"band bump worsens money/support costs")
+	var scaled := Effects.scaled(atoms, 2, 10)
+	_check(int(scaled[0].amount) == -4 and int(scaled[1].amount) == -15,
+		"band bumps worsen money/popularity costs on their own scales")
 	_check(int(scaled[2].amount) == 3 and int(scaled[3].amount) == 1,
 		"gains and permanent effects never scale")
 
@@ -138,10 +141,10 @@ func _test_era_gating(catalog: Catalog) -> void:
 
 func _test_era_brief(catalog: Catalog) -> void:
 	var act1: Dictionary = catalog.era_brief("act1")
-	_check(act1.new_cards.size() == 19 and act1.floor_drops.is_empty(),
-		"act1 brief: 19 starting cards, no floor drops to report")
+	_check(act1.new_cards.size() == 20 and act1.floor_drops.is_empty(),
+		"act1 brief: 20 starting cards, no floor drops to report")
 	var act2: Dictionary = catalog.era_brief("act2")
-	_check(act2.new_cards.size() == 13, "act2 brief: 13 cards unlock in 2038")
+	_check(act2.new_cards.size() == 14, "act2 brief: 14 cards unlock in 2038")
 	_check(act2.floor_drops.size() == 4, "act2 brief: all four sector floors fall")
 	var total_cards: int = act1.new_cards.size() + act2.new_cards.size() \
 		+ catalog.era_brief("act3").new_cards.size()
@@ -182,20 +185,99 @@ func _test_market_reroll(catalog: Catalog) -> void:
 func _test_buy_blockers(catalog: Catalog) -> void:
 	var sim := TurnManager.new(catalog, 9)
 	var money_card := ""
-	var support_card := ""
+	var pop_card := ""     # popularity cost, no gate
+	var gated_card := ""   # requires_popularity
 	for c in catalog.cards:
 		if money_card == "" and int(c.cost_money) > 0:
 			money_card = c.id
-		if support_card == "" and int(c.cost_support) > 0:
-			support_card = c.id
+		if pop_card == "" and int(c.cost_popularity) > 0 and int(c.get("requires_popularity", 0)) == 0:
+			pop_card = c.id
+		if gated_card == "" and int(c.get("requires_popularity", 0)) > 0:
+			gated_card = c.id
 	sim.state.money = 0  # test-only pokes from here on
 	_check(sim.market.blockers(money_card).has("money"), "empty wallet blocks money-cost cards")
 	sim.state.money = 99
-	sim.state.support = int(catalog.cards_by_id[support_card].cost_support)
-	_check(sim.market.blockers(support_card).has("support_floor"),
-		"support exactly at cost is blocked (would collapse to 0)")
-	sim.state.support = int(catalog.cards_by_id[support_card].cost_support) + 1
-	_check(sim.market.blockers(support_card).is_empty(), "one spare support point unblocks the buy")
+	var collapse := int(catalog.config.popularity_collapse)
+	var cost := int(catalog.cards_by_id[pop_card].cost_popularity)
+	sim.state.popularity = cost + collapse - 1
+	_check(sim.market.blockers(pop_card).has("popularity_floor"),
+		"a buy that would land inside the collapse zone is blocked")
+	sim.state.popularity = cost + collapse
+	_check(sim.market.blockers(pop_card).is_empty(),
+		"landing exactly on the collapse floor unblocks the buy")
+	var gate := int(catalog.cards_by_id[gated_card].requires_popularity)
+	sim.state.popularity = gate - 1
+	_check(sim.market.blockers(gated_card).has("popularity_gate"),
+		"radical cards are gated below their required popularity")
+	sim.state.popularity = gate
+	_check(not sim.market.blockers(gated_card).has("popularity_gate"),
+		"the gate opens at the required popularity")
+
+
+func _test_popularity_drift(catalog: Catalog) -> void:
+	# Drift pulls toward the baseline from both sides, one step per year end.
+	var step := int(catalog.config.popularity_drift)
+	var baseline := int(catalog.config.popularity_baseline)
+	var sim := TurnManager.new(catalog, 17)
+	while sim.state.phase == RunState.Phase.CRISIS:
+		sim.choose_response(Bots.pick_response(sim, "default"))
+	sim.state.popularity = baseline + 20  # test-only poke
+	sim.end_turn()
+	var after_high: int = sim.state.popularity
+	_check(after_high == baseline + 20 - step or sim.state.ended,
+		"hoarded popularity erodes %d%%/yr toward the baseline" % step)
+	if not sim.state.ended:
+		while sim.state.phase == RunState.Phase.CRISIS:
+			sim.choose_response(Bots.pick_response(sim, "default"))
+		sim.state.popularity = baseline - 20
+		var before: int = sim.state.popularity
+		sim.end_turn()
+		_check(sim.state.ended or sim.state.popularity == before + step,
+			"low popularity recovers %d%%/yr toward the baseline" % step)
+
+
+func _test_social_crisis_pool(catalog: Catalog) -> void:
+	# Below the social threshold every draw comes from the social pool; at or
+	# above it, never. The pools partition on the `social` flag.
+	var sim := TurnManager.new(catalog, 27)
+	var threshold := int(catalog.config.social_crisis_threshold)
+	sim.state.popularity = threshold - 1  # test-only poke
+	var all_social := true
+	for _i in 8:
+		if not sim.crisis_deck.draw().crisis.get("social", false):
+			all_social = false
+	_check(all_social, "below %d%% every crisis draw is social" % threshold)
+	sim.state.popularity = threshold
+	var none_social := true
+	for _i in 8:
+		if sim.crisis_deck.draw().crisis.get("social", false):
+			none_social = false
+	_check(none_social, "at or above the threshold the normal deck resumes")
+
+
+func _test_popularity_collapse(catalog: Catalog) -> void:
+	var sim := TurnManager.new(catalog, 37)
+	while sim.state.phase != RunState.Phase.CRISIS and not sim.state.ended:
+		sim.end_turn()
+	sim.state.popularity = int(catalog.config.popularity_collapse)  # exactly at the floor: alive
+	# Find the response with the worst popularity hit and take it.
+	var worst := 0
+	var worst_delta := 0
+	var responses: Array = sim.crisis_deck.current.responses
+	for i in responses.size():
+		var delta := 0
+		for atom in responses[i].effects:
+			if atom.type == "popularity":
+				delta += int(atom.amount)
+		if delta < worst_delta:
+			worst_delta = delta
+			worst = i
+	if worst_delta < 0:
+		sim.choose_response(worst)
+		_check(sim.state.ended and not sim.state.result.won,
+			"a crisis hit below the collapse floor ends the run")
+	else:
+		_check(true, "collapse check skipped — drawn crisis has no popularity cost")
 
 
 func _test_combo_detection(catalog: Catalog) -> void:

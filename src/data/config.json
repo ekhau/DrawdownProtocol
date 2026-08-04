@@ -4,8 +4,12 @@
   "lose_temp": 2.0,
   "warming_per_net_emission": 0.002,
   "start_money": 10,
-  "start_support": 10,
-  "support_cap": 12,
+  "start_popularity": 50,
+  "popularity_cap": 100,
+  "popularity_collapse": 10,
+  "popularity_baseline": 50,
+  "popularity_drift": 3,
+  "social_crisis_threshold": 30,
   "start_absorption": 3,
   "market_size": 4,
   "reroll_cost": 1,
@@ -14,17 +18,20 @@
     {
       "id": "A",
       "min_temp": 0.0,
-      "cost_bump": 0
+      "cost_bump_money": 0,
+      "cost_bump_popularity": 0
     },
     {
       "id": "B",
       "min_temp": 1.7,
-      "cost_bump": 1
+      "cost_bump_money": 1,
+      "cost_bump_popularity": 5
     },
     {
       "id": "C",
       "min_temp": 1.85,
-      "cost_bump": 2
+      "cost_bump_money": 2,
+      "cost_bump_popularity": 10
     }
   ],
   "eras": [

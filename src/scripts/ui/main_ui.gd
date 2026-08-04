@@ -11,7 +11,11 @@ var thermo_label: Label
 var year_label: Label
 var act_label: Label
 var money_label: Label
-var support_label: Label
+var income_label: Label
+var popularity_label: Label
+var popularity_bar: ProgressBar
+var pop_markers: Control         # overlay: collapse / social-unrest / card-gate thresholds
+var gate_marks: Array = []       # distinct requires_popularity values in the catalog
 var net_label: Label
 var sector_panels := {}          # sector_id -> {panel, style, title, stats}
 var market_box: HBoxContainer
@@ -40,7 +44,9 @@ func _ready() -> void:
 	_build_layout()
 	Game.run_started.connect(_on_run_started)
 	Game.resources_changed.connect(_refresh_stats)
-	Game.sector_changed.connect(func(_id): _refresh_sectors())
+	Game.sector_changed.connect(func(_id):
+		_refresh_sectors()
+		_refresh_stats())
 	Game.temperature_changed.connect(func(_t): _refresh_stats())
 	Game.phase_changed.connect(_on_phase_changed)
 	Game.market_changed.connect(_refresh_market)
@@ -99,10 +105,37 @@ func _build_layout() -> void:
 	thermo_caption = _label(thermo_box, "", 13)
 	thermo_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tip(thermo_caption, "The carbon arithmetic feeding the bar, and the ◆ verdict: where the mercury lands\nif the current pace of cuts holds (absorption frozen at today's value, era floors respected).")
-	money_label = _label(top, "$10", 26)
+	money_label = _label(top, "M$10", 26)
 	_tip(money_label, "Money funds cards and crisis responses.\nIncome arrives at each year's end — dirty sectors pay more, for now.")
-	support_label = _label(top, "Support 10", 26)
-	_tip(support_label, "Public support is your HP: at 0 the Institute is voted out.\nSpent by some cards and crisis choices — and it can never drop to 0 by your own purchase.")
+	income_label = _label(top, "+0M$/yr", 18)
+	income_label.add_theme_color_override("font_color", Color("#5ec962"))
+	_tip(income_label, "Income you'll collect when this year ends: all sector incomes plus bonuses.")
+	var cfg: Dictionary = Game.catalog.config
+	var pop_tip := "The government's approval rating — your licence to govern.\nSpent by bold cards and crisis choices; drifts %d%%/yr back toward %d%%.\nBelow %d%% the streets take over: social crises replace the year's crisis.\nBelow %d%% the government falls — though your own purchases can never take you there.\nThe most radical cards demand a popular government (green marks)." % [
+		int(cfg.popularity_drift), int(cfg.popularity_baseline),
+		int(cfg.social_crisis_threshold), int(cfg.popularity_collapse)]
+	var pop_box := VBoxContainer.new()
+	top.add_child(pop_box)
+	popularity_label = _label(pop_box, "Popularity 50%", 26)
+	_tip(popularity_label, pop_tip)
+	popularity_bar = ProgressBar.new()
+	popularity_bar.min_value = 0
+	popularity_bar.max_value = 100
+	popularity_bar.show_percentage = false
+	popularity_bar.custom_minimum_size = Vector2(0, 10)
+	pop_box.add_child(popularity_bar)
+	pop_markers = Control.new()
+	pop_markers.set_anchors_preset(Control.PRESET_FULL_RECT)
+	pop_markers.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pop_markers.draw.connect(_draw_popularity_markers)
+	pop_markers.resized.connect(pop_markers.queue_redraw)
+	popularity_bar.add_child(pop_markers)
+	_tip(popularity_bar, pop_tip)
+	for card in Game.catalog.cards:
+		var req := int(card.get("requires_popularity", 0))
+		if req > 0 and not gate_marks.has(req):
+			gate_marks.append(req)
+	gate_marks.sort()
 	var help_btn := Button.new()
 	help_btn.text = "?"
 	help_btn.tooltip_text = "Rules"
@@ -335,8 +368,19 @@ func _refresh_stats() -> void:
 			gross, s.absorption, net, thermometer.max_value]
 		thermo_caption.add_theme_color_override("font_color", orange)
 	thermo_markers.queue_redraw()
-	money_label.text = "$%d" % s.money
-	support_label.text = "Support %d/%d" % [s.support, int(Game.catalog.config.support_cap)]
+	money_label.text = "M$%d" % s.money
+	income_label.text = "+%dM$/yr" % s.total_income()
+	var cfg: Dictionary = Game.catalog.config
+	popularity_label.text = "Popularity %d%%" % s.popularity
+	var pop_color := Color.WHITE
+	if s.popularity < int(cfg.social_crisis_threshold):
+		pop_color = Color("#fc8961")
+	elif not gate_marks.is_empty() and s.popularity >= int(gate_marks[0]):
+		pop_color = Color("#5ec962")
+	popularity_label.add_theme_color_override("font_color", pop_color)
+	popularity_bar.value = s.popularity
+	popularity_bar.self_modulate = pop_color
+	pop_markers.queue_redraw()
 	_refresh_market()
 
 
@@ -383,6 +427,21 @@ func _draw_thermo_markers() -> void:
 		Vector2(clampf(tx - 5, 0, w), 0), Vector2(clampf(tx + 5, 0, w), 0), Vector2(tx, 6)]), Color.WHITE)
 
 
+func _draw_popularity_markers() -> void:
+	# The three zones the player reasons about, drawn where they sit on 0-100:
+	# red = the collapse floor, orange = social unrest, green = card gates.
+	var cfg: Dictionary = Game.catalog.config
+	var w := pop_markers.size.x
+	var h := pop_markers.size.y
+	var collapse_x := w * int(cfg.popularity_collapse) / 100.0
+	var social_x := w * int(cfg.social_crisis_threshold) / 100.0
+	pop_markers.draw_line(Vector2(collapse_x, 0), Vector2(collapse_x, h), Color("#ff5c5c"), 2.0)
+	pop_markers.draw_line(Vector2(social_x, 0), Vector2(social_x, h), Color("#fc8961"), 2.0)
+	for req in gate_marks:
+		var gx := w * int(req) / 100.0
+		pop_markers.draw_line(Vector2(gx, 0), Vector2(gx, h), Color("#5ec962"), 2.0)
+
+
 func _thermo_x(value: float, width: float) -> float:
 	var t := (value - thermometer.min_value) / (thermometer.max_value - thermometer.min_value)
 	return clampf(t, 0.0, 1.0) * width
@@ -399,8 +458,8 @@ func _refresh_sectors() -> void:
 		p.style.bg_color = palette.sample(s.decarbonization(id)).darkened(0.25)
 		var floor_value: int = s.sector_floor(id)
 		var floor_note := "  (era floor %d)" % floor_value if sector.emissions <= floor_value and floor_value > 0 else ""
-		p.stats.text = "Emissions %d%s\nIncome %d$/turn" % [sector.emissions, floor_note, sector.income]
-		p.panel.tooltip_text = "%s: emits %d/yr and pays %d$/yr.\nThis act can't cut it below %d — deeper cuts need later tech.\nPanel color tracks decarbonization: dark → the act's palette." % [
+		p.stats.text = "Emissions %d%s\nIncome %dM$/turn" % [sector.emissions, floor_note, sector.income]
+		p.panel.tooltip_text = "%s: emits %d/yr and pays %dM$/yr.\nThis act can't cut it below %d — deeper cuts need later tech.\nPanel color tracks decarbonization: dark → the act's palette." % [
 			sector.name, sector.emissions, sector.income, floor_value]
 	_refresh_stats()
 
@@ -428,9 +487,9 @@ func _refresh_market() -> void:
 		reroll_btn.text = "Rerolled ✓"
 		reroll_btn.tooltip_text = "One reroll per year — back next year."
 	else:
-		reroll_btn.text = "Reroll (%d$)" % reroll_cost
-		reroll_btn.tooltip_text = ("Need %d$ to reroll." % reroll_cost) if s.money < reroll_cost \
-			else "Pay %d$ to deal a fresh market. Once per year." % reroll_cost
+		reroll_btn.text = "Reroll (%dM$)" % reroll_cost
+		reroll_btn.tooltip_text = ("Need %dM$ to reroll." % reroll_cost) if s.money < reroll_cost \
+			else "Pay %dM$ to deal a fresh market. Once per year." % reroll_cost
 	reroll_btn.disabled = s.phase != RunState.Phase.ACTION or not Game.sim.market.can_reroll()
 	end_turn_btn.disabled = s.phase != RunState.Phase.ACTION
 
@@ -444,23 +503,31 @@ func _card_button(card_id: String, s: RunState) -> Button:
 	b.disabled = s.phase != RunState.Phase.ACTION or not Game.sim.market.can_buy(card_id)
 	b.pressed.connect(Game.buy_card.bind(card_id))
 	b.tooltip_text = "Effects are immediate and permanent.\nBought cards leave the pool for the rest of the run."
-	var cost := "%d$" % int(card.cost_money)
+	var cost := "%dM$" % int(card.cost_money)
 	if blockers.has("money"):
 		cost = "[color=#ff5c5c]%s[/color]" % cost
-	if int(card.cost_support) > 0:
-		var sup := "%d support" % int(card.cost_support)
-		if blockers.has("support") or blockers.has("support_floor"):
-			sup = "[color=#ff5c5c]%s[/color]" % sup
-		cost += " + " + sup
+	if int(card.cost_popularity) > 0:
+		var pop := "%d%% popularity" % int(card.cost_popularity)
+		if blockers.has("popularity") or blockers.has("popularity_floor"):
+			pop = "[color=#ff5c5c]%s[/color]" % pop
+		cost += " + " + pop
+	var gate := int(card.get("requires_popularity", 0))
+	if gate > 0:
+		var req := "req ≥%d%%" % gate
+		if blockers.has("popularity_gate"):
+			req = "[color=#ff5c5c]%s[/color]" % req
+		cost += " · " + req
 	var text := "[center]%s  (%s)\n%s" % [card.name, cost, Effects.describe(card.effects, Game.catalog)]
 	if s.phase == RunState.Phase.ACTION and not blockers.is_empty():
 		var why: PackedStringArray = []
 		if blockers.has("money"):
-			why.append("need %d$ more" % int(blockers.money))
-		if blockers.has("support"):
-			why.append("need %d more support" % int(blockers.support))
-		if blockers.has("support_floor"):
-			why.append("would drop support to 0")
+			why.append("need %dM$ more" % int(blockers.money))
+		if blockers.has("popularity_gate"):
+			why.append("too unpopular — needs ≥%d%%" % int(blockers.popularity_gate))
+		if blockers.has("popularity"):
+			why.append("need %d%% more popularity" % int(blockers.popularity))
+		if blockers.has("popularity_floor"):
+			why.append("would collapse the government (<%d%%)" % int(Game.catalog.config.popularity_collapse))
 		text += "\n[color=#fc8961]✗ %s[/color]" % ", ".join(why)
 	text += "[/center]"
 	# Buttons can't render bbcode — a click-transparent RichTextLabel carries
@@ -496,9 +563,12 @@ func _show_crisis() -> void:
 		return
 	var crisis: Dictionary = current.crisis
 	var is_windfall: bool = crisis.kind == "windfall"
+	var is_social: bool = bool(crisis.get("social", false))
 	# Windfalls get the hopeful green accent — relief before reading a word.
-	modal_style.border_color = Color("#5ec962") if is_windfall else Color("#b73779")
-	modal_title.text = ("☀ " if is_windfall else "⚠ ") + crisis.name
+	# Social crises burn red: the streets, not the climate, are at the door.
+	modal_style.border_color = Color("#5ec962") if is_windfall \
+		else (Color("#ff5c5c") if is_social else Color("#b73779"))
+	modal_title.text = ("☀ " if is_windfall else ("✊ " if is_social else "⚠ ")) + crisis.name
 	modal_flavor.text = crisis.flavor + ("" if is_windfall else "   [band %s]" % current.band)
 	for child in modal_buttons.get_children():
 		child.queue_free()
@@ -584,9 +654,11 @@ func _on_run_ended(result: Dictionary) -> void:
 
 func _rules_text() -> String:
 	return """One turn = one year. Reach [b]net emissions ≤ 0[/b] before the thermometer hits [b]+2.0°[/b].
-Support is your HP: at 0 the Institute is voted out.
+[b]Popularity[/b] is your licence to govern: below [b]10%[/b] the government falls.
 
-Each year: face a [b]crisis[/b] (every answer costs something — money, support, or a permanent scar; costs rise with the thermometer), then [b]buy cards[/b] from the market, then collect [b]income[/b], then the [b]climate[/b] advances by net emissions × 0.002°.
+Each year: face a [b]crisis[/b] (every answer costs something — money, popularity, or a permanent scar; costs rise with the thermometer), then [b]buy cards[/b] from the market, then collect [b]income[/b], then the [b]climate[/b] advances by net emissions × 0.002°.
+
+Approval is rented, never owned: popularity drifts 3% a year back toward 50%. Below [b]30%[/b] the streets take over — strikes, riots and no-confidence motions replace the year's crisis until you win the public back (every social crisis has a way out, at a price). The boldest policies (carbon tax, car-free centers…) [b]require[/b] a popular government — the green marks on the popularity bar — and your own purchases can never drop you into collapse; only crises can.
 
 On the climate bar: the [b]white needle[/b] is today's warming, pink ticks are the crisis cost bands. From the needle, next year's gross jump is sketched in degrees: the [b]orange segment[/b] ends exactly where the needle stands when the year ends (net × 0.002°), and the [b]green segment[/b] beyond it is the push your absorption cancels. Cut gross or grow absorption until no orange is left — the needle stops: net zero. The [b]◆[/b] marks where the mercury settles if you keep your recent pace of cuts (absorption frozen at today's value) — green means net zero is in reach, orange means +2.0° arrives first.
 
@@ -598,11 +670,11 @@ func _show_intro() -> void:
 
 2030. After a decade of broken pledges, the world's governments hand the climate file to one office with real power: the [b]Drawdown Institute[/b]. You run it.
 
-Your mandate: steer the whole economy — industry, transport, food, housing — to [b]net zero[/b] before the thermometer passes [b]+2.0°[/b]. Every year brings a crisis. Every fix costs money, public support, or a permanent scar. The public's patience is finite; the warming is not.
+Your mandate: steer the whole economy — industry, transport, food, housing — to [b]net zero[/b] before the thermometer passes [b]+2.0°[/b]. Every year brings a crisis. Every fix costs money, popularity, or a permanent scar. The public's patience is finite; the warming is not.
 
 [b]How to play[/b]
 
-One turn = one year. Reach [b]net emissions ≤ 0[/b] before the thermometer hits [b]+2.0°[/b]. Support is your HP: at 0 the Institute is voted out.
+One turn = one year. Reach [b]net emissions ≤ 0[/b] before the thermometer hits [b]+2.0°[/b]. [b]Popularity[/b] is your licence to govern: below [b]30%[/b] social unrest replaces the year's crisis; below [b]10%[/b] the government falls. It drifts back toward 50% each year, and the boldest policies require a popular government.
 
 Each year: face a [b]crisis[/b] (every answer costs something, and costs rise as the planet warms), then [b]buy cards[/b] from the market, then collect [b]income[/b], then the climate advances by net emissions × 0.002°.
 

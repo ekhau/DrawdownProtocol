@@ -7,14 +7,14 @@
       "flavor": "A week above 45°C. The city gasps.",
       "responses": [
         { "name": "Cooling centers", "archetype": "pay", "effects": [{ "type": "money", "amount": -2 }] },
-        { "name": "Ride it out", "archetype": "absorb", "effects": [{ "type": "support", "amount": -2 }] },
+        { "name": "Ride it out", "archetype": "absorb", "effects": [{ "type": "popularity", "amount": -10 }] },
         {
           "name": "Green streets",
           "archetype": "invest",
           "effects": [
             { "type": "money", "amount": -5 },
             { "type": "sector_emissions", "sector": "housing", "amount": -1 },
-            { "type": "support", "amount": 1 }
+            { "type": "popularity", "amount": 5 }
           ]
         }
       ]
@@ -26,7 +26,7 @@
       "flavor": "The hills are burning. Smoke over the skyline.",
       "responses": [
         { "name": "Firefighting surge", "archetype": "pay", "effects": [{ "type": "money", "amount": -3 }] },
-        { "name": "Call on neighbour cities", "archetype": "absorb", "effects": [{ "type": "support", "amount": -2 }] },
+        { "name": "Call on neighbour cities", "archetype": "absorb", "effects": [{ "type": "popularity", "amount": -10 }] },
         { "name": "Let it burn", "archetype": "mortgage", "effects": [{ "type": "absorption", "amount": -1 }] }
       ]
     },
@@ -48,7 +48,7 @@
           "effects": [
             { "type": "money", "amount": -6 },
             { "type": "absorption", "amount": 1 },
-            { "type": "support", "amount": 1 }
+            { "type": "popularity", "amount": 5 }
           ]
         }
       ]
@@ -60,7 +60,7 @@
       "flavor": "Reservoirs at 20%. The harvest is failing.",
       "responses": [
         { "name": "Import food", "archetype": "pay", "effects": [{ "type": "money", "amount": -3 }] },
-        { "name": "Ration water", "archetype": "absorb", "effects": [{ "type": "support", "amount": -2 }] },
+        { "name": "Ration water", "archetype": "absorb", "effects": [{ "type": "popularity", "amount": -10 }] },
         {
           "name": "Intensive irrigation",
           "archetype": "mortgage",
@@ -74,7 +74,7 @@
       "kind": "crisis",
       "flavor": "Markets down, factories idle, the budget bleeds.",
       "responses": [
-        { "name": "Austerity", "archetype": "absorb", "effects": [{ "type": "support", "amount": -2 }] },
+        { "name": "Austerity", "archetype": "absorb", "effects": [{ "type": "popularity", "amount": -10 }] },
         {
           "name": "Dirty stimulus",
           "archetype": "mortgage",
@@ -104,7 +104,7 @@
           "name": "Let prices bite",
           "archetype": "absorb",
           "effects": [
-            { "type": "support", "amount": -3 },
+            { "type": "popularity", "amount": -15 },
             { "type": "sector_emissions", "sector": "transport", "amount": -1 }
           ]
         },
@@ -113,7 +113,7 @@
           "archetype": "pay",
           "effects": [
             { "type": "money", "amount": 3 },
-            { "type": "support", "amount": -2 }
+            { "type": "popularity", "amount": -10 }
           ]
         }
       ]
@@ -129,7 +129,7 @@
           "archetype": "invest",
           "effects": [
             { "type": "money", "amount": -3 },
-            { "type": "support", "amount": 1 }
+            { "type": "popularity", "amount": 5 }
           ]
         },
         {
@@ -137,10 +137,10 @@
           "archetype": "pay",
           "effects": [
             { "type": "money", "amount": -1 },
-            { "type": "support", "amount": -1 }
+            { "type": "popularity", "amount": -5 }
           ]
         },
-        { "name": "Close the gates", "archetype": "absorb", "effects": [{ "type": "support", "amount": -2 }] }
+        { "name": "Close the gates", "archetype": "absorb", "effects": [{ "type": "popularity", "amount": -10 }] }
       ]
     },
     {
@@ -150,7 +150,7 @@
       "flavor": "The sea comes over the barriers at 3 a.m.",
       "responses": [
         { "name": "Sea walls", "archetype": "pay", "effects": [{ "type": "money", "amount": -4 }] },
-        { "name": "Take the hit", "archetype": "absorb", "effects": [{ "type": "support", "amount": -3 }] },
+        { "name": "Take the hit", "archetype": "absorb", "effects": [{ "type": "popularity", "amount": -15 }] },
         {
           "name": "Managed retreat, wetland buffer",
           "archetype": "invest",
@@ -168,13 +168,13 @@
       "flavor": "A brown lid on the city. Hospitals fill.",
       "responses": [
         { "name": "Health emergency", "archetype": "pay", "effects": [{ "type": "money", "amount": -2 }] },
-        { "name": "Traffic ban week", "archetype": "absorb", "effects": [{ "type": "support", "amount": -2 }] },
+        { "name": "Traffic ban week", "archetype": "absorb", "effects": [{ "type": "popularity", "amount": -10 }] },
         {
           "name": "Clean air act",
           "archetype": "invest",
           "effects": [
             { "type": "money", "amount": -5 },
-            { "type": "support", "amount": -1 },
+            { "type": "popularity", "amount": -5 },
             { "type": "sector_emissions", "sector": "transport", "amount": -1 }
           ]
         }
@@ -192,7 +192,86 @@
           "archetype": "mortgage",
           "effects": [
             { "type": "income_per_turn", "amount": -1 },
-            { "type": "support", "amount": -1 }
+            { "type": "popularity", "amount": -5 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "general_strike",
+      "name": "General Strike",
+      "kind": "crisis",
+      "social": true,
+      "flavor": "Ports, rails, refineries — the country stops. The unions want proof you still govern for them.",
+      "responses": [
+        {
+          "name": "Negotiate with the unions",
+          "archetype": "pay",
+          "effects": [
+            { "type": "money", "amount": -5 },
+            { "type": "popularity", "amount": 10 }
+          ]
+        },
+        { "name": "Hold the line", "archetype": "absorb", "effects": [{ "type": "popularity", "amount": -10 }] },
+        {
+          "name": "Green public works deal",
+          "archetype": "invest",
+          "effects": [
+            { "type": "money", "amount": -6 },
+            { "type": "income_per_turn", "amount": 1 },
+            { "type": "popularity", "amount": 5 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "streets_on_fire",
+      "name": "Streets on Fire",
+      "kind": "crisis",
+      "social": true,
+      "flavor": "A fuel-price protest becomes a movement. Barricades in three cities.",
+      "responses": [
+        {
+          "name": "National climate dialogue",
+          "archetype": "invest",
+          "effects": [
+            { "type": "money", "amount": -4 },
+            { "type": "popularity", "amount": 10 }
+          ]
+        },
+        { "name": "Curfew and riot police", "archetype": "absorb", "effects": [{ "type": "popularity", "amount": -10 }] },
+        {
+          "name": "Cash handouts",
+          "archetype": "pay",
+          "effects": [
+            { "type": "money", "amount": -6 },
+            { "type": "popularity", "amount": 5 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "no_confidence",
+      "name": "No-Confidence Motion",
+      "kind": "crisis",
+      "social": true,
+      "flavor": "The opposition smells blood. Your own coalition wavers.",
+      "responses": [
+        {
+          "name": "Horse-trade for votes",
+          "archetype": "pay",
+          "effects": [
+            { "type": "money", "amount": -6 },
+            { "type": "popularity", "amount": 5 }
+          ]
+        },
+        { "name": "Face the vote alone", "archetype": "absorb", "effects": [{ "type": "popularity", "amount": -15 }] },
+        {
+          "name": "Sacrifice a minister",
+          "archetype": "mortgage",
+          "effects": [
+            { "type": "income_per_turn", "amount": -1 },
+            { "type": "popularity", "amount": 10 }
           ]
         }
       ]
@@ -209,7 +288,7 @@
           "archetype": "invest",
           "effects": [
             { "type": "sector_emissions", "sector": "industry", "amount": -1 },
-            { "type": "support", "amount": -1 }
+            { "type": "popularity", "amount": -5 }
           ]
         }
       ]
@@ -225,10 +304,10 @@
           "archetype": "invest",
           "effects": [
             { "type": "money", "amount": -2 },
-            { "type": "support", "amount": 2 }
+            { "type": "popularity", "amount": 10 }
           ]
         },
-        { "name": "Warm words", "archetype": "pay", "effects": [{ "type": "support", "amount": 1 }] }
+        { "name": "Warm words", "archetype": "pay", "effects": [{ "type": "popularity", "amount": 5 }] }
       ]
     },
     {
@@ -243,7 +322,7 @@
           "effects": [
             { "type": "money", "amount": 2 },
             { "type": "gross_this_turn", "amount": -4 },
-            { "type": "support", "amount": -1 }
+            { "type": "popularity", "amount": -5 }
           ]
         }
       ]

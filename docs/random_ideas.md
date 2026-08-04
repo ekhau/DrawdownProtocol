@@ -1,4 +1,5 @@
-- The player is not an AI but a human, political power, a country or a groupe of countries.
+- The player is not an AI but a human, political power, a country or a groupe of countries. 
+    A company that simulate de carbonation
 
 - Fun ref, Greta thumberg, Jean-Marc Jancovici
 
@@ -46,4 +47,5 @@
     - Too much money, add annual expenses of a city (explicite in top bar)
     - change starting values, too much money, too much support
     - change reward of some cards to obtain benefits in several turns instead of right now
-    - One bar in toolbar
+
+    - Opprotunity /Card with vote, push your luck, certain rate to succed

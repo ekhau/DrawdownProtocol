@@ -21,14 +21,14 @@ func _init() -> void:
 	if catalog == null:
 		quit(1)
 		return
-	print("\n%-24s %6s %9s %8s %8s %10s %s" % ["profile", "wins", "win yr", "loss yr", "temp", "sup-death", "combos/run"])
+	print("\n%-24s %6s %9s %8s %8s %10s %s" % ["profile", "wins", "win yr", "loss yr", "temp", "pop-death", "combos/run"])
 	for profile in PROFILES:
 		var wins := 0
 		var win_years := 0
 		var loss_years := 0
 		var losses := 0
 		var temp_sum := 0.0
-		var support_deaths := 0
+		var popularity_deaths := 0
 		var combo_count := 0
 		for seed_value in SEEDS:
 			var r := Bots.play(catalog, 1000 + seed_value, profile.buy, profile.crisis)
@@ -40,13 +40,13 @@ func _init() -> void:
 			else:
 				losses += 1
 				loss_years += int(r.year)
-				if String(r.cause).begins_with("Support"):
-					support_deaths += 1
+				if String(r.cause).begins_with("Popularity"):
+					popularity_deaths += 1
 		var avg_win := ("%d" % (win_years / wins)) if wins > 0 else "—"
 		var avg_loss := ("%d" % (loss_years / losses)) if losses > 0 else "—"
 		print("%-24s %3d/%d %9s %8s %7.2f° %10d %10.1f" % [
 			profile.label, wins, SEEDS, avg_win, avg_loss,
-			temp_sum / SEEDS, support_deaths, float(combo_count) / SEEDS])
+			temp_sum / SEEDS, popularity_deaths, float(combo_count) / SEEDS])
 	print("\nTargets (§7): do-nothing loses 2042±1 · clean/combo bot (perfect play) wins 2044-2046,")
 	print("predicting a human window of 2045-2050 · always-absorb should die (absorb only when flush)\n")
 	quit(0)
