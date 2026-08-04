@@ -4,9 +4,10 @@ extends RefCounted
 ## Applying here guarantees every change emits its signal and writes a log line,
 ## so the turn-log clarity rule holds by construction.
 ## Atom vocabulary (see catalog.gd): money, popularity, absorption,
-## sector_emissions, sector_income, income_per_turn, gross_this_turn.
+## sector_emissions, sector_income, income_per_turn, gross_this_turn,
+## world_emissions.
 
-const PERM_TYPES := ["sector_emissions", "sector_income", "income_per_turn", "absorption"]
+const PERM_TYPES := ["sector_emissions", "sector_income", "income_per_turn", "absorption", "world_emissions"]
 
 
 static func apply(atoms: Array, source: String, state: RunState) -> void:
@@ -27,6 +28,8 @@ static func apply(atoms: Array, source: String, state: RunState) -> void:
 			"gross_this_turn":
 				state.gross_this_turn_delta += int(atom.amount)
 				state.resources_changed.emit()
+			"world_emissions":
+				state.add_world_emissions(int(atom.amount))
 			_:
 				push_error("Effects.apply: unknown atom type '%s' from '%s'" % [atom.type, source])
 	state.log_event("%s: %s" % [source, describe(atoms, state.catalog)])
@@ -71,6 +74,8 @@ static func describe(atoms: Array, catalog: Catalog) -> String:
 				parts.append("%sM$/turn" % signed)
 			"gross_this_turn":
 				parts.append("this turn's gross emissions %s" % signed)
+			"world_emissions":
+				parts.append("planetary emissions %s%s" % [signed, perm])
 	return ", ".join(parts)
 
 

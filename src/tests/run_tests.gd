@@ -32,6 +32,12 @@ func _init() -> void:
 	_test_combo_detection(catalog)
 	_test_neutrality_projection(catalog)
 	_test_breakeven_gross(catalog)
+	_test_tipping_catalog_validation(catalog)
+	_test_world_emissions_atom(catalog)
+	_test_tipping_point_crossing(catalog)
+	_test_tipping_multi_cross(catalog)
+	_test_crossing_precedes_win_check(catalog)
+	_test_projection_prices_tipping(catalog)
 
 	print("\n%d/%d checks passed" % [checks - failures, checks])
 	quit(0 if failures == 0 else 1)
@@ -54,18 +60,20 @@ func _test_determinism(catalog: Catalog) -> void:
 
 
 func _test_do_nothing_loses_on_time(catalog: Catalog) -> void:
-	# Done criterion: doing nothing loses in 2043 ± 1 turn (turn 13 ends year 2042).
+	# Done criterion: doing nothing breaches +2.0° in 2042 ± 1. The tipping-point
+	# accelerations (permafrost +2 net, dieback −2 absorption) pull the actual
+	# landing to 2041 — inside tolerance, asserted tightly here.
 	var all_on_time := true
 	var all_lost := true
 	for seed_value in [1, 2, 3, 4, 5]:
 		var r := Bots.play(catalog, seed_value, "none", "default")
 		if r.won:
 			all_lost = false
-		if r.year < 2041 or r.year > 2044:
+		if r.year < 2041 or r.year > 2042:
 			all_on_time = false
 			print("        seed %d: ended %d (%.2f°) — %s" % [seed_value, r.year, r.temp, r.cause])
 	_check(all_lost, "do-nothing always loses")
-	_check(all_on_time, "do-nothing loses 2042 ± 1 (spec: turn 13 ± 1)")
+	_check(all_on_time, "do-nothing loses 2041-2042 (spec 2042 ± 1, tipping-accelerated)")
 
 
 func _test_playing_changes_outcome(catalog: Catalog) -> void:
@@ -404,3 +412,127 @@ func _test_breakeven_gross(catalog: Catalog) -> void:
 	var reachable: bool = ClimateCalc.neutrality_projection(steady.state).reachable
 	_check(reachable == (steady.state.gross_emissions() <= line),
 		"2.0° line agrees with the ◆ projection verdict")
+
+
+# --- tipping points -----------------------------------------------------------
+
+## Re-validates the real catalog with a substituted tipping_points list;
+## returns the number of validation errors it produced.
+func _tipping_errors(catalog: Catalog, tipping_points: Array) -> int:
+	var cat := Catalog.new()
+	cat.config = catalog.config.duplicate(true)
+	cat.config.tipping_points = tipping_points
+	cat.cards = catalog.cards
+	cat.crises = catalog.crises
+	cat.combos = catalog.combos
+	cat._validate()
+	return cat.errors.size()
+
+
+func _test_tipping_catalog_validation(catalog: Catalog) -> void:
+	var good := {"id": "x", "name": "X", "temp": 1.75, "flavor": "f",
+		"effects": [{"type": "world_emissions", "amount": 2}]}
+	_check(_tipping_errors(catalog, [good]) == 0, "a well-formed tipping point validates")
+	var bad_atom: Dictionary = good.duplicate(true)
+	bad_atom.effects = [{"type": "warp_drive", "amount": 1}]
+	_check(_tipping_errors(catalog, [bad_atom]) > 0, "tipping point with unknown atom type fails validation")
+	var bad_temp: Dictionary = good.duplicate(true)
+	bad_temp.temp = float(catalog.config.lose_temp)
+	_check(_tipping_errors(catalog, [bad_temp]) > 0, "tipping temp outside (start, lose) fails validation")
+	_check(_tipping_errors(catalog, [good, good.duplicate(true)]) > 0, "duplicate tipping id fails validation")
+
+
+func _test_world_emissions_atom(catalog: Catalog) -> void:
+	var sim := TurnManager.new(catalog, 61)
+	var s := sim.state
+	var gross_before := s.gross_emissions()
+	var net_before := s.structural_net()
+	var income_before := s.total_income()
+	Effects.apply([{"type": "world_emissions", "amount": 2}], "Test thaw", s)
+	_check(s.gross_emissions() == gross_before + 2 and s.structural_net() == net_before + 2,
+		"world_emissions raises gross and structural net")
+	_check(s.total_income() == income_before, "planetary emissions pay no dirty income")
+	s.add_absorption(net_before)  # test-only poke: cancel every sector emission
+	_check(s.structural_net() == 2, "planetary emissions block the win after full sector neutrality")
+	s.add_absorption(2)
+	_check(s.structural_net() == 0, "only extra absorption cancels planetary emissions")
+	Effects.apply([{"type": "world_emissions", "amount": -99}], "Test", s)
+	_check(s.world_emissions == 0, "world_emissions floors at 0 and ignores sector/era floors")
+
+
+func _test_tipping_point_crossing(catalog: Catalog) -> void:
+	var sim := TurnManager.new(catalog, 71)
+	var fired := {}
+	var log_hits := [0]
+	sim.state.tipping_point_crossed.connect(func(id): fired[id] = fired.get(id, 0) + 1)
+	sim.state.log_line.connect(func(text: String):
+		if text.contains("TIPPING POINT — Permafrost"):
+			log_hits[0] += 1)
+	var guard := 0
+	while not sim.state.ended and guard < 200:
+		guard += 1
+		if sim.state.phase == RunState.Phase.CRISIS:
+			sim.choose_response(Bots.pick_response(sim, "default"))
+		else:
+			sim.end_turn()
+	_check(sim.state.crossed_tipping_points.count("permafrost") == 1,
+		"a do-nothing run crosses permafrost exactly once")
+	_check(fired.get("permafrost", 0) == 1, "tipping_point_crossed(permafrost) emitted exactly once")
+	_check(log_hits[0] == 1, "the crossing writes its dramatic log line once")
+	_check(sim.state.world_emissions == 2, "permafrost's planetary emissions land in the ledger")
+
+
+func _test_tipping_multi_cross(catalog: Catalog) -> void:
+	var sim := TurnManager.new(catalog, 81)
+	var s := sim.state
+	var order := []
+	s.tipping_point_crossed.connect(func(id): order.append(id))
+	s.temp = 1.66              # test-only pokes: a contrived furnace year,
+	s.gross_this_turn_delta = 80  # +0.2° in a single climate phase
+	ClimateCalc.run_phase(s)
+	_check(order == ["permafrost", "amazon_dieback"],
+		"a hot year crosses both points, in ascending threshold order")
+	_check(not s.crossed_tipping_points.has("ice_sheet"), "unreached thresholds stay pending")
+	_check(s.absorption == 1 and s.world_emissions == 2, "both scars applied through Effects")
+
+
+func _test_crossing_precedes_win_check(catalog: Catalog) -> void:
+	var sim := TurnManager.new(catalog, 91)
+	var s := sim.state
+	s.crossed_tipping_points.append("permafrost")  # test-only poke: isolate the dieback
+	s.add_absorption(20)          # sectors 23 − absorption 23 = structural 0: a win, on paper
+	s.temp = 1.84
+	s.gross_this_turn_delta = 10  # transient heat carries the mercury over 1.85
+	ClimateCalc.run_phase(s)
+	_check(s.crossed_tipping_points.has("amazon_dieback"), "the dieback fires in the same climate phase")
+	_check(not s.ended, "crossings land before the win check — the dieback steals the same-year win")
+	_check(s.structural_net() == 2, "structural net reflects the absorption the dieback destroyed")
+
+
+## Steady 2/yr pace fixture parked just under the permafrost threshold.
+func _steady_sim_below_permafrost(catalog: Catalog) -> TurnManager:
+	var sim := TurnManager.new(catalog, 23)
+	sim.state.temp = 1.69  # test-only poke
+	sim.state.add_sector_emissions("industry", -3)
+	sim.state.snapshot()
+	sim.state.turn = 2
+	sim.state.add_sector_emissions("transport", -3)
+	sim.state.snapshot()
+	sim.state.turn = 3
+	return sim
+
+
+func _test_projection_prices_tipping(catalog: Catalog) -> void:
+	var with_tp := _steady_sim_below_permafrost(catalog)
+	var bare := Catalog.load_all()
+	bare.config.tipping_points = []  # same world, tipping points erased
+	var without_tp := _steady_sim_below_permafrost(bare)
+	var p_with := ClimateCalc.neutrality_projection(with_tp.state)
+	var p_without := ClimateCalc.neutrality_projection(without_tp.state)
+	_check(bool(p_without.reachable), "control: without tipping points this pace reaches net zero")
+	var worse: bool = (not bool(p_with.reachable)) \
+		or int(p_with.year) > int(p_without.year) or float(p_with.temp) > float(p_without.temp)
+	_check(worse, "◆ prices the upcoming permafrost: same pace projects strictly worse")
+	var line := ClimateCalc.breakeven_gross(with_tp.state)
+	_check(bool(p_with.reachable) == (with_tp.state.gross_emissions() <= line),
+		"breakeven invariant holds with tipping points priced in")

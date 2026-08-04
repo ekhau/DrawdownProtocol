@@ -7,7 +7,7 @@ As-built reference for the Godot MVP, exact as of 2026-08-04 (post compromise pa
 ```
 src/
   data/                          LAYER 1 — content (all balance lives here)
-    config.json                    start values, warming factor, bands, eras+floors, sectors, palettes
+    config.json                    start values, warming factor, bands, tipping points, eras+floors, sectors, palettes
     cards.json                     44 cards (effects, costs, gates, risk blocks, combo tags)
     crises.json                    13 normal (10 crises + 3 windfalls) + 3 social
     combos.json                    5 hidden sets
@@ -20,12 +20,12 @@ src/
       market.gd                    deal/reroll/blockers/buy (incl. risk resolution)
       crisis_deck.gd               two pools, band scaling, social mode
       combo_checker.gd             set detection after every purchase
-      climate_calc.gd              climate phase + the two projection instruments
+      climate_calc.gd              climate phase (incl. tipping points) + the two projection instruments
     autoload/game.gd             façade: owns Catalog + TurnManager, re-emits signals, forwards verbs
     ui/main_ui.gd                LAYER 3 — a disposable skin; calls verbs, repaints from signals
   scenes/main.tscn               single Control-node scene
   tests/
-    run_tests.gd                 67 headless assertions (invariants + regressions)
+    run_tests.gd                 77 headless assertions (invariants + regressions)
     balance.gd                   the harness: 40 seeds × 7 bot profiles vs §7 targets
     bots.gd                      scripted players (buy policies × crisis policies)
     screenshot_driver.gd         boots the real UI, pokes the sim, saves before/after PNGs
@@ -39,7 +39,7 @@ Three rules carry the maintainability load:
 
 ### Signal flow
 
-`RunState` emits → `Game` (autoload) re-emits → `main_ui` repaints. Signals: `resources_changed`, `sector_changed(id)`, `temperature_changed(t)`, `phase_changed(p)`, `market_changed`, `combo_discovered(id)`, `risk_resolved(id, ok)`, `era_started(id)`, `log_line(text)`, `run_ended(result)`, plus `Game.run_started`. Ordering contract: `market_changed` fires at the single point every offer mutation flows through (`Market._fill()`), guaranteed *after* state settles — the fix for the 2026-08-03 desync (see Design_History).
+`RunState` emits → `Game` (autoload) re-emits → `main_ui` repaints. Signals: `resources_changed`, `sector_changed(id)`, `temperature_changed(t)`, `phase_changed(p)`, `market_changed`, `combo_discovered(id)`, `risk_resolved(id, ok)`, `tipping_point_crossed(id)`, `era_started(id)`, `log_line(text)`, `run_ended(result)`, plus `Game.run_started`. Ordering contract: `market_changed` fires at the single point every offer mutation flows through (`Market._fill()`), guaranteed *after* state settles — the fix for the 2026-08-03 desync (see Design_History).
 
 ## 2. The turn state machine
 
@@ -49,7 +49,7 @@ One turn = one year. Phases (`RunState.Phase`): **CRISIS → ACTION → INCOME �
 2. **CRISIS**: the player picks exactly one response; effects apply pre-scaled (see §6.6). A popularity collapse check runs immediately after.
 3. **ACTION**: buy any number of affordable cards; ≤1 reroll (1 M$). Combo check + collapse check after every purchase.
 4. **INCOME** (automatic on End Year): `money += total_income()`, then popularity drift.
-5. **CLIMATE** (`ClimateCalc.run_phase`): warming, snapshot, win/lose check.
+5. **CLIMATE** (`ClimateCalc.run_phase`): warming, tipping-point crossings, snapshot, win/lose check — crossings land *before* the win check (§6.10).
 
 Run end paths: **win** — structural net ≤ 0 at climate phase; **loss** — temp ≥ 2.0° at climate phase, or popularity < 10% after any crisis/purchase; bots also record a stalemate loss at 200 turns (guard, never reached in practice).
 
@@ -64,12 +64,14 @@ Run end paths: **win** — structural net ≤ 0 at climate phase; **loss** — t
 | `money` | M$, clamped ≥ 0 |
 | `popularity` | 0–100%, government approval |
 | `absorption` | carbon sink units, clamped ≥ 0 |
+| `world_emissions` | permanent planetary emissions from tipping-point scars — no sector, no dirty income, uncuttable, era floors never apply; clamped ≥ 0 |
+| `crossed_tipping_points` | tipping point ids in crossing order — each fires at most once per run |
 | `income_bonus` | flat M$/turn from `income_per_turn` atoms (may go negative) |
 | `gross_this_turn_delta` | transient gross modifier, reset each turn (Mild Winter) |
 | `sectors[id]` | `{name, emissions, income_clean, dirty_divisor, start_emissions}` |
 | `floor_locks[id]` | permanent floor raises from `floor_lock` atoms |
 | `owned_cards`, `discovered_combos` | purchase order / discovery order |
-| `history` | one snapshot per climate phase (year, temp, gross, net, money, popularity, absorption, per-sector emissions+income) — this *is* the post-mortem data |
+| `history` | one snapshot per climate phase (year, temp, gross, net, money, popularity, absorption, world_emissions, per-sector emissions+income) — this *is* the post-mortem data; `end_run` also packages `tipping_points` (the crossed ids) |
 | `rng`, `run_seed` | one seeded `RandomNumberGenerator` per run — shuffles and risk rolls |
 
 ### Effect atoms (the whole mutation vocabulary)
@@ -84,8 +86,9 @@ Run end paths: **win** — structural net ≤ 0 at climate phase; **loss** — t
 | `income_per_turn` | amount | `income_bonus += a` |
 | `gross_this_turn` | amount | transient gross delta, this climate phase only |
 | `floor_lock` | sector, amount | `floor_locks[sector] += a` — permanent |
+| `world_emissions` | amount | `world_emissions += a` (floor 0) — planetary, joins gross and structural net but pays no income and cannot be cut by cards |
 
-`PERM_TYPES` (flagged "⚠ perm" in crisis UI, never band-scaled): `sector_emissions`, `sector_income`, `income_per_turn`, `absorption`, `floor_lock`.
+`PERM_TYPES` (flagged "⚠ perm" in crisis UI, never band-scaled): `sector_emissions`, `sector_income`, `income_per_turn`, `absorption`, `floor_lock`, `world_emissions`.
 
 ### Card schema (cards.json)
 
@@ -111,6 +114,8 @@ Run end paths: **win** — structural net ≤ 0 at climate phase; **loss** — t
 
 **Popularity system.** Baseline drift (§6.8), social threshold 30%, collapse floor 10%, `requires_popularity` gates on radical cards, risk odds driven by popularity — one resource, five mechanical roles.
 
+**Tipping points.** The thermometer is the boss, but it never hits back — until a threshold falls. Config-driven temperature thresholds (`tipping_points`, sorted ascending at load, validated like everything else), telegraphed on the climate bar as dark red ▲ markers with per-marker tooltips. In the climate phase, after the temperature advances and *before* the win/lose check, every not-yet-crossed point at or below the new temperature fires in ascending order: crossed id recorded, dramatic log line, effects through `Effects.apply` (source = the point's name), `tipping_point_crossed(id)` emitted, red alarm banner in the UI. Each fires at most once per run; deterministic, no RNG. Permafrost's scar introduced the `world_emissions` atom: planetary emissions outside the city's control — in gross and structural net, but no sector, no dirty income, uncuttable, immune to era floors. The ◆ projection prices not-yet-crossed points (§6.8).
+
 **Projections (the honest UI).** Two pure instruments in `ClimateCalc`, both driven by one forward simulation (`_project`): the **◆ neutrality marker** (where warming stops if the recent pace of cuts holds) and **breakeven gross** (the highest gross from which the current pace still wins — kept tested as the ◆'s dual even though the UI no longer draws it). Both respect era floors, floor locks, and freeze absorption at today's value.
 
 **Post-mortem.** `end_run` packages cause, year, temp, seed, full timeline, combos, cards. The one-line cause names the sector that decarbonized least.
@@ -128,6 +133,7 @@ Run end paths: **win** — structural net ≤ 0 at climate phase; **loss** — t
 | popularity drift up / down | +2 / −3 per year |
 | market size / reroll cost / crisis start turn | 4 / 1 M$ / 2 |
 | bands | A base · B ≥ 1.65° (+3 M$/+5%) · C ≥ 1.8° (+6 M$/+10%) |
+| tipping points | Permafrost +1.70° (world_emissions +2) · Amazon Dieback +1.85° (absorption −2) · Ice-Sheet +1.95° (income −2 M$/turn, popularity −10%) |
 | sectors (emissions, clean, divisor) | Industry (8, 2, 2) · Transport (6, 0, 6) · Food (5, 0, 5) · Housing (4, 0, 4) |
 | era floors I / II / III | 5-3-2-2 / 3-2-1-1 / 0-0-0-0 (Industry-Transport-Food-Housing) |
 
@@ -138,13 +144,15 @@ Derived at start: gross 23, net 20, income 9 (5 dirty + 4 clean-ish: industry 2 
 ### 6.1 Emissions & warming
 
 ```
-gross            = max(0, Σ sectors.emissions + gross_this_turn_delta)
+gross            = max(0, Σ sectors.emissions + world_emissions + gross_this_turn_delta)
 net              = gross − absorption
-structural_net   = Σ sectors.emissions − absorption          (no transients)
+structural_net   = Σ sectors.emissions + world_emissions − absorption   (no transients)
 climate phase:     if net > 0: temp += net × warming_per_net_emission
+                   then tipping-point crossings (§6.10), then snapshot
 win              : structural_net ≤ 0 at climate phase       (transients can't fake it)
 lose             : temp ≥ lose_temp at climate phase, or popularity < popularity_collapse any time
 ```
+`world_emissions` delays the win exactly like a floor lock: only extra absorption can cancel it.
 
 ### 6.2 Income
 
@@ -209,20 +217,40 @@ pace            = (structural_net(3 yrs ago) − structural_net(now)) / min(3, t
 _project(start_net, pace):
   temp' = temp + start_net × 0.002 ; then per future year:
     remaining = max(remaining − pace, era_floor_net(year))
-    era_floor_net(y) = Σ_s (era_min[y][s] + floor_locks[s]) − absorption   (absorption frozen)
+    era_floor_net(y) = Σ_s (era_min[y][s] + floor_locks[s])
+                       + world_emissions + world' − absorption'
     remaining ≤ 0 → reachable at (temp', year) ; temp' ≥ 2.0 → not reachable
+  after every temp' advance: any not-yet-crossed tipping point with temp' ≥ its
+  threshold fires IN THE PROJECTION (ascending order) — the ◆ prices the future:
+    world_emissions atoms : world' += a ; remaining += a        (uncuttable: also in the floor)
+    negative absorption   : absorption' = max(0, absorption' + a) ;
+                            remaining += the absorption actually lost
+    income/popularity     : ignored (not net-relevant)
+  absorption' starts frozen at today's value; world' at 0 (today's world_emissions
+  is already inside start_net and the floor)
 breakeven_gross = largest gross whose (gross − absorption) still projects reachable
                   (linear search from absorption upward; = absorption when pace ≤ 0)
 ```
-Invariant (unit-tested): `gross ≤ breakeven_gross ⟺ neutrality_projection().reachable`.
+Invariant (unit-tested): `gross ≤ breakeven_gross ⟺ neutrality_projection().reachable` — it survives the tipping extension because `_project` stays monotone in `start_net` (hotter walks cross earlier and scar harder). Pace reference reads `world_emissions` from history snapshots, so a real crossing registers as a genuine slowdown of net decline for the next ≤3 years.
 
 ### 6.9 Determinism
 
 One RNG seeded per run drives: card pool shuffle, crisis pool shuffles, risk rolls. Same seed + same actions ⇒ identical run (tested). Tests predict risk rolls by cloning `rng.seed` + `rng.state`. UI-side `Game.new_run()` picks `randi()` only when no seed is given.
 
+### 6.10 Tipping-point crossings
+
+```
+in run_phase, AFTER temp advances and BEFORE snapshot + win/lose:
+  for each tipping point in ascending threshold order (sorted at load):
+    skip if id ∈ crossed_tipping_points, or temp < threshold
+    else: record id → dramatic log line → Effects.apply(effects, name)
+          → tipping_point_crossed(id)
+```
+Consequences to know: each point fires at most once per run, deterministically (no RNG); a hot year can cross several at once; and because crossings precede the win check, an Amazon Dieback can push a structural net of 0 back above zero and steal a same-year win — the planet doesn't wait for the press conference. Catalog validation: unique ids, non-empty name, temp strictly inside (start_temp, lose_temp), non-empty valid effects; the list is sorted ascending at load.
+
 ## 7. Testing & balance infrastructure
 
-- `run_tests.gd` — 67 assertions: catalog validation, determinism, dirty income, floor locks, income preview, do-nothing timing, mortgage-vs-pay ordering, band scaling + windfall exemption, era gating/briefs, market buy/reroll/ghost-click, all blockers, gamble odds/floors/branches, drift asymmetry, social pool switching, collapse, combos, both projections. Run: `godot --headless -s res://tests/run_tests.gd` from `src/`.
+- `run_tests.gd` — 77 assertions: catalog validation (incl. malformed tipping points), determinism, dirty income, floor locks, income preview, do-nothing timing, mortgage-vs-pay ordering, band scaling + windfall exemption, era gating/briefs, market buy/reroll/ghost-click, all blockers, gamble odds/floors/branches, drift asymmetry, social pool switching, collapse, combos, both projections, and tipping points (world_emissions semantics, single-fire crossing + signal + log, multi-cross ordering, crossing-before-win-check, projection pricing + breakeven invariant). Run: `godot --headless -s res://tests/run_tests.gd` from `src/`.
 - `balance.gd` — 40 seeds × 7 profiles vs targets (§7 v2 of the spec). Run the same way. Rebalancing = edit JSON → run harness → read table; the current table lives in [04_Rebalance_Plan.md](04_Rebalance_Plan.md).
 - `screenshot_driver.gd` — visual smoke check: `godot -s res://tests/screenshot_driver.gd -- /out/dir` saves before/after PNGs of the real UI.
 
@@ -238,3 +266,4 @@ One RNG seeded per run drives: card pool shuffle, crisis pool shuffles, risk rol
 | era `from_year` | win-window position | untouched this pass; compress to pull wins earlier without adding money |
 | `market_size` | strategy visibility, stall risk | 4 since the pool grew to 38+; shrinking it re-creates stalls |
 | `warming_per_net_emission` | everything at once | anchored by "do-nothing loses 2042" — do not touch for difficulty |
+| `tipping_points` temps / amounts | cost of running hot; endgame drag | permafrost +2 & dieback −2 pushed clean wins 2044 → 2046 and shaved 2/40 wins; soften via dieback −2 → −1 or thresholds +0.02–0.05 before touching anything else |

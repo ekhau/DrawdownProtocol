@@ -4,7 +4,7 @@ extends RefCounted
 ## names the file and entry. The validator is the compiler for JSON.
 ## Pure — no Nodes, no scene tree.
 
-const ATOM_TYPES := ["money", "popularity", "absorption", "sector_emissions", "sector_income", "income_per_turn", "gross_this_turn"]
+const ATOM_TYPES := ["money", "popularity", "absorption", "sector_emissions", "sector_income", "income_per_turn", "gross_this_turn", "world_emissions"]
 const ARCHETYPES := ["pay", "absorb", "mortgage", "invest"]
 const CRISIS_KINDS := ["crisis", "windfall"]
 
@@ -24,6 +24,11 @@ static func load_all(base_path: String = "res://data") -> Catalog:
 	cat.cards = cat._read_json(base_path + "/cards.json").get("cards", [])
 	cat.crises = cat._read_json(base_path + "/crises.json").get("crises", [])
 	cat.combos = cat._read_json(base_path + "/combos.json").get("combos", [])
+	if cat.config.get("tipping_points") is Array:
+		# Ascending threshold order is a load-time guarantee: crossing and
+		# projection code may then walk the list front-to-back.
+		(cat.config.tipping_points as Array).sort_custom(
+			func(a, b): return float(a.get("temp", 0.0)) < float(b.get("temp", 0.0)))
 	cat._validate()
 	if not cat.errors.is_empty():
 		for e in cat.errors:
@@ -87,7 +92,8 @@ func _validate() -> void:
 	for key in ["start_year", "start_temp", "lose_temp", "warming_per_net_emission",
 			"start_money", "start_popularity", "popularity_cap", "popularity_collapse",
 			"popularity_baseline", "popularity_drift", "social_crisis_threshold", "start_absorption",
-			"market_size", "reroll_cost", "crisis_start_turn", "bands", "eras", "sectors", "palettes"]:
+			"market_size", "reroll_cost", "crisis_start_turn", "bands", "eras", "sectors", "palettes",
+			"tipping_points"]:
 		if not config.has(key):
 			errors.append("config.json: missing key '%s'" % key)
 	if not errors.is_empty():
@@ -99,6 +105,27 @@ func _validate() -> void:
 				errors.append("config.json: band '%s' missing '%s'" % [band.get("id", "?"), key])
 
 	var sectors := sector_ids()
+	var tipping_ids := {}
+	for tp in config.tipping_points:
+		var twhere := "config.json: tipping point '%s'" % tp.get("id", "<no id>")
+		for key in ["id", "name", "temp", "flavor", "effects"]:
+			if not tp.has(key):
+				errors.append("%s: missing '%s'" % [twhere, key])
+		if String(tp.get("name", "")).strip_edges().is_empty():
+			errors.append("%s: empty name" % twhere)
+		var t: Variant = tp.get("temp")
+		if t is float or t is int:
+			if float(t) <= float(config.start_temp) or float(t) >= float(config.lose_temp):
+				errors.append("%s: temp %.2f must sit strictly between start_temp (%.2f) and lose_temp (%.2f)" % [
+					twhere, float(t), float(config.start_temp), float(config.lose_temp)])
+		elif tp.has("temp"):
+			errors.append("%s: 'temp' must be numeric" % twhere)
+		if tp.has("id"):
+			if tipping_ids.has(tp.id):
+				errors.append("%s: duplicate id" % twhere)
+			tipping_ids[tp.id] = true
+		_validate_effects(tp.get("effects", []), sectors, twhere)
+
 	for era in config.eras:
 		if not config.palettes.has(era.get("palette", "")):
 			errors.append("config.json: era '%s' references unknown palette '%s'" % [era.get("id", "?"), era.get("palette", "?")])

@@ -10,6 +10,7 @@ signal phase_changed(phase: int)
 signal market_changed
 signal combo_discovered(combo_id: String)
 signal risk_resolved(card_id: String, success: bool)
+signal tipping_point_crossed(tipping_id: String)
 signal era_started(era_id: String)
 signal log_line(text: String)
 signal run_ended(result: Dictionary)
@@ -40,6 +41,7 @@ func new_run(seed_value: int = -1) -> void:
 	s.market_changed.connect(func(): market_changed.emit())
 	s.combo_discovered.connect(func(id): combo_discovered.emit(id))
 	s.risk_resolved.connect(func(id, ok): risk_resolved.emit(id, ok))
+	s.tipping_point_crossed.connect(func(id): tipping_point_crossed.emit(id))
 	s.era_started.connect(func(id): era_started.emit(id))
 	s.log_line.connect(func(t): log_line.emit(t))
 	s.run_ended.connect(func(r): run_ended.emit(r))
@@ -70,6 +72,17 @@ func state() -> RunState:
 
 func neutrality_projection() -> Dictionary:
 	return ClimateCalc.neutrality_projection(sim.state)
+
+
+## Read-only, for the climate bar's tipping-point markers and tooltips:
+## the catalog's list (ascending temp) with each point's crossed status.
+func tipping_points() -> Array:
+	var crossed: Array = sim.state.crossed_tipping_points if sim != null else []
+	var out := []
+	for tp in catalog.config.tipping_points:
+		out.append({"id": tp.id, "name": tp.name, "temp": float(tp.temp),
+			"flavor": tp.flavor, "effects": tp.effects, "crossed": crossed.has(tp.id)})
+	return out
 
 
 func era_palette() -> Gradient:

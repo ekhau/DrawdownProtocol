@@ -34,6 +34,48 @@
       "cost_bump_popularity": 10
     }
   ],
+  "tipping_points": [
+    {
+      "id": "permafrost",
+      "name": "Permafrost Thaw",
+      "temp": 1.7,
+      "flavor": "The Siberian ground exhales: methane no treaty can recall.",
+      "effects": [
+        {
+          "type": "world_emissions",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "amazon_dieback",
+      "name": "Amazon Dieback",
+      "temp": 1.85,
+      "flavor": "The rainforest tips to savanna — the planet's green lung collapses.",
+      "effects": [
+        {
+          "type": "absorption",
+          "amount": -2
+        }
+      ]
+    },
+    {
+      "id": "ice_sheet",
+      "name": "Ice-Sheet Destabilization",
+      "temp": 1.95,
+      "flavor": "Greenland slides seaward; every coastal city redraws its maps.",
+      "effects": [
+        {
+          "type": "income_per_turn",
+          "amount": -2
+        },
+        {
+          "type": "popularity",
+          "amount": -10
+        }
+      ]
+    }
+  ],
   "eras": [
     {
       "id": "act1",

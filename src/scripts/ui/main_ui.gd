@@ -7,6 +7,7 @@ var thermometer: ProgressBar
 var thermo_markers: Control         # overlay: needle, band ticks, ◆ projection
 var thermo_caption: Label
 var neutrality := {}                # cached Game.neutrality_projection() for draw
+var tipping_hotspots := {}          # tipping id -> invisible tooltip Control over its ▲ marker
 var thermo_label: Label
 var year_label: Label
 var act_label: Label
@@ -61,6 +62,7 @@ func _ready() -> void:
 	Game.market_changed.connect(_refresh_market)
 	Game.combo_discovered.connect(_on_combo)
 	Game.risk_resolved.connect(_on_risk_resolved)
+	Game.tipping_point_crossed.connect(_on_tipping_point)
 	Game.era_started.connect(_on_era)
 	Game.log_line.connect(_on_log)
 	Game.run_ended.connect(_on_run_ended)
@@ -89,7 +91,7 @@ func _build_layout() -> void:
 	var thermo_box := VBoxContainer.new()
 	thermo_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(thermo_box)
-	var thermo_tip := "Global climate — clock and engine in one bar. Each year the planet warms by net emissions × 0.002°;\nat +2.0° the timeline fails. Pink lines: crisis cost bands.\nFrom the white needle, next year's gross jump is sketched: the orange segment ends exactly where\nthe needle lands when the year ends; green = the push your absorption cancels. No orange left = net zero.\n◆: where warming stops if you keep your recent pace of cuts."
+	var thermo_tip := "Global climate — clock and engine in one bar. Each year the planet warms by net emissions × 0.002°;\nat +2.0° the timeline fails. Pink lines: crisis cost bands.\nDark red ▲: tipping points — cross one and the planet scars permanently (hover each for details).\nFrom the white needle, next year's gross jump is sketched: the orange segment ends exactly where\nthe needle lands when the year ends; green = the push your absorption cancels. No orange left = net zero.\n◆: where warming stops if you keep your recent pace of cuts."
 	var thermo_head := HBoxContainer.new()
 	thermo_head.alignment = BoxContainer.ALIGNMENT_CENTER
 	thermo_head.add_theme_constant_override("separation", 24)
@@ -112,6 +114,14 @@ func _build_layout() -> void:
 	thermo_markers.resized.connect(thermo_markers.queue_redraw)
 	_tip(thermometer, thermo_tip)
 	thermometer.add_child(thermo_markers)
+	# One invisible hotspot per tipping point carries its tooltip — the marker
+	# overlay ignores the mouse, so hover zones live as thin thermometer children.
+	for tp in Game.tipping_points():
+		var hot := Control.new()
+		hot.mouse_filter = Control.MOUSE_FILTER_PASS
+		thermometer.add_child(hot)
+		tipping_hotspots[tp.id] = hot
+	thermometer.resized.connect(_refresh_tipping_markers)
 	thermo_caption = _label(thermo_box, "", 13)
 	thermo_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tip(thermo_caption, "The carbon arithmetic feeding the bar, and the ◆ verdict: where the mercury lands\nif the current pace of cuts holds (absorption frozen at today's value, era floors respected).")
@@ -415,18 +425,24 @@ func _refresh_stats() -> void:
 	var orange := Color("#fc8961")
 	net_label.text = "Net %d" % net
 	net_label.add_theme_color_override("font_color", green if s.structural_net() <= 0 else Color.WHITE)
+	# Honest arithmetic: sector panels no longer sum to gross once the planet
+	# emits on its own — the caption carries the planetary share.
+	var gross_text := "gross %d" % gross
+	if s.world_emissions > 0:
+		gross_text = "gross %d (incl. %d planetary)" % [gross, s.world_emissions]
 	if s.structural_net() <= 0:
 		thermo_caption.text = "all %d emissions absorbed — carbon neutral · end the year ▶" % gross
 		thermo_caption.add_theme_color_override("font_color", green)
 	elif neutrality.reachable:
-		thermo_caption.text = "gross %d − absorbed %d = net %d · ◆ net zero ≈ %d, at +%.2f°" % [
-			gross, s.absorption, net, neutrality.year, neutrality.temp]
+		thermo_caption.text = "%s − absorbed %d = net %d · ◆ net zero ≈ %d, at +%.2f°" % [
+			gross_text, s.absorption, net, neutrality.year, neutrality.temp]
 		thermo_caption.add_theme_color_override("font_color", green)
 	else:
-		thermo_caption.text = "gross %d − absorbed %d = net %d · ◆ +%.1f° first at this pace — cut faster" % [
-			gross, s.absorption, net, thermometer.max_value]
+		thermo_caption.text = "%s − absorbed %d = net %d · ◆ +%.1f° first at this pace — cut faster" % [
+			gross_text, s.absorption, net, thermometer.max_value]
 		thermo_caption.add_theme_color_override("font_color", orange)
 	thermo_markers.queue_redraw()
+	_refresh_tipping_markers()
 	money_label.text = "M$%d" % s.money
 	income_label.text = "+%dM$/yr" % s.total_income()
 	var cfg: Dictionary = Game.catalog.config
@@ -474,6 +490,13 @@ func _draw_thermo_markers() -> void:
 		if float(band.min_temp) > thermometer.min_value:
 			var bx := _thermo_x(float(band.min_temp), w)
 			thermo_markers.draw_line(Vector2(bx, 0), Vector2(bx, h), Color("#b73779", 0.8), 2.0)
+	# Tipping points — dark red ▲ rising from the bar's base: cross one and the
+	# planet scars permanently. Crossed points dim — that damage is done.
+	for tp in Game.tipping_points():
+		var px := _thermo_x(float(tp.temp), w)
+		var tcolor := Color("#a4161a", 0.35 if tp.crossed else 1.0)
+		thermo_markers.draw_colored_polygon(PackedVector2Array([
+			Vector2(px - 6, h), Vector2(px + 6, h), Vector2(px, h - 9)]), tcolor)
 	# ◆ where the mercury stops if the current pace holds
 	var nx := clampf(_thermo_x(float(neutrality.temp), w), 7.0, w - 7.0)
 	var ncolor := Color("#5ec962") if neutrality.reachable else Color("#fc8961")
@@ -499,6 +522,22 @@ func _draw_popularity_markers() -> void:
 	for req in gate_marks:
 		var gx := w * int(req) / 100.0
 		pop_markers.draw_line(Vector2(gx, 0), Vector2(gx, h), Color("#5ec962"), 2.0)
+
+
+func _refresh_tipping_markers() -> void:
+	# Position each tipping point's tooltip hotspot over its ▲ and keep the
+	# tooltip text tracking crossed status. Drawing lives in _draw_thermo_markers.
+	var w := thermometer.size.x
+	for tp in Game.tipping_points():
+		var hot: Control = tipping_hotspots.get(tp.id)
+		if hot == null:
+			continue
+		hot.position = Vector2(_thermo_x(float(tp.temp), w) - 8.0, 0)
+		hot.size = Vector2(16, thermometer.size.y)
+		hot.tooltip_text = "%s — tipping point at +%.2f°\n%s\nIf crossed: %s\n%s" % [
+			tp.name, float(tp.temp), tp.flavor,
+			Effects.describe(tp.effects, Game.catalog),
+			"☠ CROSSED — the scar is permanent" if tp.crossed else "Not yet crossed — keep the mercury below it."]
 
 
 func _thermo_x(value: float, width: float) -> float:
@@ -730,7 +769,17 @@ func _on_combo(combo_id: String) -> void:
 			_flash_banner("COMBO DISCOVERED — %s" % combo.name)
 
 
-func _flash_banner(text: String) -> void:
+func _on_tipping_point(tipping_id: String) -> void:
+	for tp in Game.tipping_points():
+		if tp.id == tipping_id:
+			_flash_banner("☠ TIPPING POINT — %s\n%s\n%s" % [
+				tp.name, tp.flavor, Effects.describe(tp.effects, Game.catalog)], Color("#ff5c5c"))
+	_refresh_tipping_markers()
+	thermo_markers.queue_redraw()
+
+
+func _flash_banner(text: String, color: Color = Color.WHITE) -> void:
+	banner.add_theme_color_override("font_color", color)
 	banner.text = text
 	banner.modulate.a = 0.0
 	var tween := create_tween()
@@ -757,9 +806,14 @@ func _on_run_ended(result: Dictionary) -> void:
 	var curve := ""
 	for snap in result.timeline:
 		curve += "%d  +%.2f°  net %d\n" % [snap.year, snap.temp, snap.net]
-	overlay_text.text = "%s\n\n[b]Timeline #%d[/b] — %d, +%.2f°\n%s\n\nCombos: %s\n\n[code]%s[/code]" % [
+	var tipping_names: PackedStringArray = []
+	for tp in Game.tipping_points():
+		if result.tipping_points.has(tp.id):
+			tipping_names.append(tp.name)
+	overlay_text.text = "%s\n\n[b]Timeline #%d[/b] — %d, +%.2f°\n%s\n\nCombos: %s\nTipping points crossed: %s\n\n[code]%s[/code]" % [
 		verdict, result.seed % 1000, result.year, result.temp, result.cause,
 		", ".join(result.combos) if result.combos.size() > 0 else "none discovered",
+		", ".join(tipping_names) if tipping_names.size() > 0 else "none — the thresholds held",
 		curve]
 	overlay_btn.text = "Run the next timeline ▶"
 	_reset_overlay_button(func(): Game.new_run())
@@ -775,6 +829,8 @@ Each year: face a [b]crisis[/b] (every answer costs something — money, popular
 Approval is rented, never owned: popularity drifts 3% a year back toward 50%. Below [b]30%[/b] the streets take over — strikes, riots and no-confidence motions replace the year's crisis until you win the public back (every social crisis has a way out, at a price). The boldest policies (carbon tax, car-free centers…) [b]require[/b] a popular government — the green marks on the popularity bar — and your own purchases can never drop you into collapse; only crises can.
 
 Some cards are [b]gambles[/b] (gold dialog): the chance a reform passes equals your [b]popularity[/b] plus the card's own bias, and campaign money can raise it — capped, certainty is not for sale. One attempt per run: success applies the card, failure triggers the printed backlash. A gamble you can't survive failing is blocked, like any other suicide purchase.
+
+Three [b]tipping points[/b] wait on the climate bar (dark red ▲): cross a threshold and the planet scars [b]permanently[/b] — thawing permafrost adds planetary emissions no card can cut, forest dieback destroys absorption, ice-sheet collapse drains income and approval. Scars never heal; the only defense is never crossing.
 
 On the climate bar: the [b]white needle[/b] is today's warming, pink ticks are the crisis cost bands. From the needle, next year's gross jump is sketched in degrees: the [b]orange segment[/b] ends exactly where the needle stands when the year ends (net × 0.002°), and the [b]green segment[/b] beyond it is the push your absorption cancels. Cut gross or grow absorption until no orange is left — the needle stops: net zero. The [b]◆[/b] marks where the mercury settles if you keep your recent pace of cuts (absorption frozen at today's value) — green means net zero is in reach, orange means +2.0° arrives first.
 

@@ -12,6 +12,7 @@ signal phase_changed(phase: int)
 signal market_changed
 signal combo_discovered(combo_id: String)
 signal risk_resolved(card_id: String, success: bool)
+signal tipping_point_crossed(tipping_id: String)
 signal era_started(era_id: String)
 signal log_line(text: String)
 signal run_ended(result: Dictionary)
@@ -29,6 +30,9 @@ var temp: float = 0.0
 var money: int = 0
 var popularity: int = 0            # government approval 0-100%; below popularity_collapse the run ends
 var absorption: int = 0
+var world_emissions: int = 0       # permanent planetary emissions (tipping-point scars):
+                                   # no sector, no dirty income, uncuttable, ignores era floors
+var crossed_tipping_points: Array[String] = []  # tipping point ids, crossing order
 var income_bonus: int = 0          # flat M$/turn from income_per_turn atoms
 var gross_this_turn_delta: int = 0 # transient, reset each turn (e.g. Mild Winter)
 var sectors: Dictionary = {}       # id -> {name, emissions, income, start_emissions}
@@ -65,7 +69,7 @@ func gross_emissions() -> int:
 	var total := 0
 	for id in sectors:
 		total += sectors[id].emissions
-	return maxi(0, total + gross_this_turn_delta)
+	return maxi(0, total + world_emissions + gross_this_turn_delta)
 
 
 func net_emissions() -> int:
@@ -78,7 +82,7 @@ func structural_net() -> int:
 	var total := 0
 	for id in sectors:
 		total += sectors[id].emissions
-	return total - absorption
+	return total + world_emissions - absorption
 
 
 func total_income() -> int:
@@ -125,6 +129,14 @@ func add_popularity(amount: int) -> void:
 
 func add_absorption(amount: int) -> void:
 	absorption = maxi(0, absorption + amount)
+	resources_changed.emit()
+
+
+## Planetary emissions from tipping-point scars: outside the city's control —
+## tied to no sector, they pay no dirty income, no card can cut them, and era
+## floors never apply. Only extra absorption can cancel them.
+func add_world_emissions(amount: int) -> void:
+	world_emissions = maxi(0, world_emissions + amount)
 	resources_changed.emit()
 
 
@@ -179,6 +191,7 @@ func snapshot() -> void:
 		"turn": turn, "year": year, "temp": temp,
 		"gross": gross_emissions(), "net": net_emissions(),
 		"money": money, "popularity": popularity, "absorption": absorption,
+		"world_emissions": world_emissions,
 		"sectors": sector_states,
 	})
 
@@ -194,5 +207,6 @@ func end_run(won: bool, cause: String) -> void:
 		"timeline": history.duplicate(true),
 		"combos": discovered_combos.duplicate(),
 		"cards": owned_cards.duplicate(),
+		"tipping_points": crossed_tipping_points.duplicate(),
 	}
 	run_ended.emit(result)

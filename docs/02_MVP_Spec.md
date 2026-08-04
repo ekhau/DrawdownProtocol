@@ -48,6 +48,18 @@ Baseline net = 20 → +0.04°/turn → **doing nothing loses on turn 13** (recor
 - **Lose:** thermometer ≥ +2.00°, or popularity < 10%.
 - Both end on a **post-mortem screen**: timeline number, final year, temperature curve, sector states, one-line cause ("Industry never decarbonized").
 
+### Tipping points
+
+The thermometer is the boss, but it never hits back — until a threshold falls. Three **tipping points** sit on the climate bar (dark red ▲, telegraphed from turn 1); when the mercury crosses one, it fires **once per run**, deterministically, and scars the world permanently:
+
+| Tipping point | At | Permanent scar |
+|---|---|---|
+| Permafrost Thaw | +1.70° | +2 **planetary emissions** — world-scale, tied to no sector: they pay no income, no card can cut them, era floors don't apply; only extra absorption cancels them |
+| Amazon Dieback | +1.85° | Absorption −2 |
+| Ice-Sheet Destabilization | +1.95° | Income −2M$/turn, popularity −10% |
+
+Crossings resolve in the climate phase **after the temperature advances and before the win/lose check** — a dieback can legitimately steal a same-year win. A hot enough year crosses several at once, in ascending threshold order. The ◆ pace projection is honest about the future: it prices not-yet-crossed tipping points into its forecast, so a pace that walks the mercury over a threshold shows the scar from that projected year on. All thresholds and scars live in `config.json` (`tipping_points`); the accelerations pull the do-nothing loss to 2041–2042.
+
 ## 2. Cards (pool of 43; each run shuffles, market draws without replacement)
 
 Format: **Name — cost → effect**. `(C:X)` = part of combo X. `req ≥N%` = popularity gate (checked, never spent).
@@ -224,7 +236,7 @@ Meta-progression & insights, act boss checkpoints & transitions beyond the eras-
 ## 7. Done criteria
 
 - [ ] Full run playable start → post-mortem, mouse only, no softlocks (end-turn always available).
-- [ ] Doing nothing loses in 2043 ± 1 turn.
+- [ ] Doing nothing loses in 2042 ± 1 (tipping-point accelerations land it 2041–2042).
 - [ ] A first-run player loses close (reaches ≥ +1.9° or gets within ~3 emissions of net zero).
 - [ ] A player who chases combos wins between 2045 and 2050.
 - [ ] All 3 combos trigger and display their banner.
@@ -233,3 +245,4 @@ Meta-progression & insights, act boss checkpoints & transitions beyond the eras-
 - [ ] Every resource change appears in the turn log.
 - [ ] Run length ≤ 25 minutes.
 - [ ] All numbers above live in JSON — rebalancing requires zero GDScript edits.
+- [ ] Tipping points: telegraphed on the climate bar from turn 1, each fires exactly once at its threshold (before the win check), and the ◆ projection prices not-yet-crossed ones.
