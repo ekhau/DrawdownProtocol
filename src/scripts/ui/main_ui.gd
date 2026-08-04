@@ -13,9 +13,6 @@ var act_label: Label
 var money_label: Label
 var support_label: Label
 var net_label: Label
-var emis_bar: Control            # gross-emissions gauge: green absorbed zone, needle, 2.0° line
-var emis_caption: Label
-var breakeven := 0               # cached Game.breakeven_gross() for draw
 var sector_panels := {}          # sector_id -> {panel, style, title, stats}
 var market_box: HBoxContainer
 var reroll_btn: Button
@@ -76,10 +73,15 @@ func _build_layout() -> void:
 	var thermo_box := VBoxContainer.new()
 	thermo_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(thermo_box)
-	var thermo_tip := "Global warming — the clock. Each year the planet warms by net emissions × 0.002°;\nat +2.0° the timeline fails. Pink lines: crisis cost bands.\n◆: where warming stops if you keep your recent pace of cuts."
-	thermo_label = _label(thermo_box, "+1.50°", 30)
-	thermo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var thermo_tip := "Global climate — clock and engine in one bar. Each year the planet warms by net emissions × 0.002°;\nat +2.0° the timeline fails. Pink lines: crisis cost bands.\nFrom the white needle, next year's gross jump is sketched: the orange segment ends exactly where\nthe needle lands when the year ends; green = the push your absorption cancels. No orange left = net zero.\n◆: where warming stops if you keep your recent pace of cuts."
+	var thermo_head := HBoxContainer.new()
+	thermo_head.alignment = BoxContainer.ALIGNMENT_CENTER
+	thermo_head.add_theme_constant_override("separation", 24)
+	thermo_box.add_child(thermo_head)
+	thermo_label = _label(thermo_head, "+1.50°", 30)
 	_tip(thermo_label, thermo_tip)
+	net_label = _label(thermo_head, "Net 20", 30)
+	_tip(net_label, "Net emissions = gross − absorption. This number heats the planet each year.\nReach net ≤ 0 (without one-year windfalls) to win.")
 	thermometer = ProgressBar.new()
 	thermometer.min_value = 1.5
 	thermometer.max_value = 2.0
@@ -96,23 +98,7 @@ func _build_layout() -> void:
 	thermometer.add_child(thermo_markers)
 	thermo_caption = _label(thermo_box, "", 13)
 	thermo_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_tip(thermo_caption, "Where the mercury lands if the current pace of cuts holds\n(absorption frozen at today's value, era floors respected).")
-	var emis_box := VBoxContainer.new()
-	emis_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(emis_box)
-	var emis_tip := "Global carbon — the engine. White needle: gross emissions.\nGreen zone: what your absorption soaks up — pull the needle inside it to win.\nPink 2.0° line: the highest emissions your current pace can walk back in time."
-	net_label = _label(emis_box, "Net 20", 30)
-	net_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_tip(net_label, "Net emissions = gross − absorption. This number heats the planet each year.\nReach net ≤ 0 (without one-year windfalls) to win.")
-	emis_bar = Control.new()
-	emis_bar.custom_minimum_size = Vector2(0, 22)
-	emis_bar.draw.connect(_draw_emis_bar)
-	emis_bar.resized.connect(emis_bar.queue_redraw)
-	emis_box.add_child(emis_bar)
-	_tip(emis_bar, emis_tip)
-	emis_caption = _label(emis_box, "", 13)
-	emis_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_tip(emis_caption, emis_tip)
+	_tip(thermo_caption, "The carbon arithmetic feeding the bar, and the ◆ verdict: where the mercury lands\nif the current pace of cuts holds (absorption frozen at today's value, era floors respected).")
 	money_label = _label(top, "$10", 26)
 	_tip(money_label, "Money funds cards and crisis responses.\nIncome arrives at each year's end — dirty sectors pay more, for now.")
 	support_label = _label(top, "Support 10", 26)
@@ -327,44 +313,31 @@ func _refresh_stats() -> void:
 	var tween := create_tween()
 	tween.tween_property(thermometer, "value", s.temp, 0.4)
 	var heat := clampf((s.temp - 1.5) / 0.5, 0.0, 1.0)
-	thermometer.modulate = Color(1.0, 1.0 - heat * 0.7, 1.0 - heat)
+	# self_modulate: heat-tint the mercury only — the overlay's orange/green
+	# jump segments carry meaning and must keep their true colors.
+	thermometer.self_modulate = Color(1.0, 1.0 - heat * 0.7, 1.0 - heat)
 	neutrality = Game.neutrality_projection()
+	var gross := s.gross_emissions()
+	var net := s.net_emissions()
+	var green := Color("#5ec962")
+	var orange := Color("#fc8961")
+	net_label.text = "Net %d" % net
+	net_label.add_theme_color_override("font_color", green if s.structural_net() <= 0 else Color.WHITE)
 	if s.structural_net() <= 0:
-		thermo_caption.text = "◆ net zero reached — end the year ▶"
-		thermo_caption.add_theme_color_override("font_color", Color("#5ec962"))
+		thermo_caption.text = "all %d emissions absorbed — carbon neutral · end the year ▶" % gross
+		thermo_caption.add_theme_color_override("font_color", green)
 	elif neutrality.reachable:
-		thermo_caption.text = "◆ at this pace: net zero ≈ %d, at +%.2f°" % [neutrality.year, neutrality.temp]
-		thermo_caption.add_theme_color_override("font_color", Color("#5ec962"))
+		thermo_caption.text = "gross %d − absorbed %d = net %d · ◆ net zero ≈ %d, at +%.2f°" % [
+			gross, s.absorption, net, neutrality.year, neutrality.temp]
+		thermo_caption.add_theme_color_override("font_color", green)
 	else:
-		thermo_caption.text = "◆ at this pace the mercury hits +%.1f° first — cut faster" % thermometer.max_value
-		thermo_caption.add_theme_color_override("font_color", Color("#fc8961"))
+		thermo_caption.text = "gross %d − absorbed %d = net %d · ◆ +%.1f° first at this pace — cut faster" % [
+			gross, s.absorption, net, thermometer.max_value]
+		thermo_caption.add_theme_color_override("font_color", orange)
 	thermo_markers.queue_redraw()
 	money_label.text = "$%d" % s.money
 	support_label.text = "Support %d/%d" % [s.support, int(Game.catalog.config.support_cap)]
-	_refresh_emissions_gauge(s)
 	_refresh_market()
-
-
-func _refresh_emissions_gauge(s: RunState) -> void:
-	breakeven = Game.breakeven_gross()
-	var gross := s.gross_emissions()
-	var net := s.net_emissions()
-	net_label.text = "Net %d" % net
-	var green := Color("#5ec962")
-	var orange := Color("#fc8961")
-	if s.structural_net() <= 0:
-		net_label.add_theme_color_override("font_color", green)
-		emis_caption.text = "all %d emissions absorbed — carbon neutral" % gross
-		emis_caption.add_theme_color_override("font_color", green)
-	elif gross <= breakeven:
-		net_label.add_theme_color_override("font_color", Color.WHITE)
-		emis_caption.text = "gross %d − absorbed %d = net %d · inside the 2.0° line" % [gross, s.absorption, net]
-		emis_caption.add_theme_color_override("font_color", green)
-	else:
-		net_label.add_theme_color_override("font_color", Color.WHITE)
-		emis_caption.text = "gross %d − absorbed %d = net %d · over the 2.0° line — cut faster" % [gross, s.absorption, net]
-		emis_caption.add_theme_color_override("font_color", orange)
-	emis_bar.queue_redraw()
 
 
 func _draw_thermo_markers() -> void:
@@ -373,12 +346,26 @@ func _draw_thermo_markers() -> void:
 		return
 	var w := thermo_markers.size.x
 	var h := thermo_markers.size.y
+	var tx := clampf(_thermo_x(s.temp, w), 1.0, w - 1.0)
 	# Scale ticks every 0.1°
 	var v := thermometer.min_value + 0.1
 	while v < thermometer.max_value - 0.001:
 		var x := _thermo_x(v, w)
 		thermo_markers.draw_line(Vector2(x, 0), Vector2(x, h), Color(1, 1, 1, 0.2), 1.0)
 		v += 0.1
+	# Next year's gross jump, anchored at the needle and projected into degrees
+	# (× warming_per_net_emission). Edges are destinations: orange [needle →
+	# landing] is the net push — its right edge is exactly where the needle
+	# stands when the year ends. Green [landing → gross end] is the slice of
+	# the jump absorption cancels. Green swallowing it all = net zero.
+	var per_unit := float(Game.catalog.config.warming_per_net_emission)
+	var net_x := _thermo_x(s.temp + maxi(s.net_emissions(), 0) * per_unit, w)
+	var gross_x := _thermo_x(s.temp + s.gross_emissions() * per_unit, w)
+	thermo_markers.draw_rect(Rect2(tx, 3, net_x - tx, h - 6), Color("#fc8961", 0.45))
+	thermo_markers.draw_rect(Rect2(net_x, 3, gross_x - net_x, h - 6), Color("#5ec962", 0.45))
+	if net_x > tx:
+		# Landing line: crisp edge on where the needle stands next year.
+		thermo_markers.draw_line(Vector2(net_x, 3), Vector2(net_x, h - 3), Color("#fc8961"), 2.0)
 	# Band boundaries — crisis costs bump past these
 	for band in Game.catalog.config.bands:
 		if float(band.min_temp) > thermometer.min_value:
@@ -391,46 +378,9 @@ func _draw_thermo_markers() -> void:
 	thermo_markers.draw_colored_polygon(PackedVector2Array([
 		Vector2(nx, cy - 7), Vector2(nx + 7, cy), Vector2(nx, cy + 7), Vector2(nx - 7, cy)]), ncolor)
 	# Needle: current warming
-	var tx := clampf(_thermo_x(s.temp, w), 1.0, w - 1.0)
 	thermo_markers.draw_line(Vector2(tx, 0), Vector2(tx, h), Color.WHITE, 2.0)
 	thermo_markers.draw_colored_polygon(PackedVector2Array([
 		Vector2(clampf(tx - 5, 0, w), 0), Vector2(clampf(tx + 5, 0, w), 0), Vector2(tx, 6)]), Color.WHITE)
-
-
-func _draw_emis_bar() -> void:
-	var s: RunState = Game.state()
-	if s == null:
-		return
-	var w := emis_bar.size.x
-	var h := emis_bar.size.y
-	var gross := s.gross_emissions()
-	var start_gross := 0
-	for id in s.sectors:
-		start_gross += int(s.sectors[id].start_emissions)
-	# Stable scale: anchored to the run's starting gross so the bar doesn't
-	# rescale under the player; widens only if something outgrows it.
-	var scale_max := maxi(maxi(start_gross, gross), maxi(s.absorption, breakeven)) + 1
-	emis_bar.draw_rect(Rect2(0, 0, w, h), Color(0.15, 0.15, 0.17))
-	# Green zone: emissions the current absorption soaks up. Its right edge is
-	# the win line — pull the needle inside to reach net zero.
-	var ax := w * s.absorption / float(scale_max)
-	emis_bar.draw_rect(Rect2(0, 0, ax, h), Color("#5ec962", 0.35))
-	emis_bar.draw_line(Vector2(ax, 0), Vector2(ax, h), Color("#5ec962"), 2.0)
-	# Scale ticks every 5 units
-	var v := 5
-	while v < scale_max:
-		var x := w * v / float(scale_max)
-		emis_bar.draw_line(Vector2(x, 0), Vector2(x, h), Color(1, 1, 1, 0.2), 1.0)
-		v += 5
-	# 2.0° line — same pink as the thermometer's band boundaries: emissions
-	# above it can't be walked back before the mercury hits +2.0° at this pace.
-	var bx := clampf(w * breakeven / float(scale_max), 2.0, w - 2.0)
-	emis_bar.draw_line(Vector2(bx, 0), Vector2(bx, h), Color("#b73779"), 3.0)
-	# Needle: current gross emissions (same visual language as the thermometer)
-	var gx := clampf(w * gross / float(scale_max), 1.0, w - 1.0)
-	emis_bar.draw_line(Vector2(gx, 0), Vector2(gx, h), Color.WHITE, 2.0)
-	emis_bar.draw_colored_polygon(PackedVector2Array([
-		Vector2(clampf(gx - 5, 0, w), 0), Vector2(clampf(gx + 5, 0, w), 0), Vector2(gx, 6)]), Color.WHITE)
 
 
 func _thermo_x(value: float, width: float) -> float:
@@ -638,9 +588,7 @@ Support is your HP: at 0 the Institute is voted out.
 
 Each year: face a [b]crisis[/b] (every answer costs something — money, support, or a permanent scar; costs rise with the thermometer), then [b]buy cards[/b] from the market, then collect [b]income[/b], then the [b]climate[/b] advances by net emissions × 0.002°.
 
-On the thermometer: the [b]white needle[/b] is today's warming, pink ticks are the crisis cost bands. The [b]◆[/b] projects where the mercury stops if you keep your recent pace of cuts (absorption frozen at today's value) — green means net zero is in reach, orange means +2.0° arrives first.
-
-On the emissions gauge: the [b]green zone[/b] is what your absorption soaks up — pull the white needle (gross emissions) inside it to reach net zero. The [b]pink 2.0° line[/b] is the highest emissions your current pace of cuts can still walk back before the mercury hits +2.0°: needle left of it = winning course, right of it = cut faster. No cuts underway pins the line to the green edge.
+On the climate bar: the [b]white needle[/b] is today's warming, pink ticks are the crisis cost bands. From the needle, next year's gross jump is sketched in degrees: the [b]orange segment[/b] ends exactly where the needle stands when the year ends (net × 0.002°), and the [b]green segment[/b] beyond it is the push your absorption cancels. Cut gross or grow absorption until no orange is left — the needle stops: net zero. The [b]◆[/b] marks where the mercury settles if you keep your recent pace of cuts (absorption frozen at today's value) — green means net zero is in reach, orange means +2.0° arrives first.
 
 Dirty income pays now and emits forever. New eras (2038, 2044) unlock deeper cards. Some cards form hidden combos."""
 

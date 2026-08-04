@@ -70,10 +70,6 @@ func neutrality_projection() -> Dictionary:
 	return ClimateCalc.neutrality_projection(sim.state)
 
 
-func breakeven_gross() -> int:
-	return ClimateCalc.breakeven_gross(sim.state)
-
-
 func era_palette() -> Gradient:
 	var era := sim.state.era_for_year(sim.state.year)
 	return palette_gradient(era.palette)

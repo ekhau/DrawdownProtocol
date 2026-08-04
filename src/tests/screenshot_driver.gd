@@ -18,6 +18,11 @@ func _tick() -> void:
 	frames += 1
 	if frames == 2:
 		root.add_child((load("res://scenes/main.tscn") as PackedScene).instantiate())
+	elif frames == 25:
+		# The launch intro and act card cover the top bar — dismiss both for a clean shot.
+		var ui := root.get_node("Main")
+		ui.overlay.visible = false
+		ui.era_modal.visible = false
 	elif frames == 30:
 		root.get_texture().get_image().save_png(out_dir + "/before.png")
 		# Deterministic pokes through the sim (market offer is seed-dependent):
